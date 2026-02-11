@@ -1,363 +1,101 @@
-# Roark TypeScript API Library
-
-[![NPM version](<https://img.shields.io/npm/v/@roarkanalytics/sdk.svg?label=npm%20(stable)>)](https://npmjs.org/package/@roarkanalytics/sdk) ![npm bundle size](https://img.shields.io/bundlephobia/minzip/@roarkanalytics/sdk)
-
-This library provides convenient access to the Roark REST API from server-side TypeScript or JavaScript.
-
-The REST API documentation can be found on [docs.roark.ai](https://docs.roark.ai). The full API of this library can be found in [api.md](api.md).
+# Roark TypeScript MCP Server
 
 It is generated with [Stainless](https://www.stainless.com/).
 
 ## Installation
 
+### Direct invocation
+
+You can run the MCP Server directly via `npx`:
+
 ```sh
-npm install @roarkanalytics/sdk
+export ROARK_API_BEARER_TOKEN="My Bearer Token"
+npx -y @roarkanalytics/sdk-mcp@latest
 ```
 
-## Usage
+### Via MCP Client
 
-The full API of this library can be found in [api.md](api.md).
+There is a partial list of existing clients at [modelcontextprotocol.io](https://modelcontextprotocol.io/clients). If you already
+have a client, consult their documentation to install the MCP server.
 
-<!-- prettier-ignore -->
-```js
-import Roark from '@roarkanalytics/sdk';
+For clients with a configuration JSON, it might look something like this:
 
-const client = new Roark({
-  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted
-});
-
-const response = await client.evaluation.createJob({ evaluators: ['string'] });
-
-console.log(response.data);
-```
-
-### Request & Response types
-
-This library includes TypeScript definitions for all request params and response fields. You may import and use them like so:
-
-<!-- prettier-ignore -->
-```ts
-import Roark from '@roarkanalytics/sdk';
-
-const client = new Roark({
-  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted
-});
-
-const params: Roark.EvaluationCreateJobParams = { evaluators: ['string'] };
-const response: Roark.EvaluationCreateJobResponse = await client.evaluation.createJob(params);
-```
-
-Documentation for each method, request param, and response field are available in docstrings and will appear on hover in most modern editors.
-
-## Handling errors
-
-When the library is unable to connect to the API,
-or if the API returns a non-success status code (i.e., 4xx or 5xx response),
-a subclass of `APIError` will be thrown:
-
-<!-- prettier-ignore -->
-```ts
-const response = await client.evaluation
-  .createJob({ evaluators: ['string'] })
-  .catch(async (err) => {
-    if (err instanceof Roark.APIError) {
-      console.log(err.status); // 400
-      console.log(err.name); // BadRequestError
-      console.log(err.headers); // {server: 'nginx', ...}
-    } else {
-      throw err;
+```json
+{
+  "mcpServers": {
+    "roarkanalytics_sdk_api": {
+      "command": "npx",
+      "args": ["-y", "@roarkanalytics/sdk-mcp"],
+      "env": {
+        "ROARK_API_BEARER_TOKEN": "My Bearer Token"
+      }
     }
-  });
+  }
+}
 ```
 
-Error codes are as follows:
+### Cursor
 
-| Status Code | Error Type                 |
-| ----------- | -------------------------- |
-| 400         | `BadRequestError`          |
-| 401         | `AuthenticationError`      |
-| 403         | `PermissionDeniedError`    |
-| 404         | `NotFoundError`            |
-| 422         | `UnprocessableEntityError` |
-| 429         | `RateLimitError`           |
-| >=500       | `InternalServerError`      |
-| N/A         | `APIConnectionError`       |
+If you use Cursor, you can install the MCP server by using the button below. You will need to set your environment variables
+in Cursor's `mcp.json`, which can be found in Cursor Settings > Tools & MCP > New MCP Server.
 
-### Retries
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en-US/install-mcp?name=%40roarkanalytics%2Fsdk-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkByb2Fya2FuYWx5dGljcy9zZGstbWNwIl0sImVudiI6eyJST0FSS19BUElfQkVBUkVSX1RPS0VOIjoiTXkgQmVhcmVyIFRva2VuIn19)
 
-Certain errors will be automatically retried 2 times by default, with a short exponential backoff.
-Connection errors (for example, due to a network connectivity problem), 408 Request Timeout, 409 Conflict,
-429 Rate Limit, and >=500 Internal errors will all be retried by default.
+### VS Code
 
-You can use the `maxRetries` option to configure or disable this:
+If you use MCP, you can install the MCP server by clicking the link below. You will need to set your environment variables
+in VS Code's `mcp.json`, which can be found via Command Palette > MCP: Open User Configuration.
 
-<!-- prettier-ignore -->
-```js
-// Configure the default for all requests:
-const client = new Roark({
-  maxRetries: 0, // default is 2
-});
+[Open VS Code](https://vscode.stainless.com/mcp/%7B%22name%22%3A%22%40roarkanalytics%2Fsdk-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40roarkanalytics%2Fsdk-mcp%22%5D%2C%22env%22%3A%7B%22ROARK_API_BEARER_TOKEN%22%3A%22My%20Bearer%20Token%22%7D%7D)
 
-// Or, configure per-request:
-await client.evaluation.createJob({ evaluators: ['string'] }, {
-  maxRetries: 5,
-});
+### Claude Code
+
+If you use Claude Code, you can install the MCP server by running the command below in your terminal. You will need to set your
+environment variables in Claude Code's `.claude.json`, which can be found in your home directory.
+
+```
+claude mcp add roarkanalytics_sdk_mcp_api --env ROARK_API_BEARER_TOKEN="My Bearer Token" -- npx -y @roarkanalytics/sdk-mcp
 ```
 
-### Timeouts
+## Code Mode
 
-Requests time out after 1 minute by default. You can configure this with a `timeout` option:
+This MCP server is built on the "Code Mode" tool scheme. In this MCP Server,
+your agent will write code against the TypeScript SDK, which will then be executed in an
+isolated sandbox. To accomplish this, the server will expose two tools to your agent:
 
-<!-- prettier-ignore -->
-```ts
-// Configure the default for all requests:
-const client = new Roark({
-  timeout: 20 * 1000, // 20 seconds (default is 1 minute)
-});
+- The first tool is a docs search tool, which can be used to generically query for
+  documentation about your API/SDK.
 
-// Override per-request:
-await client.evaluation.createJob({ evaluators: ['string'] }, {
-  timeout: 5 * 1000,
-});
+- The second tool is a code tool, where the agent can write code against the TypeScript SDK.
+  The code will be executed in a sandbox environment without web or filesystem access. Then,
+  anything the code returns or prints will be returned to the agent as the result of the
+  tool call.
+
+Using this scheme, agents are capable of performing very complex tasks deterministically
+and repeatably.
+
+## Running remotely
+
+Launching the client with `--transport=http` launches the server as a remote server using Streamable HTTP transport. The `--port` setting can choose the port it will run on, and the `--socket` setting allows it to run on a Unix socket.
+
+Authorization can be provided via the `Authorization` header using the Bearer scheme.
+
+Additionally, authorization can be provided via the following headers:
+| Header | Equivalent client option | Security scheme |
+| -------------------------- | ------------------------ | --------------- |
+| `x-roark-api-bearer-token` | `bearerToken` | Bearer |
+
+A configuration JSON for this server might look like this, assuming the server is hosted at `http://localhost:3000`:
+
+```json
+{
+  "mcpServers": {
+    "roarkanalytics_sdk_api": {
+      "url": "http://localhost:3000",
+      "headers": {
+        "Authorization": "Bearer <auth value>"
+      }
+    }
+  }
+}
 ```
-
-On timeout, an `APIConnectionTimeoutError` is thrown.
-
-Note that requests which time out will be [retried twice by default](#retries).
-
-## Advanced Usage
-
-### Accessing raw Response data (e.g., headers)
-
-The "raw" `Response` returned by `fetch()` can be accessed through the `.asResponse()` method on the `APIPromise` type that all methods return.
-This method returns as soon as the headers for a successful response are received and does not consume the response body, so you are free to write custom parsing or streaming logic.
-
-You can also use the `.withResponse()` method to get the raw `Response` along with the parsed data.
-Unlike `.asResponse()` this method consumes the body, returning once it is parsed.
-
-<!-- prettier-ignore -->
-```ts
-const client = new Roark();
-
-const response = await client.evaluation.createJob({ evaluators: ['string'] }).asResponse();
-console.log(response.headers.get('X-My-Header'));
-console.log(response.statusText); // access the underlying Response object
-
-const { data: response, response: raw } = await client.evaluation
-  .createJob({ evaluators: ['string'] })
-  .withResponse();
-console.log(raw.headers.get('X-My-Header'));
-console.log(response.data);
-```
-
-### Logging
-
-> [!IMPORTANT]
-> All log messages are intended for debugging only. The format and content of log messages
-> may change between releases.
-
-#### Log levels
-
-The log level can be configured in two ways:
-
-1. Via the `ROARK_LOG` environment variable
-2. Using the `logLevel` client option (overrides the environment variable if set)
-
-```ts
-import Roark from '@roarkanalytics/sdk';
-
-const client = new Roark({
-  logLevel: 'debug', // Show all log messages
-});
-```
-
-Available log levels, from most to least verbose:
-
-- `'debug'` - Show debug messages, info, warnings, and errors
-- `'info'` - Show info messages, warnings, and errors
-- `'warn'` - Show warnings and errors (default)
-- `'error'` - Show only errors
-- `'off'` - Disable all logging
-
-At the `'debug'` level, all HTTP requests and responses are logged, including headers and bodies.
-Some authentication-related headers are redacted, but sensitive data in request and response bodies
-may still be visible.
-
-#### Custom logger
-
-By default, this library logs to `globalThis.console`. You can also provide a custom logger.
-Most logging libraries are supported, including [pino](https://www.npmjs.com/package/pino), [winston](https://www.npmjs.com/package/winston), [bunyan](https://www.npmjs.com/package/bunyan), [consola](https://www.npmjs.com/package/consola), [signale](https://www.npmjs.com/package/signale), and [@std/log](https://jsr.io/@std/log). If your logger doesn't work, please open an issue.
-
-When providing a custom logger, the `logLevel` option still controls which messages are emitted, messages
-below the configured level will not be sent to your logger.
-
-```ts
-import Roark from '@roarkanalytics/sdk';
-import pino from 'pino';
-
-const logger = pino();
-
-const client = new Roark({
-  logger: logger.child({ name: 'Roark' }),
-  logLevel: 'debug', // Send all messages to pino, allowing it to filter
-});
-```
-
-### Making custom/undocumented requests
-
-This library is typed for convenient access to the documented API. If you need to access undocumented
-endpoints, params, or response properties, the library can still be used.
-
-#### Undocumented endpoints
-
-To make requests to undocumented endpoints, you can use `client.get`, `client.post`, and other HTTP verbs.
-Options on the client, such as retries, will be respected when making these requests.
-
-```ts
-await client.post('/some/path', {
-  body: { some_prop: 'foo' },
-  query: { some_query_arg: 'bar' },
-});
-```
-
-#### Undocumented request params
-
-To make requests using undocumented parameters, you may use `// @ts-expect-error` on the undocumented
-parameter. This library doesn't validate at runtime that the request matches the type, so any extra values you
-send will be sent as-is.
-
-```ts
-client.evaluation.createJob({
-  // ...
-  // @ts-expect-error baz is not yet public
-  baz: 'undocumented option',
-});
-```
-
-For requests with the `GET` verb, any extra params will be in the query, all other requests will send the
-extra param in the body.
-
-If you want to explicitly send an extra argument, you can do so with the `query`, `body`, and `headers` request
-options.
-
-#### Undocumented response properties
-
-To access undocumented response properties, you may access the response object with `// @ts-expect-error` on
-the response object, or cast the response object to the requisite type. Like the request params, we do not
-validate or strip extra properties from the response from the API.
-
-### Customizing the fetch client
-
-By default, this library expects a global `fetch` function is defined.
-
-If you want to use a different `fetch` function, you can either polyfill the global:
-
-```ts
-import fetch from 'my-fetch';
-
-globalThis.fetch = fetch;
-```
-
-Or pass it to the client:
-
-```ts
-import Roark from '@roarkanalytics/sdk';
-import fetch from 'my-fetch';
-
-const client = new Roark({ fetch });
-```
-
-### Fetch options
-
-If you want to set custom `fetch` options without overriding the `fetch` function, you can provide a `fetchOptions` object when instantiating the client or making a request. (Request-specific options override client options.)
-
-```ts
-import Roark from '@roarkanalytics/sdk';
-
-const client = new Roark({
-  fetchOptions: {
-    // `RequestInit` options
-  },
-});
-```
-
-#### Configuring proxies
-
-To modify proxy behavior, you can provide custom `fetchOptions` that add runtime-specific proxy
-options to requests:
-
-<img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/node.svg" align="top" width="18" height="21"> **Node** <sup>[[docs](https://github.com/nodejs/undici/blob/main/docs/docs/api/ProxyAgent.md#example---proxyagent-with-fetch)]</sup>
-
-```ts
-import Roark from '@roarkanalytics/sdk';
-import * as undici from 'undici';
-
-const proxyAgent = new undici.ProxyAgent('http://localhost:8888');
-const client = new Roark({
-  fetchOptions: {
-    dispatcher: proxyAgent,
-  },
-});
-```
-
-<img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/bun.svg" align="top" width="18" height="21"> **Bun** <sup>[[docs](https://bun.sh/guides/http/proxy)]</sup>
-
-```ts
-import Roark from '@roarkanalytics/sdk';
-
-const client = new Roark({
-  fetchOptions: {
-    proxy: 'http://localhost:8888',
-  },
-});
-```
-
-<img src="https://raw.githubusercontent.com/stainless-api/sdk-assets/refs/heads/main/deno.svg" align="top" width="18" height="21"> **Deno** <sup>[[docs](https://docs.deno.com/api/deno/~/Deno.createHttpClient)]</sup>
-
-```ts
-import Roark from 'npm:@roarkanalytics/sdk';
-
-const httpClient = Deno.createHttpClient({ proxy: { url: 'http://localhost:8888' } });
-const client = new Roark({
-  fetchOptions: {
-    client: httpClient,
-  },
-});
-```
-
-## Frequently Asked Questions
-
-## Semantic versioning
-
-This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) conventions, though certain backwards-incompatible changes may be released as minor versions:
-
-1. Changes that only affect static types, without breaking runtime behavior.
-2. Changes to library internals which are technically public but not intended or documented for external use. _(Please open a GitHub issue to let us know if you are relying on such internals.)_
-3. Changes that we do not expect to impact the vast majority of users in practice.
-
-We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
-
-We are keen for your feedback; please open an [issue](https://www.github.com/roarkhq/sdk-roark-analytics-node/issues) with questions, bugs, or suggestions.
-
-## Requirements
-
-TypeScript >= 4.9 is supported.
-
-The following runtimes are supported:
-
-- Web browsers (Up-to-date Chrome, Firefox, Safari, Edge, and more)
-- Node.js 20 LTS or later ([non-EOL](https://endoflife.date/nodejs)) versions.
-- Deno v1.28.0 or higher.
-- Bun 1.0 or later.
-- Cloudflare Workers.
-- Vercel Edge Runtime.
-- Jest 28 or greater with the `"node"` environment (`"jsdom"` is not supported at this time).
-- Nitro v2.6 or greater.
-
-Note that React Native is not supported at this time.
-
-If you are interested in other runtime environments, please open or upvote an issue on GitHub.
-
-## Contributing
-
-See [the contributing documentation](./CONTRIBUTING.md).

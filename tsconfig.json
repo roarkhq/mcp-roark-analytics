@@ -2,14 +2,14 @@
   "include": ["src", "tests", "examples"],
   "exclude": [],
   "compilerOptions": {
-    "target": "es2020",
-    "lib": ["es2020"],
+    "target": "es2022",
+    "lib": ["es2022"],
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "paths": {
-      "@roarkanalytics/sdk/*": ["./src/*"],
-      "@roarkanalytics/sdk": ["./src/index.ts"]
+      "@roarkanalytics/sdk-mcp/*": ["./src/*"],
+      "@roarkanalytics/sdk-mcp": ["./src/index.ts"]
     },
     "noEmit": true,
 
@@ -30,7 +30,6 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-    "isolatedModules": false,
 
     "skipLibCheck": true
   }

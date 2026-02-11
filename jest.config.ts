@@ -7,16 +7,10 @@ const config: JestConfigWithTsJest = {
     '^.+\\.(t|j)sx?$': ['@swc/jest', { sourceMaps: 'inline' }],
   },
   moduleNameMapper: {
-    '^@roarkanalytics/sdk$': '<rootDir>/src/index.ts',
-    '^@roarkanalytics/sdk/(.*)$': '<rootDir>/src/$1',
+    '^@roarkanalytics/sdk-mcp$': '<rootDir>/src/index.ts',
+    '^@roarkanalytics/sdk-mcp/(.*)$': '<rootDir>/src/$1',
   },
-  modulePathIgnorePatterns: [
-    '<rootDir>/ecosystem-tests/',
-    '<rootDir>/dist/',
-    '<rootDir>/deno/',
-    '<rootDir>/deno_tests/',
-    '<rootDir>/packages/',
-  ],
+  modulePathIgnorePatterns: ['<rootDir>/dist/'],
   testPathIgnorePatterns: ['scripts'],
 };
 
