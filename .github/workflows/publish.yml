@@ -1,0 +1,183 @@
+# Publishes @roarkanalytics/sdk-mcp, and the .mcpb bundle beside it.
+#
+# Manual, and single-purpose: pick a ref, rehearse it, publish it. There is no
+# release-please in this repository and no tag-driven trigger. In
+# sdk-roark-analytics-node this package rode that repository's release train -
+# release-please bumped `package.json`, `manifest.json` and the literal in
+# `server.ts` in lockstep with the SDK, and `publish-npm.yml` shipped both
+# packages from one GitHub release. That coupling is what the split removes: a
+# regeneration that adds a tool is not an SDK release, and an SDK release is not
+# a reason to republish this.
+#
+# So a human bumps package.json and manifest.json, dispatches this, and the tag
+# and GitHub release are created here - the release exists so the bundle has
+# somewhere to be attached, which is what `publish-npm.yml` used it for too.
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build and check, but do not publish'
+        type: boolean
+        default: true
+      tag:
+        description: 'npm dist-tag to publish under'
+        type: string
+        default: 'latest'
+
+concurrency:
+  group: publish-mcp
+  cancel-in-progress: false
+
+# `contents: write` for the GitHub release the bundle is attached to. The npm
+# publish authenticates separately, with NODE_AUTH_TOKEN.
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    steps:
+      # Whichever branch or tag the run was dispatched from. Normally `main`.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: '10.30.1'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # A publish is immutable, so the suite runs here as well as in ci.yml: this
+      # workflow can be dispatched from any ref, including one that never went
+      # through a pull request.
+      - name: Test
+        run: pnpm test
+
+      # `dist/` is what gets published, so every check below reads from there
+      # rather than from the source package.json. The two differ: the build
+      # rewrites the export map and the bin path and drops devDependencies.
+      - name: Check what is about to be published
+        id: check
+        run: |
+          set -euo pipefail
+
+          version=$(jq -r -e '.version' dist/package.json)
+          source_version=$(jq -r -e '.version' package.json)
+          manifest_version=$(jq -r -e '.version' manifest.json)
+          sdk_range=$(jq -r -e '.dependencies["@roarkanalytics/sdk"]' dist/package.json)
+          sdk_version="${sdk_range#^}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "publishing @roarkanalytics/sdk-mcp@$version against @roarkanalytics/sdk@$sdk_range"
+
+          # The bundle carries its own manifest, and Claude Desktop reads the
+          # version out of that one. They were kept in step by release-please's
+          # `extra-files`; nothing does that now, so a bundle claiming 3.2.0
+          # while npm serves 3.3.0 is one forgotten edit away.
+          if [ "$manifest_version" != "$source_version" ]; then
+            echo "::error::manifest.json says $manifest_version but package.json says $source_version. Both are bumped by hand in this repository; bump manifest.json too."
+            exit 1
+          fi
+
+          # While this package lived inside the SDK repository the dependency was
+          # a workspace link, rewritten to a real range at pack time. It declares
+          # a published range directly now, so the failure left to guard against
+          # is a range bumped ahead of the SDK's own release: it installs fine on
+          # a machine with a warm cache and fails for the first customer who runs
+          # `npx @roarkanalytics/sdk-mcp`.
+          if ! npm view "@roarkanalytics/sdk@$sdk_version" version >/dev/null 2>&1; then
+            echo "::error::@roarkanalytics/sdk@$sdk_version is not on npm, so this server would not install"
+            exit 1
+          fi
+
+          # npm rejects a duplicate version anyway; failing here says why.
+          if npm view "@roarkanalytics/sdk-mcp@$version" version >/dev/null 2>&1; then
+            echo "::error::@roarkanalytics/sdk-mcp@$version is already published. Bump package.json and manifest.json first."
+            exit 1
+          fi
+
+      # The version the server announces in its MCP handshake is a literal
+      # compiled into `server.ts`. `build` syncs it from package.json, and this
+      # is the assertion that it did: `@roarkanalytics/cli@0.1.0` published
+      # reporting `2.31.0` because nothing checked, and npm publishes are
+      # immutable.
+      - name: Smoke test the built server
+        run: |
+          set -euo pipefail
+          expected=$(jq -r -e '.version' dist/package.json)
+          if ! grep -qF "version: '$expected'" dist/server.js; then
+            echo "::error::dist/server.js does not report $expected, so this build would announce the wrong version to every client. scripts/sync-version.cjs runs in ./build; a mismatch means it did not."
+            exit 1
+          fi
+          node dist/index.js --help > /dev/null
+          echo "the built server reports $expected and its bin starts"
+
+          # Existing on disk is not the same as shipping: npm drops some files
+          # when it packs, so assert against the tarball it actually builds.
+          cd dist
+          npm pack --loglevel=error >/dev/null
+          tarball=$(ls -- *.tgz)
+          # Listed into a file and grepped from the file rather than from a pipe:
+          # `grep -q` exits at the first match, closing the pipe while GNU tar is
+          # still writing, and under `pipefail` that reports a present entry as
+          # missing. The CLI's publish hit exactly this.
+          entries="$RUNNER_TEMP/mcp-tarball-entries.txt"
+          tar -tzf "$tarball" > "$entries"
+          for entry in package/index.js package/server.js package/methods.js package/package.json; do
+            if ! grep -qxF "$entry" "$entries"; then
+              echo "::error::$entry is missing from the tarball npm packed"
+              exit 1
+            fi
+          done
+          rm -f "$tarball"
+          echo 'the packed tarball carries the entry point, the server and the tool table'
+
+      - name: Publish
+        if: inputs.dry_run != true
+        working-directory: dist
+        run: npm publish --access public --tag '${{ inputs.tag }}'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ROARK_NPM_TOKEN || secrets.NPM_TOKEN }}
+
+      - name: Rehearse the publish
+        if: inputs.dry_run == true
+        working-directory: dist
+        run: npm publish --access public --tag '${{ inputs.tag }}' --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ROARK_NPM_TOKEN || secrets.NPM_TOKEN }}
+
+      # After the npm publish rather than before: the bundle is a convenience,
+      # the registry is the product, and a release tagging a version npm rejected
+      # would be a tag pointing at nothing installable.
+      - name: Tag the release and attach the bundle
+        if: inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes "Published \`@roarkanalytics/sdk-mcp@$VERSION\` to npm." \
+            roarkanalytics_sdk_api.mcpb
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '### @roarkanalytics/sdk-mcp ${{ steps.check.outputs.version }}'
+            if [ '${{ inputs.dry_run }}' = 'true' ]; then
+              echo 'Dry run: built, checked and packed. Nothing was published, and no release was cut.'
+            else
+              echo 'Published to npm under the `${{ inputs.tag }}` tag, with the bundle attached to the release.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

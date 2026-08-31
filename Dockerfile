@@ -3,7 +3,7 @@
 # This Dockerfile builds a Docker image for the MCP Server.
 #
 # To build the image locally:
-#   docker build -f packages/mcp-server/Dockerfile -t @roarkanalytics/sdk-mcp:local .
+#   docker build -t @roarkanalytics/sdk-mcp:local .
 #
 # To run the image:
 #   docker run -i @roarkanalytics/sdk-mcp:local [OPTIONS]
@@ -57,10 +57,14 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 WORKDIR /app
 
 # Copy the build results, preserving directory structure
+#
+# The line that used to follow this one copied `/build/dist` over
+# `node_modules/@roarkanalytics/sdk`: the SDK was built from the same workspace
+# and `workspace:*` left nothing installable behind. This package depends on a
+# published SDK now, so `pnpm install` above has already put the real one in
+# node_modules, and copying this package's own `dist` over it would replace the
+# SDK with the MCP server.
 COPY --from=builder /build .
-
-# Copy the built @roarkanalytics/sdk into node_modules
-COPY --from=builder /build/dist ./node_modules/@roarkanalytics/sdk
 
 # Change ownership to nodejs user
 RUN chown -R nodejs:nodejs /app
@@ -73,7 +77,7 @@ USER nodejs
 # No exposed ports needed for stdio communication
 
 # Set the entrypoint to the MCP server
-ENTRYPOINT ["node", "packages/mcp-server/dist/index.js"]
+ENTRYPOINT ["node", "dist/index.js"]
 
 # Allow passing arguments to the MCP server
 CMD []

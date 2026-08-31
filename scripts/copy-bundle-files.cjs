@@ -23,13 +23,12 @@ async function copyFiles() {
     await fs.promises.copyFile(file, dest);
   }
 
-  // replace package.json reference with local reference
-  for (const dep in pkgJson.dependencies) {
-    if (dep === '@roarkanalytics/sdk') {
-      pkgJson.dependencies[dep] = 'file:../../../dist/';
-    }
-  }
-
+  // The `@roarkanalytics/sdk` dependency used to be rewritten here to
+  // `file:../../../dist/` - the SDK built alongside this package in the same
+  // workspace, because a `workspace:*` range means nothing to the `npm install`
+  // the bundle runs. There is no such sibling now: the manifest declares a
+  // published range, which npm resolves on its own. Rewriting it to a path that
+  // does not exist would fail the bundle install.
   await fs.promises.writeFile(distBundlePkgJson, JSON.stringify(pkgJson, null, 2));
 }
 

@@ -1,26 +1,37 @@
 #!/usr/bin/env bash
 set -exuo pipefail
 
+# The build that was `packages/mcp-server/build` inside the node SDK. Three
+# things changed when the package became the repository, all of them the same
+# change: the paths that reached up out of the workspace no longer can.
+#
+#   ../../scripts/utils/make-dist-package-json.cjs  -> scripts/
+#   ../../scripts/utils/postprocess-files.cjs       -> scripts/
+#   ../../LICENSE                                   -> LICENSE
+#
+# And `scripts/postprocess-dist-package-json.cjs` is gone entirely: it existed to
+# rewrite a `workspace:*` dependency on `@roarkanalytics/sdk` into a published
+# range at pack time. This package declares the published range directly now, so
+# there is nothing to rewrite - and rewriting it from a sibling's version would
+# now read a package.json that is not there.
+
 rm -rf dist; mkdir dist
+
+# Nothing else rewrites the version literal in `src/server.ts` any more, so it is
+# synced from package.json before anything compiles it.
+node scripts/sync-version.cjs
 
 # Copy src to dist/src and build from dist/src into dist, so that
 # the source map for index.js.map will refer to ./src/index.ts etc
 cp -rp src README.md dist
 
-for file in LICENSE; do
-  if [ -e "../../${file}" ]; then cp "../../${file}" dist; fi
-done
-
-for file in CHANGELOG.md; do
+for file in LICENSE CHANGELOG.md; do
   if [ -e "${file}" ]; then cp "${file}" dist; fi
 done
 
 # this converts the export map paths for the dist directory
 # and does a few other minor things
-PKG_JSON_PATH=../../packages/mcp-server/package.json node ../../scripts/utils/make-dist-package-json.cjs > dist/package.json
-
-# updates the `@roarkanalytics/sdk` dependency to point to NPM
-node scripts/postprocess-dist-package-json.cjs
+node scripts/make-dist-package-json.cjs > dist/package.json
 
 # build to .js/.mjs/.d.ts files
 ./node_modules/.bin/tsc-multi
@@ -29,13 +40,13 @@ cp tsconfig.dist-src.json dist/src/tsconfig.json
 
 chmod +x dist/index.js
 
-DIST_PATH=./dist PKG_IMPORT_PATH=@roarkanalytics/sdk-mcp/ node ../../scripts/utils/postprocess-files.cjs
+DIST_PATH=./dist PKG_IMPORT_PATH=@roarkanalytics/sdk-mcp/ node scripts/postprocess-files.cjs
 
 # mcp bundle
 rm -rf dist-bundle roarkanalytics_sdk_api.mcpb; mkdir dist-bundle
 
 # copy package.json
-PKG_JSON_PATH=../../packages/mcp-server/package.json node ../../scripts/utils/make-dist-package-json.cjs > dist-bundle/package.json
+node scripts/make-dist-package-json.cjs > dist-bundle/package.json
 
 # copy files
 node scripts/copy-bundle-files.cjs

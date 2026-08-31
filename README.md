@@ -1,6 +1,13 @@
 # Roark TypeScript MCP Server
 
-It is generated with [Stainless](https://www.stainless.com/).
+The official MCP server for the [Roark API](https://docs.roark.ai), published as
+[`@roarkanalytics/sdk-mcp`](https://www.npmjs.com/package/@roarkanalytics/sdk-mcp).
+
+Its tool table, the code tool's prompt and its embedded docs index are generated from
+Roark's OpenAPI spec by [app-agent-codegen](https://github.com/roarkhq/app-agent-codegen) and
+arrive here as pull requests. Everything else - the transports, auth, the code tool runtime -
+is hand-maintained. Four files carry generated regions: `src/methods.ts`, `src/code-tool.ts`,
+`src/code-tool-worker.ts` and `src/local-docs-search.ts`.
 
 ## Installation
 
@@ -81,9 +88,10 @@ Launching the client with `--transport=http` launches the server as a remote ser
 Authorization can be provided via the `Authorization` header using the Bearer scheme.
 
 Additionally, authorization can be provided via the following headers:
-| Header | Equivalent client option | Security scheme |
+
+| Header                     | Equivalent client option | Security scheme |
 | -------------------------- | ------------------------ | --------------- |
-| `x-roark-api-bearer-token` | `bearerToken` | Bearer |
+| `x-roark-api-bearer-token` | `bearerToken`            | Bearer          |
 
 A configuration JSON for this server might look like this, assuming the server is hosted at `http://localhost:3000`:
 
