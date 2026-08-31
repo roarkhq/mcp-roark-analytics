@@ -16,11 +16,17 @@ processExportMap(pkgJson.exports);
 for (const key of ['types', 'main', 'module']) {
   if (typeof pkgJson[key] === 'string') pkgJson[key] = pkgJson[key].replace(/^(\.\/)?dist\//, './');
 }
-// Fix bin paths if present
+// Fix bin paths if present.
+//
+// Bare `index.js`, not `./index.js` like the fields above: npm rewrites a
+// `./`-prefixed bin path to the bare form when it packs, and says so -
+// "npm auto-corrected some errors in your package.json when publishing".
+// Emitting what npm would write keeps the manifest in the tarball identical to
+// the one in `dist/`, so what a publish rehearsal checks is what ships.
 if (pkgJson.bin) {
   for (const key in pkgJson.bin) {
     if (typeof pkgJson.bin[key] === 'string') {
-      pkgJson.bin[key] = pkgJson.bin[key].replace(/^(\.\/)?dist\//, './');
+      pkgJson.bin[key] = pkgJson.bin[key].replace(/^(\.\/)?dist\//, '');
     }
   }
 }
