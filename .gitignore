@@ -7,3 +7,8 @@ dist-bundle
 codegen.log
 yarn-error.log
 .idea/
+
+# Written into the checkout root by app-agent-codegen's typecheck gate
+# (`verify-mcp`), and left behind. Untracked debris that makes `pnpm lint` fail
+# on `prettier --check .` for anyone who has run the gate locally.
+tsconfig.review.json
