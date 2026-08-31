@@ -1,7 +1,7 @@
 {
   "dxt_version": "0.2",
   "name": "@roarkanalytics/sdk-mcp",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "The official MCP Server for the Roark API",
   "author": {
     "name": "Roark",
@@ -9,9 +9,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/roarkhq/sdk-roark-analytics-node.git"
+    "url": "git+https://github.com/roarkhq/mcp-roark-analytics.git"
   },
-  "homepage": "https://github.com/roarkhq/sdk-roark-analytics-node/tree/main/packages/mcp-server#readme",
+  "homepage": "https://github.com/roarkhq/mcp-roark-analytics#readme",
   "documentation": "https://docs.roark.ai",
   "server": {
     "type": "node",

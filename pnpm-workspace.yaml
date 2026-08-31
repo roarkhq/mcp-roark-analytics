@@ -1,0 +1,17 @@
+# Settings, not a workspace. pnpm 10 reads its configuration from this file, and
+# these two entries came across from the node SDK's copy, where this package
+# lived. There is no `packages:` key: this repository is one package.
+#
+# `@swc/core` compiles the jest transform and has to be allowed to run its
+# postinstall; without it pnpm skips the build and every test run warns.
+onlyBuiltDependencies:
+  - '@swc/core'
+
+# Nothing published in the last 24 hours is installed, which is the window a
+# compromised release is usually caught in.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  # The SDK this package wraps. It is regenerated from the same spec change, so
+  # its release is minutes old by design and waiting a day for it would stall
+  # every MCP release behind it.
+  - '@roarkanalytics/sdk'

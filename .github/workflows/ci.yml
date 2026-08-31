@@ -1,0 +1,78 @@
+# The MCP server's own CI.
+#
+# In sdk-roark-analytics-node this package had none of its own: it was covered by
+# that repository's `ci.yml`, which built the workspace root and typechecked
+# everything in it. Here the package is the whole repository, so this is just CI.
+#
+# The one thing it checks that the old arrangement could not: that this package
+# compiles against a *published* `@roarkanalytics/sdk` rather than a workspace
+# link. That is the whole substance of the split, and it is exactly what breaks
+# first if the dependency range is bumped ahead of the SDK's own release.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Nothing here writes anything back: it checks out, installs, and runs. Without
+# this the token is whatever the repository default is, which is write on a push
+# event, and CodeQL's actions/missing-workflow-permissions flags it.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: '10.30.1'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check types
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Lint
+        run: pnpm lint
+
+      # The build is no longer covered by anyone else's workflow, and it is the
+      # only place `scripts/sync-version.cjs` runs and the only place the `.mcpb`
+      # bundle is produced. Both have shipped bugs before, one repository over.
+      - name: Build
+        run: pnpm build
+
+      # `build` syncs the literal in `src/server.ts` from package.json, so a
+      # checkout where they disagree builds green and commits nothing - and the
+      # next person to read `server.ts` sees a version that was never published.
+      # Fail here instead, where the fix is one `pnpm build` and a commit.
+      - name: Check the version literal was committed in step with package.json
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- src/server.ts; then
+            echo '::error::src/server.ts declares a different version from package.json. Run `pnpm build` and commit src/server.ts.'
+            git --no-pager diff -- src/server.ts
+            exit 1
+          fi
+
+      # The bundle is what Claude Desktop installs, and it is assembled by a
+      # different path from the npm tarball: its own package.json, its own
+      # `npm install`, its own file copy. It has broken while the tarball was
+      # fine.
+      - name: Check the bundle was produced
+        run: test -f roarkanalytics_sdk_api.mcpb
