@@ -12,13 +12,16 @@ how to select flow variants without accidentally placing hundreds of calls.
 
 ## Skills
 
-| Skill              | Use it to                                                          |
-| ------------------ | ----------------------------------------------------------------- |
-| `roark-overview`   | Understand how the Roark MCP works and route to the right skill.  |
-| `build-run-plan`   | Configure and start a simulation (the main workflow).             |
-| `configure-metrics`| Choose built-in metrics, add pass/fail checks, or author custom.  |
+| Skill                 | Use it to                                                        |
+| --------------------- | ---------------------------------------------------------------- |
+| `roark-overview`      | Understand how the Roark MCP works and route to the right skill. |
+| `register-agent`      | Create the agent under test and a phone endpoint Roark reaches.  |
+| `author-personas-flows`| Define who calls (personas) and what they do (customer flows).  |
+| `build-run-plan`      | Configure and start a simulation (the main workflow).            |
+| `configure-metrics`   | Choose built-in metrics, add pass/fail checks, or author custom. |
+| `read-results`        | Poll a run and read metric scores (pass/fail) and transcripts.   |
 
-Each skill is a `SKILL.md` plus a `references/` folder that loads on demand.
+Each skill is a `SKILL.md`, some with a `references/` folder that loads on demand.
 
 ## Install (Claude Code)
 

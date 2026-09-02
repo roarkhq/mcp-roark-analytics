@@ -78,11 +78,16 @@ the right run plan and metrics and run it"**, which is `build-run-plan` +
   metrics, preview the call count, and run. This is the main skill.
 - **`configure-metrics`** - choose the built-in metrics for a goal, add pass/fail
   checks, or author a custom metric (LLM judge, formula, temporal pattern).
+- **`register-agent`** - create the agent under test and a phone endpoint Roark
+  can reach. Use when the agent is new.
+- **`author-personas-flows`** - define who calls (personas) and what they do
+  (customer flows) when a run needs one that does not exist yet.
+- **`read-results`** - poll a run, list its calls, and read metric scores
+  (pass/fail) and transcripts.
 
-For registering a new agent/endpoint, authoring new personas or flows, and
-reading detailed results, use plain `@roarkanalytics/sdk` calls (list/create on
-`agent`, `agentEndpoint`, `customerFlow`, `simulationPersona`) and confirm shapes
-with docs search. Those get dedicated skills in a later version.
+A typical first-time setup runs them in order: `register-agent` ->
+`author-personas-flows` -> `build-run-plan` (+ `configure-metrics`) ->
+`read-results`. Most repeat runs are just `build-run-plan` -> `read-results`.
 
 ## The one rule that costs money
 
