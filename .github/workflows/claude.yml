@@ -36,7 +36,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Generated updates arrive as PRs opened by app-agent-codegen, so the
           # review job must accept that bot actor while still rejecting others.
-          allowed_bots: "app-agent-codegen"
+          allowed_bots: 'app-agent-codegen'
           track_progress: true
           prompt: |
             REPO: ${{ github.repository }}
