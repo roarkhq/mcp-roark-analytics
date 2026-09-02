@@ -6,3 +6,9 @@ pnpm-lock.yaml
 # don't format tsc output, will break source maps
 dist
 dist-bundle
+
+# Hand-authored agent skills (not part of the TS build or codegen). Left
+# unformatted so `pnpm lint` (prettier --check .) stays green on prose.
+.claude-plugin
+plugins
+examples/roark-skills

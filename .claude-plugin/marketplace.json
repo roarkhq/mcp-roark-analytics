@@ -1,0 +1,14 @@
+{
+  "name": "roark",
+  "owner": {
+    "name": "Roark",
+    "url": "https://roark.ai"
+  },
+  "plugins": [
+    {
+      "name": "roark",
+      "source": "./plugins/roark",
+      "description": "Make your coding agent an expert at using the Roark MCP to design simulations and metrics for testing voice AI agents."
+    }
+  ]
+}
