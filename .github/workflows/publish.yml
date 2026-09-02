@@ -1,20 +1,24 @@
 # Publishes @roarkanalytics/sdk-mcp, and the .mcpb bundle beside it.
 #
-# Manual, and single-purpose: pick a ref, rehearse it, publish it. There is no
-# release-please in this repository and no tag-driven trigger. In
-# sdk-roark-analytics-node this package rode that repository's release train -
-# release-please bumped `package.json`, `manifest.json` and the literal in
-# `server.ts` in lockstep with the SDK, and `publish-npm.yml` shipped both
-# packages from one GitHub release. That coupling is what the split removes: a
-# regeneration that adds a tool is not an SDK release, and an SDK release is not
-# a reason to republish this.
+# Two ways in, sharing one build-check-publish body:
 #
-# So a human bumps package.json and manifest.json, dispatches this, and the tag
-# and GitHub release are created here - the release exists so the bundle has
-# somewhere to be attached, which is what `publish-npm.yml` used it for too.
+#   - `release: published` - the automated path. release-please.yml merges a
+#     `release:` PR (bumping package.json and manifest.json together), cuts the
+#     tag and creates the GitHub release, and that event fires this at the tagged
+#     commit. Here the release already exists, so the bundle is ATTACHED to it
+#     rather than creating it. This is why the release must be made with a PAT and
+#     not GITHUB_TOKEN: a GITHUB_TOKEN release raises no `release: published`.
+#   - `workflow_dispatch` - the manual path, for a hand-picked ref or a rehearsal.
+#     No release exists yet, so this path CREATES it with the bundle, as before.
+#     It still defaults `dry_run` to true.
+#
+# A regeneration that adds a tool is still not automatically a release: the human
+# decision of WHEN to ship is made by merging the release PR.
 name: Publish
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -141,43 +145,52 @@ jobs:
           rm -f "$tarball"
           echo 'the packed tarball carries the entry point, the server and the tool table'
 
+      # A `release` event carries no inputs, so `inputs.tag` is empty there:
+      # default it to `latest`. A release always publishes; only a manual dispatch
+      # can ask for a dry run.
       - name: Publish
-        if: inputs.dry_run != true
+        if: github.event_name == 'release' || inputs.dry_run != true
         working-directory: dist
-        run: npm publish --access public --tag '${{ inputs.tag }}'
+        run: npm publish --access public --tag '${{ inputs.tag || 'latest' }}'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ROARK_NPM_TOKEN || secrets.NPM_TOKEN }}
 
       - name: Rehearse the publish
-        if: inputs.dry_run == true
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
         working-directory: dist
-        run: npm publish --access public --tag '${{ inputs.tag }}' --dry-run
+        run: npm publish --access public --tag '${{ inputs.tag || 'latest' }}' --dry-run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.ROARK_NPM_TOKEN || secrets.NPM_TOKEN }}
 
-      # After the npm publish rather than before: the bundle is a convenience,
-      # the registry is the product, and a release tagging a version npm rejected
-      # would be a tag pointing at nothing installable.
-      - name: Tag the release and attach the bundle
-        if: inputs.dry_run != true
+      # After the npm publish rather than before: the bundle is a convenience, the
+      # registry is the product. On the automated path release-please already cut
+      # `v$VERSION`, so the bundle is uploaded to it; on a manual dispatch no
+      # release exists yet, so it is created here as before.
+      - name: Attach the bundle to the release
+        if: github.event_name == 'release' || inputs.dry_run != true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.check.outputs.version }}
+          EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --notes "Published \`@roarkanalytics/sdk-mcp@$VERSION\` to npm." \
-            roarkanalytics_sdk_api.mcpb
+          if [ "$EVENT" = 'release' ]; then
+            gh release upload "v$VERSION" roarkanalytics_sdk_api.mcpb --clobber
+          else
+            gh release create "v$VERSION" \
+              --title "v$VERSION" \
+              --notes "Published \`@roarkanalytics/sdk-mcp@$VERSION\` to npm." \
+              roarkanalytics_sdk_api.mcpb
+          fi
 
       - name: Summary
         if: always()
         run: |
           {
             echo '### @roarkanalytics/sdk-mcp ${{ steps.check.outputs.version }}'
-            if [ '${{ inputs.dry_run }}' = 'true' ]; then
+            if [ '${{ github.event_name }}' = 'workflow_dispatch' ] && [ '${{ inputs.dry_run }}' = 'true' ]; then
               echo 'Dry run: built, checked and packed. Nothing was published, and no release was cut.'
             else
-              echo 'Published to npm under the `${{ inputs.tag }}` tag, with the bundle attached to the release.'
+              echo 'Published to npm under the `${{ inputs.tag || 'latest' }}` tag, with the bundle attached to the release.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
