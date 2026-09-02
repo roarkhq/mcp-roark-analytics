@@ -34,6 +34,10 @@ concurrency:
   group: publish-mcp
   cancel-in-progress: false
 
+env:
+  # #alarms-prod, defined once here rather than repeated in every alert step.
+  SLACK_ALARMS_CHANNEL: 'C064B836PL2'
+
 # `contents: write` for the GitHub release the bundle is attached to. The npm
 # publish authenticates separately, with NODE_AUTH_TOKEN.
 permissions:
@@ -209,10 +213,13 @@ jobs:
           curl -sS -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
             -H 'Content-type: application/json; charset=utf-8' \
-            --data "$(jq -n --arg t "$text" '{channel:"C064B836PL2",text:$t}')" >/dev/null || true
+            --data "$(jq -n --arg t "$text" --arg c "$SLACK_ALARMS_CHANNEL" '{channel:$c,text:$t}')" >/dev/null || true
 
+      # Scoped to a real publish (release, or a non-dry-run dispatch), so a
+      # dry-run rehearsal failing in build/test does not page #alarms-prod and
+      # the "publish FAILED" wording stays accurate.
       - name: Slack notify - publish failed
-        if: failure()
+        if: failure() && (github.event_name == 'release' || inputs.dry_run != true)
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -222,4 +229,4 @@ jobs:
           curl -sS -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
             -H 'Content-type: application/json; charset=utf-8' \
-            --data "$(jq -n --arg t "$text" '{channel:"C064B836PL2",text:$t}')" >/dev/null || true
+            --data "$(jq -n --arg t "$text" --arg c "$SLACK_ALARMS_CHANNEL" '{channel:$c,text:$t}')" >/dev/null || true
