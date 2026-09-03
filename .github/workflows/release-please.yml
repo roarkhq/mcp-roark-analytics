@@ -11,7 +11,7 @@
 #
 # Inert until the `RELEASE_PLEASE_ENABLED` repository variable is 'true', so this
 # is safe to merge before that variable is flipped. The token is minted per-run
-# from the org-owned release GitHub App (APP_ID / APP_PRIVATE_KEY).
+# from the org-owned release GitHub App (RELEASE_APP_ID / RELEASE_APP_PRIVATE_KEY).
 name: release-please
 
 on:
@@ -41,8 +41,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - uses: googleapis/release-please-action@v4
         with:
