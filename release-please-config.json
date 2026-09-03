@@ -10,7 +10,10 @@
   "pull-request-header": "Automated Release PR",
   "pull-request-title-pattern": "release: ${version}",
   "exclude-paths": [".github", "scripts", "tests"],
-  "extra-files": [{ "type": "json", "path": "manifest.json", "jsonpath": "$.version" }],
+  "extra-files": [
+    { "type": "json", "path": "manifest.json", "jsonpath": "$.version" },
+    { "type": "generic", "path": "src/server.ts" }
+  ],
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
