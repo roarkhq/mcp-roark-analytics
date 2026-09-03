@@ -87,6 +87,12 @@ the right run plan and metrics and run it"**, which is `build-run-plan` +
 - **`manage-config-as-code`** - manage agents, personas, flows, metrics, and
   collectors declaratively from a repo (diff then apply), instead of imperative
   create/update. Reach for this when the user wants Roark config in git.
+- **`gate-ci`** - gate a deploy or CI pipeline on a run (start -> wait -> assert
+  the pass/fail metrics -> exit code).
+
+Cross-cutting rules every skill relies on (auth, project scoping, pagination,
+idempotency, cost, error handling) are in
+[references/conventions.md](references/conventions.md).
 
 A typical first-time setup runs them in order: `register-agent` ->
 `author-personas-flows` -> `build-run-plan` (+ `configure-metrics`) ->
