@@ -84,6 +84,9 @@ the right run plan and metrics and run it"**, which is `build-run-plan` +
   (customer flows) when a run needs one that does not exist yet.
 - **`read-results`** - poll a run, list its calls, and read metric scores
   (pass/fail) and transcripts.
+- **`manage-config-as-code`** - manage agents, personas, flows, metrics, and
+  collectors declaratively from a repo (diff then apply), instead of imperative
+  create/update. Reach for this when the user wants Roark config in git.
 
 A typical first-time setup runs them in order: `register-agent` ->
 `author-personas-flows` -> `build-run-plan` (+ `configure-metrics`) ->
