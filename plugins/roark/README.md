@@ -21,6 +21,7 @@ how to select flow variants without accidentally placing hundreds of calls.
 | `configure-metrics`   | Choose built-in metrics, add pass/fail checks, or author custom. |
 | `read-results`        | Poll a run and read metric scores (pass/fail) and transcripts.   |
 | `manage-config-as-code`| Manage agents/personas/flows/metrics/collectors declaratively.  |
+| `gate-ci`             | Gate a deploy/CI pipeline on a run (start, wait, assert).        |
 
 Each skill is a `SKILL.md`, some with a `references/` folder that loads on demand.
 
