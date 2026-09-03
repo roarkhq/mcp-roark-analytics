@@ -34,7 +34,6 @@ concurrency:
   group: publish-mcp
   cancel-in-progress: false
 
-
 # `contents: write` for the GitHub release the bundle is attached to. The npm
 # publish authenticates separately, with NODE_AUTH_TOKEN.
 permissions:
