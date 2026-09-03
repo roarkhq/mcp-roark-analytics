@@ -10,7 +10,8 @@
 # bundle to that release.
 #
 # Inert until the `RELEASE_PLEASE_ENABLED` repository variable is 'true', so this
-# is safe to merge before the token and variable are in place.
+# is safe to merge before that variable is flipped. The token is minted per-run
+# from the org-owned release GitHub App (APP_ID / APP_PRIVATE_KEY).
 name: release-please
 
 on:
@@ -30,16 +31,28 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      # Mint a short-lived installation token from the org-owned release GitHub
+      # App (roark-release). This replaces the personal RELEASE_PLEASE_TOKEN PAT:
+      # the App is owned by the org so it survives any one person leaving, its key
+      # is never exposed as a long-lived token in a run, and - unlike GITHUB_TOKEN
+      # - a release it creates DOES raise `release: published`, which is exactly
+      # what `publish.yml` waits on.
+      - name: Mint a token from the release App
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: main
-          # NOT GITHUB_TOKEN. A GitHub release created with GITHUB_TOKEN does not
-          # raise `release: published`, so `publish.yml` would never fire and the
-          # server would silently stop shipping. A PAT is required
-          # (RELEASE_PLEASE_TOKEN), as in the SDK repos.
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          # The App token minted above, NOT GITHUB_TOKEN. A GitHub release created
+          # with GITHUB_TOKEN does not raise `release: published`, so `publish.yml`
+          # would never fire and the server would silently stop shipping.
+          token: ${{ steps.app-token.outputs.token }}
 
       # A failure here stalls shipping silently: no release PR, so no publish.
       # Alert #alarms-prod. No-op until SLACK_ALARMS_PROD_WEBHOOK_URL is set.
