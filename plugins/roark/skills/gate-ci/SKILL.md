@@ -24,28 +24,33 @@ const jobId = run.simulationRunPlanJobId
 // run.simulationJobCount = calls this will place (log it; it bills)
 ```
 
+Use `simulation.run`, not the deprecated `simulationRunPlanJob.start` - the latter
+returns no `simulationJobCount`, so CI cannot log what it is about to spend.
+
 ## 2. Wait for it to finish
 
 Poll `simulationRunPlanJob.getByID` until the run reaches a terminal status.
-Terminal = `COMPLETED | FAILED | CANCELLED | TIMED_OUT`; anything else is still
-running. Back off between polls and cap total wait so CI cannot hang forever.
+Terminal = `COMPLETED | FAILED | TIMED_OUT | CANCELLED`; the other eight statuses
+(including `CANCELLING` and `ENDING_SIMULATIONS`) are still in flight. Back off
+between polls and cap total wait so CI cannot hang forever.
 
 ```ts
-const TERMINAL = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT'])
+const TERMINAL = new Set(['COMPLETED', 'FAILED', 'TIMED_OUT', 'CANCELLED'])
 let run = await client.simulationRunPlanJob.getByID(jobId)
 while (!TERMINAL.has(run.status)) {
   await sleep(15_000) // poll interval; use your runtime's timer
   run = await client.simulationRunPlanJob.getByID(jobId)
 }
 if (run.status !== 'COMPLETED') {
-  // the run itself failed to execute — fail the gate and report run.status
+  // the run itself failed to execute — fail the gate and report run.status.
+  // There is no error field on the run or its jobs; report the status as-is.
 }
 ```
 
 For a long suite, prefer a **webhook** over long polling: subscribe with
-`client.webhook.create` to the run-completion event and let CI resume on the
-callback. Confirm the exact event-type name with docs search before relying on
-it; do not guess the string.
+`client.webhook.create` to `SIMULATION_RUN_PLAN_JOB_COMPLETED`,
+`SIMULATION_RUN_PLAN_JOB_FAILED`, and `SIMULATION_RUN_PLAN_JOB_CANCELLED`, and let
+CI resume on the callback. See `subscribe-webhooks` for the full event list.
 
 ## 3. Assert the pass/fail metrics
 
@@ -55,16 +60,23 @@ is `false`.
 
 ```ts
 let failures = []
+let checksSeen = 0
 for (const job of run.simulationJobs) {
   if (!job.callId) continue
-  const metrics = await client.call.listMetrics(job.callId)
-  for (const m of metrics) {
-    if (m.captureStatus !== 'SUCCESS') continue // only SUCCESS carries a value
-    if (m.slug.endsWith('_check') && m.value === false) {
-      failures.push({ callId: job.callId, check: m.slug, reason: m.valueReasoning })
+  // flatten: 'true' is REQUIRED — the default response nests values[] per metric.
+  const rows = await client.call.listMetrics(job.callId, { flatten: 'true' })
+  for (const r of rows) {
+    if (!r.slug.endsWith('_check')) continue
+    checksSeen++
+    if (r.captureStatus !== 'SUCCESS') continue // only SUCCESS carries a value
+    if (r.value === false) {
+      failures.push({ callId: job.callId, check: r.slug, reason: r.valueReasoning })
     }
   }
 }
+
+// Guard against a vacuous pass: no checks attached means nothing was gated.
+if (checksSeen === 0) throw new Error('No _check metrics on this plan — the gate would always pass')
 
 const passed = failures.length === 0
 // In CI: process.exit(passed ? 0 : 1), and print `failures` so the log explains why.
