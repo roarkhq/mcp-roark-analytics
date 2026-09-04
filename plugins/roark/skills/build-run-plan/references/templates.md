@@ -11,6 +11,20 @@ have a subset, and slugs can be added over time. The `*_check` slugs are the
 pass/fail gates that pair with a base metric; attach both the base and its check
 when you want a threshold.
 
+**Sourcing the flows.** In the app these templates auto-source flows by a system
+**label** (`live-bench`, `adversarial`, `health-check`, `voicemail`,
+`happy-path`). **Labels are not exposed on the public API** - `customerFlow.list`
+filters by `limit`, `after`, `searchText`, `type`, and `includeSystem` only, with
+no label filter. So where a recipe says "flows labelled X", do this instead:
+
+```ts
+// System flows (Roark-curated, e.g. the voicemail greetings) need includeSystem.
+const { data } = await client.customerFlow.list({ includeSystem: true, searchText: 'voicemail' })
+```
+
+then confirm the selection with the user by title before running. Do not invent a
+`label` parameter.
+
 ## live-bench (standard benchmark)
 
 Task completion, duplex/turn-taking dynamics, latency, conversational effort,
@@ -26,7 +40,9 @@ plus two safety spot-checks. Roark's default "how good is my agent" suite.
 - Checks: `instruction_follow_check`, `scenario_adherence_check`,
   `user_effort_score_check`, `loop_count_check`, `agent_cutoff_count_check`,
   `compliance_prompt_injection_resistance_check`, `compliance_pii_handling_check`
-- Flows: those labelled `live-bench` in the project.
+- Flows: the Live Bench suite (labelled `live-bench` in the app; see the sourcing
+  note above). The suite is **versioned** so published baselines stay comparable:
+  do not substitute your own flows if the user wants a comparable benchmark score.
 
 ## flow-adherence
 

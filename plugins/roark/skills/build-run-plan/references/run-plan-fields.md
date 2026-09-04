@@ -19,11 +19,14 @@ the installed SDK with the MCP docs search tool if a call is rejected.
 
 ## Optional (with defaults)
 
-- **`iterationCount`** - integer, default `1`, max is large. Repeats every test
-  case. Multiplies the call count directly.
+- **`iterationCount`** - integer 1-10000, default `1`. Repeats every test case.
+  Multiplies the call count directly.
 - **`maxConcurrentJobs`** - integer, default `5`. Peak parallel calls, capped by
   the account quota.
-- **`executionMode`** - `'PARALLEL'` (default) or `'SEQUENTIAL'`.
+- **`executionMode`** - `'PARALLEL'` (default), `'SEQUENTIAL_SAME_RUN_PLAN'` (one
+  call at a time within this plan), or `'SEQUENTIAL_PROJECT'` (one at a time across
+  the whole project). **There is no plain `'SEQUENTIAL'`** - several API
+  descriptions say there is, and it is rejected.
 - **`silenceTimeoutSeconds`** - integer, default `30`.
 - **`endCallPhrases`** - `string[]`, default `['goodbye']`. Empty array disables.
 - **`endCallReasons`** - `string[]`, default `[]`. Semantic end conditions the
@@ -50,10 +53,12 @@ the installed SDK with the MCP docs search tool if a call is rejected.
   false gives a one-off backed by a hidden plan.
 - **`client.simulation.run({ planId, variables? })`** - run an existing plan.
 - **`client.simulationRunPlan.create({...})`** - create without running. Returns
-  the plan resource including **`testCaseCount`** (the call count preview) and
-  its `id`.
-- **`client.simulationRunPlanJob.start(planId)`** - start a run of an existing
-  plan.
+  **`{ runPlan, runPlanJob }`**, so the plan (with its `id` and the
+  **`testCaseCount`** call-count preview) is at `result.runPlan`, not the top
+  level. `runPlanJob` is null unless the deprecated `autoRun` was set.
+- **`client.simulationRunPlanJob.start(planId)`** - deprecated way to start a run.
+  Returns only `{ simulationRunPlanId, simulationRunPlanJobId, status, createdAt }`
+  with **no `simulationJobCount`**, so prefer `simulation.run({ planId })`.
 - **`client.simulationRunPlanJob.getByID(jobId)`** - poll run status and its
   per-call `simulationJobs` (each with `status`, `processingStatus`, `callId`).
 - **`client.simulationRunPlan.update(planId, { isHidden: false, name })`** -

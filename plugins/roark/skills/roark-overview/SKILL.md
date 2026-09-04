@@ -63,13 +63,18 @@ trying to work around it. Never read a token out of a checked-in file.
         |
   metrics              each finished call is graded pass/fail and scored
         |
-  results / datasets   read scores and transcripts; curate calls for regression
+  results              read scores, reasoning, and transcripts
 ```
 
 You rarely build all of this from scratch. Most projects already have an agent,
 some flows, and the system persona library. The common request is **"assemble
 the right run plan and metrics and run it"**, which is `build-run-plan` +
 `configure-metrics`.
+
+The full object model - every primitive, what it references, and which ones you can
+actually create through the SDK - is in
+[references/primitives.md](references/primitives.md). Read it before inventing a
+method name.
 
 ## Which skill to use
 
@@ -81,9 +86,25 @@ the right run plan and metrics and run it"**, which is `build-run-plan` +
 - **`register-agent`** - create the agent under test and a phone endpoint Roark
   can reach. Use when the agent is new.
 - **`author-personas-flows`** - define who calls (personas) and what they do
-  (customer flows) when a run needs one that does not exist yet.
+  (improv customer flows) when a run needs one that does not exist yet.
+- **`author-scripted-flows`** - author a SCRIPTED flow: an IVR/phone-tree, DTMF
+  keypad entry, silence/voicemail, and exact turn-by-turn routing (a conversation
+  graph). Use when a test needs deterministic routing or key presses.
+- **`configure-outbound-dial`** - define the HTTP request Roark sends to your
+  platform to place an OUTBOUND call (`httpRequestDefinition`). Only for outbound
+  runs where Roark must trigger the dial.
+- **`manage-run-plans`** - manage saved test suites: find, read, update, re-run,
+  promote a one-off into a saved plan, delete. Use for "our nightly suite" or
+  "change what the billing tests cover".
 - **`read-results`** - poll a run, list its calls, and read metric scores
   (pass/fail) and transcripts.
+- **`monitor-live-calls`** - grade real production calls/chats (not simulations):
+  a standing metric policy over live traffic, or a collection job to backfill
+  metrics over existing calls.
+- **`ingest-calls`** - import an already-happened real call from a recording URL
+  for analysis, and read calls/transcripts/sentiment back.
+- **`subscribe-webhooks`** - get notified on events (run finished, analysis
+  complete, issue opened) instead of polling.
 - **`manage-config-as-code`** - manage agents, personas, flows, metrics, and
   collectors declaratively from a repo (diff then apply), instead of imperative
   create/update. Reach for this when the user wants Roark config in git.
@@ -93,6 +114,17 @@ the right run plan and metrics and run it"**, which is `build-run-plan` +
 Cross-cutting rules every skill relies on (auth, project scoping, pagination,
 idempotency, cost, error handling) are in
 [references/conventions.md](references/conventions.md).
+
+**Not driven through this SDK.** Several Roark surfaces are configured in-product,
+over raw HTTP, or via provider integrations, so do not invent client methods for
+them: **chat** (real chats can be ingested and graded, but only via
+`POST /v1/chat`; there is no `client.chat.*`, and **chat cannot be simulated at
+all**), **knowledge-base grounding**, **datasets** (regression curation is
+in-product only), **issues**, **provider call imports**
+(Vapi/Retell/LiveKit/Pipecat send webhooks to Roark; to bring a call in via code use
+`ingest-calls`' `call.create`), and **metric update/delete/thresholds**. The
+complete list is in [references/primitives.md](references/primitives.md). If unsure
+whether a method exists, use docs search rather than guessing a name.
 
 A typical first-time setup runs them in order: `register-agent` ->
 `author-personas-flows` -> `build-run-plan` (+ `configure-metrics`) ->

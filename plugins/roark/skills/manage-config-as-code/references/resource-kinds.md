@@ -6,10 +6,22 @@ shapes below are the essentials; confirm the full set with docs search or the
 Roark config DSL docs, and prefer omitting optional behavioral fields (they
 default to complete, sensible values).
 
+Every `name` must match `/^[a-z0-9][a-z0-9-_.]*$/` - lowercase, starting
+alphanumeric. `Frontdesk` and `front desk` are both invalid.
+
 ## agent
 
+Agents declare their **endpoints** here; this is the only way config-as-code
+creates the phone endpoints simulations target.
+
 ```ts
-{ kind: 'agent', name: 'frontdesk', description: 'Inbound reception line' }
+{ kind: 'agent', name: 'frontdesk', description: 'Inbound reception line',
+  customId: 'crm-42',
+  endpoints: [
+    { name: 'main-line', value: '+15551234567',
+      direction: 'INCOMING', // INCOMING | OUTGOING | INCOMING_AND_OUTGOING
+      environment: 'production' },
+  ] }
 ```
 
 ## persona
@@ -25,24 +37,53 @@ create (see `author-personas-flows/references/personas.md`).
 
 ## flow (improv)
 
-References agents and personas by name.
+References agents, personas, and environments **by name**. `agents` (min 1) and
+`happyPath` are both **required**, and the happy path's `persona` and `environment`
+are required within it.
 
 ```ts
 {
   kind: 'flow', type: 'improv', name: 'frustrated-rebooking',
-  agents: ['frontdesk'],
-  // happy path requires a persona + environment
-  // edge cases each have a local name + their own persona/prompt
+  title: 'Frustrated rebooking',
+  agents: ['frontdesk'],                 // required, at least one
+  expectations: ['confirms the new time'],
+  happyPath: {                           // required
+    persona: 'frustrated-caller',         // required
+    environment: 'quiet-office',          // required, must already exist
+    title: 'Standard rebooking',
+    prompt: 'Caller wants to move an existing booking',
+  },
+  edgeCases: [
+    { name: 'wrong-number', prompt: 'Caller has the wrong business',
+      persona: 'confused-caller' },       // omit to inherit the happy path's
+  ],
 }
 ```
 
 ## flow (scripted)
 
-A conversation graph. Nodes are labelled with `ref`; a node's `steps` are its
-successors (more than one = a branch), and `mergeInto` names refs this node
-rejoins (DAG merge edges). No UUIDs; each apply replaces the whole graph. Roles
-must alternate agent <-> customer along every edge. Because the graph is easy to
-get wrong, build it with docs search open and re-diff to confirm.
+Sends a **`graph`** (required, min 1 step) instead of a happy path and edge cases;
+`agents` is **optional** here (the opposite of improv).
+
+```ts
+{
+  kind: 'flow', type: 'scripted', name: 'billing-ivr',
+  branchingMode: 'DETERMINISTIC',        // or ADAPTIVE
+  graph: [
+    { type: 'CUSTOMER_FIRST_MESSAGE', content: 'Hi' },
+    { type: 'AGENT_TURN', content: 'Press 1 for billing.',
+      steps: [{ type: 'CUSTOMER_DTMF', dtmfDigits: '1', ref: 'after-1' }] },
+  ],
+}
+```
+
+Step `type` is one of `AGENT_TURN`, `CUSTOMER_TURN`, `CUSTOMER_FIRST_MESSAGE`,
+`CUSTOMER_SILENCE`, `CUSTOMER_DTMF`, `VOICEMAIL`, `SCENARIO_LINK`, carrying
+`content`, `silenceDurationSeconds`, `dtmfDigits`, or `flow` as appropriate. Steps
+nest via `steps` (more than one = a branch) and rejoin via `mergeInto` naming a
+`ref`. There are **no UUIDs** in config: each apply replaces the whole graph. Roles
+must alternate agent <-> customer along every edge. See `author-scripted-flows` for
+the semantics, which are the same as the imperative graph.
 
 ## metric (custom, LLM-judged only)
 
@@ -52,27 +93,48 @@ here; author those with `configure-metrics`. System metrics are never defined
 here, only referenced by slug in a collector.
 
 ```ts
-{ kind: 'metric', name: 'refund-policy-accuracy', type: 'BOOLEAN',
-  prompt: 'Did the agent state the 30-day refund window correctly?' }
+{ kind: 'metric', name: 'refund-policy-accuracy', // == the slug, immutable
+  displayName: 'Refund policy accuracy',
+  type: 'BOOLEAN',                  // BOOLEAN | SCALE | NUMERIC | TEXT | CLASSIFICATION
+  prompt: 'Did the agent state the 30-day refund window correctly? {{transcript}}',
+  scope: 'GLOBAL',                  // or PER_PARTICIPANT (+ participantRole)
+  contexts: ['CALL'] }              // CALL | SEGMENT | TURN, default ['CALL']
 ```
 
-SCALE metrics carry labelled bands; CLASSIFICATION metrics carry options. Match
-the type to the question, same as the imperative metric create.
+- `prompt` is **required** and should reference the `{{transcript}}` and
+  `{{world_context}}` template variables.
+- `scope: 'PER_PARTICIPANT'` requires `participantRole` (`AGENT` | `CUSTOMER`).
+- `SCALE` **requires** both `scaleMin` and `scaleMax` (optional `scaleLabels` bands);
+  `CLASSIFICATION` **requires** `options` (optional `maxSelections`). These are not
+  optional extras.
+- `name` (the slug), `type`, and `scope` are immutable: changing one fails the apply.
+- `contexts` here is `CALL | SEGMENT | TURN` - do not confuse it with the
+  `CALL | SEGMENT | SEGMENT_RANGE` enum on collected metric *values*.
 
 ## collector (live-call metric policy)
 
 Which metrics get collected on real calls/chats, and on which conversations.
 
-- `conversationType` - required and **immutable** (changing it is a create-new).
-- `metrics` - at least one metric **slug** (`metricId`). System and custom slugs
-  both allowed.
+- **`modality`** (`'call'` | `'chat'`) - required and **immutable** (changing it is
+  rejected up front; make a new collector). The field is `modality`, **not**
+  `conversationType`.
+- `status` - `ACTIVE` (default) | `INACTIVE`. Use `INACTIVE` to park a collector.
+- `metrics` - at least one metric **slug**. System and custom slugs both allowed,
+  but every metric must support this collector's `modality` (a `chat` collector
+  cannot reference a call-only metric).
 - `filters` - optional; omit to match every conversation. A filter is an OR of
-  groups; conditions within a group are AND. Condition targets include `AGENT`
-  (a config-managed agent name), `CALL_SOURCE` (e.g. `VAPI`), `CALL_PROPERTY`
-  (key + operator + value), and `INTEGRATION` (integration id).
+  groups; conditions within a group are AND. Each condition's discriminator field
+  is **`type`**, **not** `target`: `AGENT` (a config-managed agent name),
+  `CALL_SOURCE` (e.g. `VAPI`), `CALL_PROPERTY` (needs `operator` + `value`), or
+  `INTEGRATION` (integration id). Operators: `EQUALS`, `NOT_EQUALS`, `CONTAINS`,
+  `STARTS_WITH`, `GREATER_THAN`, `LESS_THAN`, `GREATER_THAN_OR_EQUALS`,
+  `LESS_THAN_OR_EQUALS`.
 
 ```ts
-{ kind: 'collector', name: 'quality-on-frontdesk', conversationType: 'call',
+{ kind: 'collector', name: 'quality-on-frontdesk', modality: 'call', status: 'ACTIVE',
   metrics: ['call_outcome', 'sentiment_score', 'refund-policy-accuracy'],
-  filters: [{ conditions: [{ target: 'AGENT', key: 'frontdesk' }] }] }
+  filters: [{ conditions: [{ type: 'AGENT', key: 'frontdesk' }] }] }
 ```
+
+Because chat conversations cannot be simulated, a `modality: 'chat'` collector is
+the only way to grade chat.
