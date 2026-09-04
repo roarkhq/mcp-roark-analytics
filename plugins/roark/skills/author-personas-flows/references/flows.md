@@ -38,6 +38,19 @@ const flow = await client.customerFlow.create({
 // Read it back to see happy path + edge cases + expectations.
 const full = await client.customerFlow.getByID(flow.id)
 
+// Edit flow-LEVEL fields (not the variants, not the graph). All optional;
+// omitted fields are left unchanged.
+await client.customerFlow.update(flow.id, {
+  title: 'Reschedule an appointment',
+  description: '...',
+  agentIds: [agentId], // replaces the linked agents; improv needs >= 1
+  agentExpectations: [{ prompt: 'confirms the new time' }], // replaces the set
+  branchingMode: 'ADAPTIVE', // scripted flows only
+})
+
+// Soft-delete a flow.
+await client.customerFlow.delete(flow.id) // -> { deleted: true }
+
 // Replace a scripted flow's conversation graph wholesale.
 await client.customerFlow.replaceGraph(flow.id, { /* step tree */ })
 
