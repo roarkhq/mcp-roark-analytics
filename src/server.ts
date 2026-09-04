@@ -40,6 +40,31 @@ export const newMcpServer = async ({
  * Initializes the provided MCP Server with the given tools and handlers.
  * If not provided, the default client, tools and handlers will be used.
  */
+/**
+ * One local docs index per process, keyed by `docsDir`.
+ *
+ * `LocalDocsSearch.create()` reindexes the whole embedded corpus with
+ * MiniSearch. Under `--transport=http` every POST builds a fresh server through
+ * `newServer()` -> `initMcpServer()`, so without this the index is rebuilt on
+ * every request - including requests that never touch docs search. The corpus
+ * is baked into the bundle and cannot change while the process runs, so one
+ * instance is correct for its lifetime.
+ *
+ * The promise is cached rather than the resolved value, so concurrent requests
+ * arriving before the first build settles share it instead of racing.
+ */
+const localDocsSearches = new Map<string, Promise<LocalDocsSearch>>();
+
+export const localDocsSearchFor = (docsDir?: string | undefined): Promise<LocalDocsSearch> => {
+  const key = docsDir ?? '';
+  let search = localDocsSearches.get(key);
+  if (!search) {
+    search = LocalDocsSearch.create(docsDir ? { docsDir } : undefined);
+    localDocsSearches.set(key, search);
+  }
+  return search;
+};
+
 export async function initMcpServer(params: {
   server: Server | McpServer;
   clientOptions?: ClientOptions;
@@ -67,9 +92,7 @@ export async function initMcpServer(params: {
   };
 
   if (params.mcpOptions?.docsSearchMode === 'local') {
-    const docsDir = params.mcpOptions?.docsDir;
-    const localSearch = await LocalDocsSearch.create(docsDir ? { docsDir } : undefined);
-    setLocalSearch(localSearch);
+    setLocalSearch(await localDocsSearchFor(params.mcpOptions?.docsDir));
   }
 
   let _client: Roark | undefined;
