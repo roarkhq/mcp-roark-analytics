@@ -19,3 +19,16 @@ describe('localDocsSearchFor', () => {
     expect(results.length).toBeGreaterThan(0);
   });
 });
+
+describe('localDocsSearchFor failure handling', () => {
+  it('does not cache a failed build, so a later call can retry', async () => {
+    const { LocalDocsSearch } = require('../src/local-docs-search');
+    const create = jest.spyOn(LocalDocsSearch, 'create');
+
+    create.mockRejectedValueOnce(new Error('index build failed'));
+    await expect(localDocsSearchFor('./src')).rejects.toThrow('index build failed');
+
+    create.mockRestore();
+    await expect(localDocsSearchFor('./src')).resolves.toBeDefined();
+  });
+});

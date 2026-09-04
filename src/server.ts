@@ -51,7 +51,11 @@ export const newMcpServer = async ({
  * instance is correct for its lifetime.
  *
  * The promise is cached rather than the resolved value, so concurrent requests
- * arriving before the first build settles share it instead of racing.
+ * arriving before the first build settles share it instead of racing. A
+ * rejection evicts itself: `create()` has no throwing path today, because
+ * `loadDocsDirectory` swallows its own fs errors, but caching a rejected
+ * promise would poison that `docsDir` for the life of the process, and this
+ * should not depend on error handling elsewhere staying as it is.
  */
 const localDocsSearches = new Map<string, Promise<LocalDocsSearch>>();
 
@@ -59,7 +63,10 @@ export const localDocsSearchFor = (docsDir?: string | undefined): Promise<LocalD
   const key = docsDir ?? '';
   let search = localDocsSearches.get(key);
   if (!search) {
-    search = LocalDocsSearch.create(docsDir ? { docsDir } : undefined);
+    search = LocalDocsSearch.create(docsDir ? { docsDir } : undefined).catch((error) => {
+      localDocsSearches.delete(key);
+      throw error;
+    });
     localDocsSearches.set(key, search);
   }
   return search;
