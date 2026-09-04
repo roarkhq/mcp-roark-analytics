@@ -68,9 +68,16 @@ export function parseCLIOptions(): CLIOptions {
     .option('docs-search-mode', {
       type: 'string',
       choices: ['stainless-api', 'local'],
-      default: 'stainless-api',
+      // 'local' by default: the index this package ships is built from the same
+      // spec as the rest of it and is current by construction, while the
+      // Stainless-hosted one stopped tracking our config when SDK generation
+      // moved in-house and now answers "customer flows" with the retired
+      // simulationScenario methods and no customer_flow methods at all. Local
+      // also needs no network and no Stainless API key, which the hosted path
+      // 404s without. 'stainless-api' stays available as an opt-in.
+      default: 'local',
       description:
-        "Where to search documentation; 'stainless-api' uses the Stainless-hosted search API whereas 'local' uses an in-memory search index built from embedded SDK method data and optional local docs files.",
+        "Where to search documentation; 'local' (the default) uses an in-memory search index built from embedded SDK method data and optional local docs files, whereas 'stainless-api' uses the Stainless-hosted search API.",
     })
     .option('log-format', {
       type: 'string',
