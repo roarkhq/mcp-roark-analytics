@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.6.0...v3.6.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* **docs-search:** search the index we ship, not the one that stopped tracking us ([#21](https://github.com/roarkhq/mcp-roark-analytics/issues/21)) ([681c30c](https://github.com/roarkhq/mcp-roark-analytics/commit/681c30c058ce21d58bd6e067b45e7b3ddddddf05))
+
 ## [3.6.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.5.0...v3.6.0) (2026-09-03)
 
 
