@@ -11,9 +11,33 @@ classes of mistakes.
   that project. There is no cross-project call; to work in another project you
   need that project's key. Do not assume resources from one project are visible
   in another.
-- Some actions need a **permission** on the key, not just a valid token: config
-  `apply` needs `config:apply`. A 403 means the key lacks the permission; tell
-  the user to grant it rather than working around it.
+- Some actions need a **permission** on the key, not just a valid token. A 403
+  names the missing permission; tell the user to grant it on the API key rather
+  than working around it. Permissions are `resource:action` strings:
+
+  | resource | actions |
+  | --- | --- |
+  | `call` | `read`, `create` |
+  | `chat` | `read`, `create` |
+  | `transcript` | `read` |
+  | `recording` | `read` (`create` is integration-only) |
+  | `agent` | `read`, `create`, `update` |
+  | `endpoint` | `read`, `create`, `update` |
+  | `metric` | `read`, `create`, `update`, `delete` (covers definitions, policies, collection jobs, values) |
+  | `persona` | `read`, `create`, `update` |
+  | `simulation` | `read`, `create`, `update`, `delete`, `run` (covers flows, run plans, jobs) |
+  | `http-request` | `read`, `create`, `update` |
+  | `webhook` | `read`, `create`, `delete` |
+  | `issue` | `read`, `create`, `update` |
+  | `knowledge-base` | `read`, `create`, `delete` |
+  | `config` | `apply` (one cross-cutting permission for all of config-as-code) |
+
+- Two read permissions are **separately gated because they are sensitive**:
+  `transcript:read` and `recording:read`. Without `recording:read` a call still
+  returns, but with `recordingUrlAccess: 'RESTRICTED'` and no usable URL - that is
+  a permissions problem, not a missing recording.
+- Ingesting a call or chat **with agent attribution** additionally needs
+  `agent:create`, or the whole request is rejected (403).
 
 ## Identity and idempotency
 

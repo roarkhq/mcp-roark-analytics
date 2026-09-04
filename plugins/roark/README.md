@@ -14,14 +14,25 @@ how to select flow variants without accidentally placing hundreds of calls.
 
 | Skill                 | Use it to                                                        |
 | --------------------- | ---------------------------------------------------------------- |
-| `roark-overview`      | Understand how the Roark MCP works and route to the right skill. |
+| `roark-overview`      | Understand how the Roark MCP works, learn the primitives, and route to the right skill. |
 | `register-agent`      | Create the agent under test and a phone endpoint Roark reaches.  |
-| `author-personas-flows`| Define who calls (personas) and what they do (customer flows).  |
+| `author-personas-flows`| Define who calls (personas) and what they do (improv flows).    |
+| `author-scripted-flows`| Author IVR/DTMF/scripted conversation graphs (exact routing).   |
+| `configure-outbound-dial`| Define the HTTP request Roark sends to place OUTBOUND calls.   |
 | `build-run-plan`      | Configure and start a simulation (the main workflow).            |
+| `manage-run-plans`    | Manage saved test suites: find, edit, re-run, delete plans.      |
 | `configure-metrics`   | Choose built-in metrics, add pass/fail checks, or author custom. |
 | `read-results`        | Poll a run and read metric scores (pass/fail) and transcripts.   |
+| `monitor-live-calls`  | Grade real production calls/chats: policies and backfill jobs.   |
+| `ingest-calls`        | Import a real recording for analysis; read calls and sentiment.  |
+| `subscribe-webhooks`  | Get event notifications (run done, issue opened) instead of polling. |
 | `manage-config-as-code`| Manage agents/personas/flows/metrics/collectors declaratively.  |
 | `gate-ci`             | Gate a deploy/CI pipeline on a run (start, wait, assert).        |
+
+`roark-overview` also carries two cross-cutting references every other skill leans
+on: `references/primitives.md` (the object model, and exactly which primitives the
+SDK can create) and `references/conventions.md` (auth, permissions, pagination,
+cost, error handling).
 
 Each skill is a `SKILL.md`, some with a `references/` folder that loads on demand.
 
