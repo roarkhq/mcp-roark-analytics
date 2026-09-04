@@ -37,10 +37,6 @@ export const newMcpServer = async ({
   );
 
 /**
- * Initializes the provided MCP Server with the given tools and handlers.
- * If not provided, the default client, tools and handlers will be used.
- */
-/**
  * One local docs index per process, keyed by `docsDir`.
  *
  * `LocalDocsSearch.create()` reindexes the whole embedded corpus with
@@ -75,6 +71,10 @@ export const localDocsSearchFor = (docsDir?: string | undefined): Promise<LocalD
   return search;
 };
 
+/**
+ * Initializes the provided MCP Server with the given tools and handlers.
+ * If not provided, the default client, tools and handlers will be used.
+ */
 export async function initMcpServer(params: {
   server: Server | McpServer;
   clientOptions?: ClientOptions;
