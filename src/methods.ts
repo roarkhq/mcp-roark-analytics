@@ -29,6 +29,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/call',
   },
   {
+    clientCallName: 'client.call.appendToolInvocations',
+    fullyQualifiedName: 'call.appendToolInvocations',
+    httpMethod: 'post',
+    httpPath: '/v1/call/{callId}/tool-invocations',
+  },
+  {
     clientCallName: 'client.call.getByID',
     fullyQualifiedName: 'call.getByID',
     httpMethod: 'get',
@@ -63,6 +69,12 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'metric.listDefinitions',
     httpMethod: 'get',
     httpPath: '/v1/metric/definitions',
+  },
+  {
+    clientCallName: 'client.metric.updateDefinition',
+    fullyQualifiedName: 'metric.updateDefinition',
+    httpMethod: 'put',
+    httpPath: '/v1/metric/definitions/{idOrSlug}',
   },
   {
     clientCallName: 'client.metricPolicy.create',
@@ -111,6 +123,36 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'metricCollectionJob.getByID',
     httpMethod: 'get',
     httpPath: '/v1/metric/collection-jobs/{jobId}',
+  },
+  {
+    clientCallName: 'client.metricVariant.create',
+    fullyQualifiedName: 'metricVariant.create',
+    httpMethod: 'post',
+    httpPath: '/v1/metric/definitions/{idOrSlug}/variants',
+  },
+  {
+    clientCallName: 'client.metricVariant.update',
+    fullyQualifiedName: 'metricVariant.update',
+    httpMethod: 'put',
+    httpPath: '/v1/metric/definitions/{idOrSlug}/variants/{variantId}',
+  },
+  {
+    clientCallName: 'client.metricVariant.list',
+    fullyQualifiedName: 'metricVariant.list',
+    httpMethod: 'get',
+    httpPath: '/v1/metric/definitions/{idOrSlug}/variants',
+  },
+  {
+    clientCallName: 'client.metricVariant.delete',
+    fullyQualifiedName: 'metricVariant.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/metric/definitions/{idOrSlug}/variants/{variantId}',
+  },
+  {
+    clientCallName: 'client.metricVariant.getByID',
+    fullyQualifiedName: 'metricVariant.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/metric/definitions/{idOrSlug}/variants/{variantId}',
   },
   {
     clientCallName: 'client.simulation.run',
