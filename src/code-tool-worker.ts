@@ -109,6 +109,7 @@ function getTSDiagnostics(code: string): string[] {
 const fuse = new Fuse(
   [
     'client.health.get',
+    'client.call.appendToolInvocations',
     'client.call.create',
     'client.call.getByID',
     'client.call.getTranscript',
@@ -117,6 +118,7 @@ const fuse = new Fuse(
     'client.call.listSentimentRuns',
     'client.metric.createDefinition',
     'client.metric.listDefinitions',
+    'client.metric.updateDefinition',
     'client.metricPolicy.create',
     'client.metricPolicy.delete',
     'client.metricPolicy.getByID',
@@ -125,6 +127,11 @@ const fuse = new Fuse(
     'client.metricCollectionJob.create',
     'client.metricCollectionJob.getByID',
     'client.metricCollectionJob.list',
+    'client.metricVariant.create',
+    'client.metricVariant.delete',
+    'client.metricVariant.getByID',
+    'client.metricVariant.list',
+    'client.metricVariant.update',
     'client.simulation.run',
     'client.simulationJob.getByID',
     'client.simulationJob.lookup',
