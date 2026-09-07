@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.8.0...v3.9.0) (2026-09-07)
+
+
+### Features
+
+* **skills:** gate-ci + conventions ([#14](https://github.com/roarkhq/mcp-roark-analytics/issues/14)) ([c578610](https://github.com/roarkhq/mcp-roark-analytics/commit/c57861064a9664248aa83b54efa0f604bdf871c7))
+
 ## [3.8.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.7.0...v3.8.0) (2026-09-07)
 
 
