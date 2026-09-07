@@ -201,6 +201,29 @@ const remoteStainlessHandler = async ({
   return asTextContentResult(output);
 };
 
+/** Suffix deno-http-worker gives the Unix socket it creates for each worker. */
+const DENO_WORKER_SOCKET_SUFFIX = '-deno-http.sock';
+
+/**
+ * Adds the worker's Unix socket to the existing `--allow-net` allowlist.
+ *
+ * deno-http-worker generates the socket path itself and passes it to the Deno
+ * process, so it can only be read off the spawn arguments. Throws rather than
+ * falling back to an unrestricted `--allow-net`, so a change in how the socket is
+ * passed fails closed instead of silently widening what the sandbox can reach.
+ */
+export const scopeAllowNetToWorkerSocket = (spawnArgs: string[]): string[] => {
+  // Skip flags: deno-http-worker also appends the socket to `--allow-read`/`--allow-write`,
+  // so match only the bare path it passes through to the bootstrap script.
+  const socketPath = spawnArgs.find((arg) => !arg.startsWith('-') && arg.endsWith(DENO_WORKER_SOCKET_SUFFIX));
+  if (socketPath === undefined) {
+    throw new Error(
+      'Could not find the Deno worker socket path in its spawn arguments, so network access could not be scoped to it.',
+    );
+  }
+  return spawnArgs.map((arg) => (arg.startsWith('--allow-net=') ? `${arg},unix:${socketPath}` : arg));
+};
+
 const localDenoHandler = async ({
   reqContext,
   args,
@@ -216,6 +239,7 @@ const localDenoHandler = async ({
   const workerPath = getWorkerPath();
 
   const client = reqContext.client;
+  const baseURLHostname = new URL(client.baseURL).hostname;
   const { code } = args as { code: string };
 
   let denoPath: string;
@@ -224,7 +248,7 @@ const localDenoHandler = async ({
   const packageNodeModulesPath = path.resolve(packageRoot, 'node_modules');
 
   // Check if deno is in PATH
-  const { execSync } = await import('node:child_process');
+  const { execSync, spawn } = await import('node:child_process');
   try {
     execSync('command -v deno', { stdio: 'ignore' });
     denoPath = 'deno';
@@ -267,14 +291,19 @@ const localDenoHandler = async ({
     runFlags: [
       `--node-modules-dir=manual`,
       `--allow-read=${allowRead}`,
-      // deno-http-worker creates a unique Unix socket at runtime. Deno requires
-      // network permission for that socket as well as for the Roark API, and the
-      // socket path cannot be known before the worker starts.
-      '--allow-net',
+      // Only the Roark API is reachable from the sandbox. The worker's Unix socket
+      // is added to this same allowlist by scopeAllowNetToWorkerSocket below.
+      `--allow-net=${baseURLHostname}`,
       // Allow environment variables because instantiating the client will try to read from them,
       // even though they are not set.
       '--allow-env',
     ],
+    // deno-http-worker picks the worker's Unix socket path while it builds the spawn
+    // arguments, so it is not known when runFlags are constructed above. Deno gates
+    // listening on a Unix socket behind --allow-net, so intercept the spawn to grant
+    // that one socket rather than opening up network access to every host.
+    spawnFunc: (command, spawnArgs, spawnOptions) =>
+      spawn(command, scopeAllowNetToWorkerSocket(spawnArgs), spawnOptions),
     printOutput: true,
     spawnOptions: {
       cwd: path.dirname(workerPath),
