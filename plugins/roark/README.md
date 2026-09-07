@@ -50,6 +50,9 @@ Set your Roark API key in the environment that launches Claude Code:
 export ROARK_API_BEARER_TOKEN="My Bearer Token"
 ```
 
+The bundled MCP executes SDK snippets locally, so install
+[Deno](https://deno.com) first.
+
 Then install the bundled MCP and skills together:
 
 ```

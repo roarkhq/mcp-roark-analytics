@@ -51,9 +51,9 @@ export function parseCLIOptions(): CLIOptions {
     .option('code-execution-mode', {
       type: 'string',
       choices: ['stainless-sandbox', 'local'],
-      default: 'stainless-sandbox',
+      default: 'local',
       description:
-        "Where to run code execution in code tool; 'stainless-sandbox' will execute code in Stainless-hosted sandboxes whereas 'local' will execute code locally on the MCP server machine.",
+        "Where to run code execution in code tool; 'local' executes code on the MCP server machine. 'stainless-sandbox' is no longer available.",
     })
     .option('custom-instructions-path', {
       type: 'string',

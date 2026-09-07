@@ -216,7 +216,6 @@ const localDenoHandler = async ({
   const workerPath = getWorkerPath();
 
   const client = reqContext.client;
-  const baseURLHostname = new URL(client.baseURL).hostname;
   const { code } = args as { code: string };
 
   let denoPath: string;
@@ -268,7 +267,10 @@ const localDenoHandler = async ({
     runFlags: [
       `--node-modules-dir=manual`,
       `--allow-read=${allowRead}`,
-      `--allow-net=${baseURLHostname}`,
+      // deno-http-worker creates a unique Unix socket at runtime. Deno requires
+      // network permission for that socket as well as for the Roark API, and the
+      // socket path cannot be known before the worker starts.
+      '--allow-net',
       // Allow environment variables because instantiating the client will try to read from them,
       // even though they are not set.
       '--allow-env',

@@ -17,8 +17,10 @@ You can run the MCP Server directly via `npx`:
 
 ```sh
 export ROARK_API_BEARER_TOKEN="My Bearer Token"
-npx -y @roarkanalytics/sdk-mcp@latest
+npx --yes --package @roarkanalytics/sdk-mcp@latest mcp-server
 ```
+
+Code execution runs locally, so install [Deno](https://deno.com) first.
 
 ### Via MCP Client
 
@@ -32,7 +34,7 @@ For clients with a configuration JSON, it might look something like this:
   "mcpServers": {
     "roarkanalytics_sdk_api": {
       "command": "npx",
-      "args": ["-y", "@roarkanalytics/sdk-mcp"],
+      "args": ["--yes", "--package", "@roarkanalytics/sdk-mcp", "mcp-server"],
       "env": {
         "ROARK_API_BEARER_TOKEN": "My Bearer Token"
       }
@@ -61,7 +63,7 @@ If you use Claude Code, you can install the MCP server by running the command be
 environment variables in Claude Code's `.claude.json`, which can be found in your home directory.
 
 ```
-claude mcp add roarkanalytics_sdk_mcp_api --env ROARK_API_BEARER_TOKEN="My Bearer Token" -- npx -y @roarkanalytics/sdk-mcp
+claude mcp add roarkanalytics_sdk_mcp_api --env ROARK_API_BEARER_TOKEN="My Bearer Token" -- npx --yes --package @roarkanalytics/sdk-mcp mcp-server
 ```
 
 ## Claude Code plugin and skills

@@ -2,7 +2,13 @@
   "mcpServers": {
     "roark": {
       "command": "npx",
-      "args": ["-y", "@roarkanalytics/sdk-mcp"],
+      "args": [
+        "--yes",
+        "--package",
+        "@roarkanalytics/sdk-mcp",
+        "mcp-server",
+        "--code-execution-mode=local"
+      ],
       "env": {
         "ROARK_API_BEARER_TOKEN": "${ROARK_API_BEARER_TOKEN}"
       }
