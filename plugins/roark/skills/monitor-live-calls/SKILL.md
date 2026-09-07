@@ -70,6 +70,10 @@ const policy = await client.metricPolicy.create({
     optional otherwise. Operators: `EQUALS`, `NOT_EQUALS`, `CONTAINS`,
     `STARTS_WITH`, `GREATER_THAN`, `LESS_THAN`, `GREATER_THAN_OR_EQUALS`,
     `LESS_THAN_OR_EQUALS`.
+- These field names (`conditionType` / `conditionKey` / …, `metrics: [{ id }]`)
+  are the **imperative SDK** shape. Config-as-code collectors use a different
+  DSL for the same idea (`filters` with `type` / `key` / `operator` / `value`,
+  metrics by slug) — see `manage-config-as-code`. Do not mix the two.
 - **`status: 'INACTIVE'`** disables a policy without deleting it.
 
 Update / list / delete:
@@ -115,8 +119,9 @@ while (!TERMINAL.has(j.status)) {        // PENDING | PROCESSING | COMPLETED | F
 // j.totalItems / completedItems / failedItems are call-metric pairs
 ```
 
-Then read the resulting scores per call with `client.call.listMetrics(callId)`
-(see `read-results`), branching on `captureStatus` before reading `value`.
+Then read the resulting scores per call with `client.call.listMetrics(callId, { flatten: 'true' })`
+(see `read-results`), branching on `captureStatus` before reading `value`. The
+default (grouped) response nests those fields under `values[]` per metric.
 
 ## Which resource for which ask
 

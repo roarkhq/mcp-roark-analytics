@@ -77,7 +77,7 @@ const call = await client.call.getByID(callId)
 // recordingUrl (pre-signed, ~1h), recordingUrlAccess, properties, policyIds, agents, customers
 
 const transcript = await client.call.getTranscript(callId)
-const metrics = await client.call.listMetrics(callId) // branch on captureStatus - see read-results
+const metrics = await client.call.listMetrics(callId, { flatten: 'true' }) // branch on captureStatus - see read-results
 ```
 
 `recordingUrlAccess` can be `AVAILABLE` | `NOT_AVAILABLE` | `RESTRICTED`;
