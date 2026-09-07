@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.11.0...v3.12.0) (2026-09-07)
+
+
+### Features
+
+* **plugin:** bundle Roark MCP with skills ([#30](https://github.com/roarkhq/mcp-roark-analytics/issues/30)) ([4588916](https://github.com/roarkhq/mcp-roark-analytics/commit/4588916fc29e9b38b2ce4cf014efb0a1a2d0cc82))
+
 ## [3.11.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.10.0...v3.11.0) (2026-09-07)
 
 
