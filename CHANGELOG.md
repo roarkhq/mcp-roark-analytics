@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.6.1...v3.7.0) (2026-09-07)
+
+
+### Features
+
+* **skills:** Roark agent-skills package ([#5](https://github.com/roarkhq/mcp-roark-analytics/issues/5)) ([69dedff](https://github.com/roarkhq/mcp-roark-analytics/commit/69dedff13b176d895a5ec26a49048f0f847ef591))
+
 ## [3.6.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.6.0...v3.6.1) (2026-09-04)
 
 
