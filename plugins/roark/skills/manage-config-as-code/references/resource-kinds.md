@@ -66,22 +66,30 @@ config metric is always an LLM judge, so it has no `calculationType` to
 disambiguate. Sending the imperative names to `config.apply` fails validation, and
 vice versa. Translate:
 
-| config bundle    | `client.metric.createDefinition` | note                                     |
-| ---------------- | -------------------------------- | ---------------------------------------- |
-| `name`           | `slug` / `metricId`              | config's identity IS the slug; imperative derives the slug from `name` |
-| `displayName`    | `name`                           | the human-facing label in the product     |
-| `type`           | `outputType`                     | same values                               |
-| `prompt`         | `llmPrompt`                      | same 2000-char cap                        |
-| `contexts`       | `supportedContexts`              | same values                               |
-| `options`        | `classificationOptions`          | CLASSIFICATION only                       |
-| `maxSelections`  | `maxClassifications`             | CLASSIFICATION only                       |
-| (implied)        | `calculationType: 'LLM_JUDGE'`   | config has no such field: it is always a judge |
+| config bundle   | `client.metric.createDefinition` | note                                            |
+| --------------- | -------------------------------- | ----------------------------------------------- |
+| `name`          | `slug`                           | config's identity IS the slug; imperative instead derives its slug from `name` |
+| `displayName`   | `name`                           | the label shown in the product; falls back to `name` when omitted |
+| `type`          | `outputType`                     | same values                                     |
+| `prompt`        | `llmPrompt`                      | same 2000-char cap                              |
+| `contexts`      | `supportedContexts`              | same values                                     |
+| `trueLabel`     | `booleanTrueLabel`               | BOOLEAN only                                    |
+| `falseLabel`    | `booleanFalseLabel`              | BOOLEAN only                                    |
+| `options`       | `classificationOptions`          | CLASSIFICATION only                             |
+| `maxSelections` | `maxClassifications`             | CLASSIFICATION only                             |
+| (implied)       | `calculationType: 'LLM_JUDGE'`   | config has no such field: it is always a judge  |
 
-`scope`, `participantRole`, `scaleMin`, `scaleMax`, `scaleLabels`, `trueLabel`,
-and `falseLabel` are spelled the same in both. One asymmetry to watch:
-`participantRole` in config accepts only `AGENT` | `CUSTOMER`, while the
-imperative API also takes `SIMULATED_CUSTOMER` and `BACKGROUND_SPEAKER`. A metric
-that must be scoped to a simulated caller has to be created imperatively.
+Only `scope`, `participantRole`, `scaleMin`, `scaleMax`, and `scaleLabels` are
+spelled the same in both. Two asymmetries to watch:
+
+- `participantRole` in config accepts only `AGENT` | `CUSTOMER`, while the
+  imperative API also takes `SIMULATED_CUSTOMER` and `BACKGROUND_SPEAKER`. A metric
+  that must be scoped to a simulated caller has to be created imperatively.
+- A `classificationOptions` entry requires a `description` imperatively; in config
+  it is optional and defaults to the option's `label`.
+
+Every config-authored metric is filed under a single auto-created **"Config as
+Code"** analysis package, which is where they appear in the product.
 
 ## collector (live-call metric policy)
 
