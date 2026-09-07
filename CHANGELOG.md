@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.7.0...v3.8.0) (2026-09-07)
+
+
+### Features
+
+* **skills:** manage-config-as-code ([#13](https://github.com/roarkhq/mcp-roark-analytics/issues/13)) ([b2fc7c8](https://github.com/roarkhq/mcp-roark-analytics/commit/b2fc7c8f86d69347168a62a7387e114e31fed0b3))
+
 ## [3.7.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.6.1...v3.7.0) (2026-09-07)
 
 
