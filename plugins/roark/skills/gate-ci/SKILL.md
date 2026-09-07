@@ -19,9 +19,9 @@ Use `build-run-plan` to configure and start. In CI you usually run a saved plan
 by id so the test suite is version-controlled and stable:
 
 ```ts
-const run = await client.simulation.run({ planId }) // or { plan: {...} }
-const jobId = run.simulationRunPlanJobId
-// run.simulationJobCount = calls this will place (log it; it bills)
+const started = await client.simulation.run({ planId }) // or { plan: {...} }
+const jobId = started.simulationRunPlanJobId
+// started.simulationJobCount = calls this will place (log it; it bills)
 ```
 
 ## 2. Wait for it to finish
@@ -31,10 +31,11 @@ Terminal = `COMPLETED | FAILED | CANCELLED | TIMED_OUT`; anything else is still
 running. Back off between polls and cap total wait so CI cannot hang forever.
 
 ```ts
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const TERMINAL = new Set(['COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT'])
 let run = await client.simulationRunPlanJob.getByID(jobId)
 while (!TERMINAL.has(run.status)) {
-  await sleep(15_000) // poll interval; use your runtime's timer
+  await sleep(15_000) // poll interval
   run = await client.simulationRunPlanJob.getByID(jobId)
 }
 if (run.status !== 'COMPLETED') {
