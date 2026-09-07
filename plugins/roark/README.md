@@ -1,9 +1,9 @@
-# Roark agent skills
+# Roark Claude Code plugin
 
-A skills package that makes your coding agent an expert at using the **Roark
-MCP** to test voice and chat AI agents: registering agents, designing personas
-and customer flows, building simulation run plans, and configuring the metrics
-that grade them.
+One plugin that bundles the **Roark MCP** with skills that make your coding
+agent an expert at testing voice and chat AI agents: registering agents,
+designing personas and customer flows, building simulation run plans, and
+configuring the metrics that grade them.
 
 These skills complement the MCP. The MCP gives your agent the tools (a code tool
 that runs `@roarkanalytics/sdk` snippets, plus docs search); these skills give it
@@ -38,13 +38,28 @@ Each skill is a `SKILL.md`, some with a `references/` folder that loads on deman
 
 ## Install (Claude Code)
 
+Add the Roark marketplace once if it is not already registered:
+
 ```
 /plugin marketplace add roarkhq/mcp-roark-analytics
-/plugin install roark
 ```
 
-Then connect the Roark MCP and set `ROARK_API_BEARER_TOKEN` so the skills have
-tools to drive. See https://docs.roark.ai.
+Set your Roark API key in the environment that launches Claude Code:
+
+```sh
+export ROARK_API_BEARER_TOKEN="My Bearer Token"
+```
+
+Then install the bundled MCP and skills together:
+
+```
+/plugin install roark@roark
+```
+
+The bundled MCP server is named `roark`, so Claude Code exposes its tools as
+`mcp__roark__*`. It reads `ROARK_API_BEARER_TOKEN` from the environment; Claude
+Code does not prompt for this value during plugin installation. See
+https://docs.roark.ai.
 
 ## Other agents
 

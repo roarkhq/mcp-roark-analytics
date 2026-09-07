@@ -64,6 +64,25 @@ environment variables in Claude Code's `.claude.json`, which can be found in you
 claude mcp add roarkanalytics_sdk_mcp_api --env ROARK_API_BEARER_TOKEN="My Bearer Token" -- npx -y @roarkanalytics/sdk-mcp
 ```
 
+## Claude Code plugin and skills
+
+The [`roark` plugin](./plugins/roark) bundles this MCP server with skills for
+testing voice and chat AI agents. The MCP supplies access to the Roark API; the
+skills provide the workflow for registering agents, authoring personas and
+flows, building simulation run plans, configuring metrics, and reading results.
+
+After adding the Roark marketplace once, install both together in Claude Code:
+
+```
+/plugin marketplace add roarkhq/mcp-roark-analytics
+/plugin install roark@roark
+```
+
+Set `ROARK_API_BEARER_TOKEN` in the environment that launches Claude Code. The
+plugin's MCP server uses the `roark` key, so its tools are exposed as
+`mcp__roark__*`. See the [plugin README](./plugins/roark/README.md) for the
+complete setup and the available skills.
+
 ## Code Mode
 
 This MCP server is built on the "Code Mode" tool scheme. In this MCP Server,
