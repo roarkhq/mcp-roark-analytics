@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "roark": {
+      "command": "npx",
+      "args": ["-y", "@roarkanalytics/sdk-mcp"],
+      "env": {
+        "ROARK_API_BEARER_TOKEN": "${ROARK_API_BEARER_TOKEN}"
+      }
+    }
+  }
+}
