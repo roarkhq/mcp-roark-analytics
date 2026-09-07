@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.9.0...v3.10.0) (2026-09-07)
+
+
+### Features
+
+* **skills:** expand skill set (IVR/DTMF, live monitoring, primitives) and fix verified API errors ([#22](https://github.com/roarkhq/mcp-roark-analytics/issues/22)) ([1febec9](https://github.com/roarkhq/mcp-roark-analytics/commit/1febec98d94207b564f117ca999f314c9a3f7dde))
+
 ## [3.9.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.8.0...v3.9.0) (2026-09-07)
 
 
