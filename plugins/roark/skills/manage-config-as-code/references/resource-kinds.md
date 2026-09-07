@@ -59,6 +59,30 @@ here, only referenced by slug in a collector.
 SCALE metrics carry labelled bands; CLASSIFICATION metrics carry options. Match
 the type to the question, same as the imperative metric create.
 
+### The field names differ from `client.metric.createDefinition`
+
+This is deliberate, not a typo: the config bundle uses shorter names because a
+config metric is always an LLM judge, so it has no `calculationType` to
+disambiguate. Sending the imperative names to `config.apply` fails validation, and
+vice versa. Translate:
+
+| config bundle    | `client.metric.createDefinition` | note                                     |
+| ---------------- | -------------------------------- | ---------------------------------------- |
+| `name`           | `slug` / `metricId`              | config's identity IS the slug; imperative derives the slug from `name` |
+| `displayName`    | `name`                           | the human-facing label in the product     |
+| `type`           | `outputType`                     | same values                               |
+| `prompt`         | `llmPrompt`                      | same 2000-char cap                        |
+| `contexts`       | `supportedContexts`              | same values                               |
+| `options`        | `classificationOptions`          | CLASSIFICATION only                       |
+| `maxSelections`  | `maxClassifications`             | CLASSIFICATION only                       |
+| (implied)        | `calculationType: 'LLM_JUDGE'`   | config has no such field: it is always a judge |
+
+`scope`, `participantRole`, `scaleMin`, `scaleMax`, `scaleLabels`, `trueLabel`,
+and `falseLabel` are spelled the same in both. One asymmetry to watch:
+`participantRole` in config accepts only `AGENT` | `CUSTOMER`, while the
+imperative API also takes `SIMULATED_CUSTOMER` and `BACKGROUND_SPEAKER`. A metric
+that must be scoped to a simulated caller has to be created imperatively.
+
 ## collector (live-call metric policy)
 
 Which metrics get collected on real calls/chats, and on which conversations.
