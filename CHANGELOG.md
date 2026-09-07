@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.12.0...v3.12.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* **mcp:** run code execution locally ([#32](https://github.com/roarkhq/mcp-roark-analytics/issues/32)) ([c29256d](https://github.com/roarkhq/mcp-roark-analytics/commit/c29256d357e72dc596e2107800d2ece2eafc4d7e))
+
 ## [3.12.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.11.0...v3.12.0) (2026-09-07)
 
 
