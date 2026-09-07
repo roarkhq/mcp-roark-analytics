@@ -45,8 +45,9 @@ code-switching, idle handling) is in
 
 A **customer flow** is one type of conversation. It has:
 
-- a **mode**: `IMPROV` (the simulated caller improvises from a brief),
-  `SCRIPTED` (a step graph the conversation follows), or `VOICEMAIL`.
+- a **type**: `IMPROV` (the simulated caller improvises from a brief),
+  `SCRIPTED` (a step graph the conversation follows), or `VOICEMAIL`
+  (Roark-seeded, read-only).
 - a **happy path**: the way the conversation is meant to go.
 - **edge cases**: every other way of running it (an angry caller, a wrong number,
   a mid-call correction). Each edge case can carry its own persona and variables.
@@ -61,15 +62,54 @@ const { data: flows } = await client.customerFlow.list()
 const flow = await client.customerFlow.getByID(flowId) // see its happy path + edge cases
 ```
 
-Authoring depends on mode. IMPROV flows are a brief plus edge cases and are quick
-to write; SCRIPTED flows are a conversation graph and are more involved. The
-concepts, the operations (`create`, `updateHappyPath`, `replaceGraph`, and the
-`customerFlowEdgeCase` add/update/remove/promote calls), and when to reach for
-each are in [references/flows.md](references/flows.md).
+### Create an IMPROV flow
 
-> The SCRIPTED step-graph payload is detailed (a recursive node tree with
-> branch/merge semantics). Author the shape with the MCP docs search tool open,
-> confirming node fields against the installed SDK rather than guessing.
+An improv flow is a brief plus optional edge cases and is quick to write. The
+happy path **requires a persona and an environment**; edge cases inherit them
+unless they name their own:
+
+```ts
+const flow = await client.customerFlow.create({
+  type: 'IMPROV',
+  title: 'Reschedule an appointment',
+  agentIds: [agentId], // required for improv, at least one
+  happyPath: {
+    title: 'Standard reschedule',
+    prompt: 'Caller wants to move an existing booking to next week',
+    personaOverrideId: personaId, // required
+    environmentId, // required - see "Environments" below
+  },
+  edgeCases: [
+    { title: 'Angry caller', prompt: 'Has been on hold twice and is frustrated' },
+  ],
+})
+```
+
+Edit it with `client.customerFlow.updateHappyPath(flowId, {...})` and the
+`customerFlowEdgeCase` add/update/remove/promote calls. Concepts and full
+operation shapes are in [references/flows.md](references/flows.md).
+
+### Create a SCRIPTED flow
+
+SCRIPTED flows are a conversation graph (IVR menus, DTMF entry, deterministic
+routing) and are more involved: you send a `graph`, not a happy path / edge
+cases, and variants are derived from the graph. That is its own skill:
+**`author-scripted-flows`**. Use it whenever the test needs a phone tree, keypad
+input, or an exact turn-by-turn script.
+
+### Environments
+
+The happy path's `environmentId` names the conditions the call runs under (its
+main knob today is `backgroundNoise`, one of `NONE`, `AIRPORT`,
+`CHILDREN_PLAYING`, `CITY`, `COFFEE_SHOP`, `DRIVING`, `OFFICE`, `THUNDERSTORM`).
+The catalogue is **read-only** via the API - list it and reference an id, you do
+not create environments here:
+
+```ts
+const { data: envs } = await client.simulationEnvironment.list()
+const quiet = envs.find((e) => e.backgroundNoise === 'NONE')
+// use quiet.id as environmentId
+```
 
 ## Next
 

@@ -80,21 +80,30 @@ The config (shared by `simulation.run` and `simulationRunPlan.create`) is:
 
 | field                          | required | default      | notes                                            |
 | ------------------------------ | -------- | ------------ | ------------------------------------------------ |
+| `name`                         | yes\*\*  |              | required on `simulationRunPlan.create`            |
+| `description`                  | no       |              | free text                                        |
 | `direction`                    | yes      |              | `INBOUND` or `OUTBOUND`                           |
 | `agentEndpoints`               | yes      |              | `[{ id }]`, at least one                          |
 | `metrics`                      | yes      |              | `[{ slug }]` or `[{ id }]`, at least one          |
-| `flows`                        | yes\*    |              | `[{ id, happyPath?, edgeCases? }]`                |
+| `flows`                        | yes\*    |              | `[{ id, happyPath?, edgeCases?, personaOverrideId?, variables? }]` |
 | `maxSimulationDurationSeconds` | yes      |              | per-call cap, e.g. `300`                          |
-| `iterationCount`               | no       | `1`          | repeats every test case; multiplies call count   |
+| `iterationCount`               | no       | `1`          | 1-10000; repeats every test case, multiplies cost |
 | `maxConcurrentJobs`            | no       | `5`          | parallelism, capped by your account quota        |
-| `executionMode`                | no       | `PARALLEL`   | `PARALLEL` or `SEQUENTIAL`                        |
+| `executionMode`                | no       | `PARALLEL`   | `PARALLEL`, `SEQUENTIAL_SAME_RUN_PLAN`, or `SEQUENTIAL_PROJECT` |
 | `silenceTimeoutSeconds`        | no       | `30`         |                                                  |
 | `endCallPhrases`               | no       | `['goodbye']`| empty array disables                             |
 | `endCallReasons`               | no       | `[]`         | LLM-evaluated end conditions                     |
 
-\* `flows` is the modern path. `scenarios` + `personas` is the deprecated
-alternative; do not use it for new work. Full field reference:
-[references/run-plan-fields.md](references/run-plan-fields.md).
+There is **no plain `SEQUENTIAL`** value: pick which sequencing you mean. There is
+also no plan-level `variables` (they go on each `flows[]` entry or at run time), no
+scheduling/cron, and no tags.
+
+\* `flows` is the modern path. `scenarios` (+ a required `personas`) is the
+deprecated alternative: you must send one or the other, **never both**, and a plan
+with neither is rejected. Do not use `scenarios` for new work.
+\*\* `name` is required by `simulationRunPlan.create`, and optional on an inline
+`simulation.run({ plan })` unless you set `saveAsPlan: true`. Full field
+reference: [references/run-plan-fields.md](references/run-plan-fields.md).
 
 ## 5. Preview the call count, then run (do not skip)
 
@@ -103,7 +112,7 @@ safe pattern is create-then-start: creating a plan does not run it, and the
 response carries `testCaseCount`.
 
 ```ts
-const plan = await client.simulationRunPlan.create({
+const created = await client.simulationRunPlan.create({
   name: 'Billing regression',
   direction: 'OUTBOUND',
   maxSimulationDurationSeconds: 300,
@@ -113,12 +122,16 @@ const plan = await client.simulationRunPlan.create({
   iterationCount: 1,
 })
 
+// NOTE the nesting: create returns { runPlan, runPlanJob }, not the plan itself.
+const plan = created.runPlan
+
 // Tell the user: "This will place <testCaseCount> calls." Wait for go-ahead
 // if the number is large or the user has not already approved it.
 console.log(`This run will place ${plan.testCaseCount} calls.`)
 
-// Then start it.
-const started = await client.simulationRunPlanJob.start(plan.id)
+// Then start it. Prefer simulation.run({ planId }) - simulationRunPlanJob.start
+// is the deprecated twin and returns a smaller payload (no simulationJobCount).
+const started = await client.simulation.run({ planId: plan.id })
 ```
 
 For a quick one-off where the user has already accepted the cost, you can

@@ -32,9 +32,11 @@ and idempotent.
 
 ## Always diff before apply
 
-`config.diff` is a dry run: it returns the projected `create` / `update` /
-`delete` / `noop` changes and a summary, and writes nothing. Show the diff (and
-call out deletes) before applying.
+`config.diff` is a dry run: it returns the projected changes and a summary, and
+writes nothing. Show the diff (and call out deletes) before applying.
+
+**The request body *is* the bundle.** Its only top-level fields are `resources` and
+`prune`: there is no `bundle` wrapper, no `dryRun`, and no `version`.
 
 ```ts
 const bundle = {
@@ -47,17 +49,37 @@ const bundle = {
 
 const diff = await client.config.diff(bundle)
 // diff.summary => { create, update, delete, noop }
-// diff.changes => [{ configKey, kind, name, op, detail? }]
+// diff.changes => [{ configKey, kind, name, op }]   op is lowercase
 // Surface this to the user. If delete > 0, confirm it is intended.
 
 const applied = await client.config.apply(bundle)
-// applied.changes => [{ ..., status: 'applied'|'skipped'|'failed', id?, error? }]
-// applied.summary => { create, update, delete, noop, failed }
+// applied.changes => [{ ..., status: 'applied'|'failed', id?, error? }]
+// applied.summary => diff summary + `failed`
 ```
 
-Applying needs an API key with the **`config:apply`** permission; `diff` is
-read-only. If `apply` returns any `failed` change, report its `error`; do not
-retry blindly.
+What the response actually does, versus what the enums suggest:
+
+- **`op` values are lowercase**: `'create'`, `'update'`, `'delete'`, `'noop'`.
+- **`noop` is never returned.** The diff classifies purely on existence: a resource
+  already config-managed is `update`, otherwise `create`. There is no content
+  comparison, so `summary.noop` is always `0` and "everything shows as update" is
+  normal, not a bug.
+- **`status: 'skipped'` and the `detail` field are never populated** either. Apply
+  emits only `applied` or `failed`.
+- **`apply` is not atomic.** It applies changes in a loop, catching per-change
+  errors, so a mid-run failure leaves earlier changes committed. Treat `changes[]`
+  as a partial-success report.
+- Deletes run **last**, and among deletes flows are removed before the agents and
+  personas they reference.
+
+**Both `diff` and `apply` require the `config:apply` permission.** `diff` is
+read-only in effect, not in authorization. If `apply` returns any `failed` change,
+report its `error`; do not retry blindly.
+
+The changes most likely to come back `failed`: changing a collector's `modality`, or
+changing an immutable metric field (`name`/slug, `type`, `scope`). Both mean "make a
+new resource" rather than "edit this one". Referencing an environment that does not
+exist also fails, with `unknown environment "X"`.
 
 ## Resource kinds
 
@@ -77,6 +99,11 @@ boundaries:
   references (agents, personas, flows, metrics); *triggering runs* stays
   imperative via `build-run-plan` (`simulation.run`). Keep the two separate:
   reconcile config, then start runs.
+- **Environments are not a config kind either**, and cannot be created at all
+  (they are read-only everywhere in the API). A flow referencing an environment
+  name that does not already exist fails the apply.
+- **Agent endpoints are declared inside the `agent` resource** (`endpoints: [...]`),
+  which is the only way config creates the phone endpoints a run plan targets.
 
 ## When to use this vs imperative calls
 
