@@ -51,9 +51,9 @@ export function parseCLIOptions(): CLIOptions {
     .option('code-execution-mode', {
       type: 'string',
       choices: ['stainless-sandbox', 'local'],
-      default: 'stainless-sandbox',
+      default: 'local',
       description:
-        "Where to run code execution in code tool; 'stainless-sandbox' will execute code in Stainless-hosted sandboxes whereas 'local' will execute code locally on the MCP server machine.",
+        "Where to run code execution in code tool; 'local' executes code on the MCP server machine using Deno. 'stainless-sandbox' has been retired and is rejected.",
     })
     .option('custom-instructions-path', {
       type: 'string',
@@ -128,6 +128,16 @@ export function parseCLIOptions(): CLIOptions {
   const includeCodeTool = shouldIncludeToolType('code');
   const includeDocsTools = shouldIncludeToolType('docs');
 
+  const codeExecutionMode = argv.codeExecutionMode as McpCodeExecutionMode;
+  // The choice is still accepted by yargs so that anyone carrying the old flag (or
+  // the MCP_SERVER_CODE_EXECUTION_MODE env var) gets told why it stopped working,
+  // instead of a request that fails against the retired endpoint at tool-call time.
+  if (codeExecutionMode === 'stainless-sandbox') {
+    throw new Error(
+      "code-execution-mode 'stainless-sandbox' is no longer available: the Stainless-hosted sandbox has been retired. Use 'local', which runs code on this machine with Deno (https://deno.land).",
+    );
+  }
+
   const transport = argv.transport as 'stdio' | 'http';
   const logFormat =
     argv.logFormat ? (argv.logFormat as 'json' | 'pretty')
@@ -144,7 +154,7 @@ export function parseCLIOptions(): CLIOptions {
     codeAllowHttpGets: argv.codeAllowHttpGets,
     codeAllowedMethods: argv.codeAllowedMethods,
     codeBlockedMethods: argv.codeBlockedMethods,
-    codeExecutionMode: argv.codeExecutionMode as McpCodeExecutionMode,
+    codeExecutionMode,
     customInstructionsPath: argv.customInstructionsPath,
     transport,
     logFormat,

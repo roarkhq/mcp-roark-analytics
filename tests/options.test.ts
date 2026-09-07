@@ -31,6 +31,24 @@ describe('parseCLIOptions', () => {
   });
 });
 
+describe('code execution mode', () => {
+  it('defaults to running code locally', () => {
+    const cleanup = mockArgv([]);
+
+    expect(parseCLIOptions().codeExecutionMode).toBe('local');
+
+    cleanup();
+  });
+
+  it('rejects the retired Stainless sandbox with an actionable message', () => {
+    const cleanup = mockArgv(['--code-execution-mode=stainless-sandbox']);
+
+    expect(() => parseCLIOptions()).toThrow(/no longer available/);
+
+    cleanup();
+  });
+});
+
 describe('docs search mode', () => {
   it('defaults to the index shipped with this package', () => {
     const cleanup = mockArgv([]);
