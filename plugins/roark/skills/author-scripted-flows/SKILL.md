@@ -25,6 +25,10 @@ Scripted graphs are more work than improv and easy to get subtly wrong, so keep
 the MCP docs search tool open and re-read the flow with `getByID` after every
 write to confirm the graph you intended.
 
+**Read first:** `../roark-concepts/scripted-flows.md` for the two structural
+rules (it is a DAG; roles alternate), what each step type means, and why the
+branching mode is a cost decision. This skill is the payloads and the errors.
+
 ## The shape in one look
 
 ```ts
@@ -74,14 +78,10 @@ becomes its own variant / billable call.
 
 ## Branching mode
 
-- **`DETERMINISTIC`** ("Simulate every path") - one call per path through the
-  graph; each call follows its path exactly. Use to exhaustively test an IVR.
-- **`ADAPTIVE`** ("Adapt to your agent") - the paths collapse into one call per
-  persona; the simulated caller picks a branch based on what the agent actually
-  said. Use when you care about the agent's routing decision, not every path.
-
-Both speak the authored lines verbatim; the mode only changes how branches are
-walked, not how metrics or expectations grade. `ADAPTIVE` requires `SCRIPTED`.
+`../roark-concepts/scripted-flows.md` covers what the two modes do, the cost
+difference that makes the choice matter, and what the field is called over the
+API. In the product they are labelled "Simulate every path" (`DETERMINISTIC`)
+and "Adapt to your agent" (`ADAPTIVE`), and `ADAPTIVE` requires `SCRIPTED`.
 
 ## Step types
 
@@ -100,10 +100,10 @@ title). Full field-by-field detail and the graph rules are in
 | `VOICEMAIL` | customer | (nothing) |
 | `SCENARIO_LINK` | customer | `linkedCustomerFlowId?`, `linkedCustomerFlowVariantId?` |
 
-**Roles must strictly alternate** along
-every edge: `AGENT_TURN` and `AGENT_DTMF` are the agent roles; every other type
-counts as a customer turn, so an agent turn must be followed by a customer turn
-and vice versa (violations return `ROLE_ALTERNATION`).
+The alternation rule is in the concept; the part you need here is which types
+count as which role and what a violation returns. `AGENT_TURN` and `AGENT_DTMF`
+are the agent roles, every other type counts as a customer turn, and breaking the
+alternation returns `ROLE_ALTERNATION`.
 
 ## Editing an existing graph
 

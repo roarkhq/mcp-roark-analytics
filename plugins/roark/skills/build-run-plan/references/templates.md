@@ -1,9 +1,14 @@
 # Testing-goal recipes
 
-Roark's app ships run templates that pre-select metrics and flows for a common
-goal. The public API has no template parameter, so these are **recipes you
-assemble by hand**: attach the listed metric slugs (see `configure-metrics`) and
-source the listed flows.
+What a run template is and how to pick one:
+`../../roark-concepts/templates.md`. The current catalogue, generated from the
+system data rather than transcribed:
+`../../roark-concepts/templates-catalogue.md` - prefer it over the list below if
+the two ever disagree, because it cannot go stale.
+
+The public API has no template parameter, so these are **recipes you assemble by
+hand**: attach the listed metric slugs (see `configure-metrics`) and source the
+listed flows.
 
 The metric slugs below are Roark's stable system slugs. Confirm they exist in the
 project with `client.metric.listDefinitions()` before attaching; a project may

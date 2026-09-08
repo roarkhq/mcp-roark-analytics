@@ -18,12 +18,18 @@ and idempotent.
 
 ## The model
 
-- Identity is by **`name`**, not id. The server keys each resource by
-  `<kind>/<name>` (its "configKey") and resolves cross-references (a flow's
-  `agents`, a collector's agent filter) by name. Your bundle carries no UUIDs.
+`../roark-concepts/config-as-code.md` covers identity-by-name (and why renaming
+is not renaming), what reconciliation prunes, what config cannot express, and why
+its field vocabulary diverges from the imperative API. The field-by-field mapping
+between the two is generated from the code that performs it:
+`../roark-concepts/metric-config-mapping.md`.
+
+The mechanics you need here:
+
+- The server keys each resource by `<kind>/<name>` (its "configKey"). Your bundle
+  carries no UUIDs.
 - **`prune` defaults to `true`**: a config-managed resource missing from the
-  bundle is **deleted**. The bundle is the complete desired state, not a patch.
-  Set `prune: false` for additive-only syncs.
+  bundle is **deleted**. Set `prune: false` for additive-only syncs.
 - Applying is **idempotent**: re-submitting unchanged config updates in place and
   never duplicates.
 - Config-managed resources become **read-only in the product UI** (a "managed by

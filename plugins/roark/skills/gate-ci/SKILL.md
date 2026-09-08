@@ -13,6 +13,12 @@ Roark's headline use is gating a deploy: run the simulation, and fail the
 pipeline if the agent does not meet the bar. There is no single "gate" call, so
 compose three steps: **start -> wait -> assert**.
 
+**The gate is the checks, not the run.** `../roark-concepts/metrics.md`: a check
+is a threshold metric that turns a score into a boolean, and it is free, because
+thresholds are computed from values that already exist and reach no model. A
+pipeline wired to a plan with no checks attached goes green forever without ever
+having tested the bar.
+
 ## 1. Start the run
 
 Use `build-run-plan` to configure and start. In CI you usually run a saved plan

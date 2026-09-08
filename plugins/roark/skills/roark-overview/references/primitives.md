@@ -66,45 +66,46 @@ webhook ── events (run finished, analysis done, issue opened)
   settable through the API.
 - **the legacy `scenario` resource** - deprecated and replaced by customer flows.
 
-## Concepts worth getting right
+## What each primitive *is*
+
+Definitions live in the `roark-concepts` skill, shared with Roark's in-product
+assistant so the two cannot describe the product differently. Read the one you
+need rather than all of them:
+
+| To understand | Read |
+| --- | --- |
+| personas, and why a trait in a brief does nothing | `../../roark-concepts/personas.md` |
+| flows, variants, improv vs scripted, expectations | `../../roark-concepts/flows.md` |
+| step graphs, DTMF, branching modes | `../../roark-concepts/scripted-flows.md` |
+| run plans, variant selection, the call multiplication | `../../roark-concepts/run-plans.md` |
+| metric definitions, checks, collectors | `../../roark-concepts/metrics.md` |
+| run templates, and the current catalogue | `../../roark-concepts/templates.md` |
+| the declarative bundle | `../../roark-concepts/config-as-code.md` |
+
+What follows is only the part a concept does not cover, because it is about the
+SDK rather than the domain.
 
 **Agent vs endpoint.** The agent is the thing under test; the endpoint is how Roark
 reaches it. Run plans reference **endpoints**, not agents. One agent can have many
 endpoints (different numbers, environments, transports).
-
-**Flow vs variant.** A customer flow is a *kind* of conversation. Its **variants**
-are the ways of running it: exactly one **happy path** plus any number of **edge
-cases**. A run plan selects variants, and **each selected variant is a separate
-billable call**. Improv flows have hand-authored variants; scripted flows derive one
-variant per path through the graph.
-
-**Persona vs environment.** The persona is *who* calls (language, accent, emotion,
-behaviour). The environment is only the *conditions* (background noise). Both attach
-per variant, and edge cases inherit the happy path's unless they override.
 
 **Run plan vs run vs simulation job vs call.** The plan is the suite. Running it
 creates a **run plan job** (the batch). That fans out into one **simulation job**
 per test case, each of which produces a **call** once it connects. Metrics attach to
 the call.
 
-**Metric definition vs value vs check.** A definition is the rule. A **value** is one
-graded result on one conversation, carrying a `captureStatus` you must check before
-reading `value`. A **check** is a THRESHOLD metric that turns a score into a boolean
-so a run can gate a deploy.
+**A metric value carries a `captureStatus`.** Check it before reading `value`: a
+value that could not be graded still comes back, and reading it blind is how a
+failed grade turns into a confident wrong number.
 
-**Simulation vs live grading.** A run plan grades simulated calls. A **metric
-policy** grades real production traffic as it arrives; a **metric collection job**
-grades a named set of existing conversations. Same metric definitions, different
-trigger.
-
-**System vs project resources.** Roark ships system personas, flows, environments,
-metrics, and metric policies. They appear in your lists (flows need
-`includeSystem: true`), and they are **read-only**: attempts to edit them fail. When
-a customer needs a variation, create their own copy.
+**System resources are read-only.** Roark ships system personas, flows,
+environments, metrics and policies. They appear in your lists (flows need
+`includeSystem: true`) and edits to them fail. Copy rather than edit.
 
 ## Two hard limits to respect
 
 - **Every simulated call bills.** Calls placed =
   `variants x personas x endpoints x iterationCount`. Preview `testCaseCount`
-  before starting.
+  before starting. See `../../roark-concepts/run-plans.md` for why the selection
+  is never defaulted.
 - **Scripted graphs** cap at 100 steps across 25 leaf paths.

@@ -28,6 +28,18 @@ how to select flow variants without accidentally placing hundreds of calls.
 | `subscribe-webhooks`  | Get event notifications (run done, issue opened) instead of polling. |
 | `manage-config-as-code`| Manage agents/personas/flows/metrics/collectors declaratively.  |
 | `gate-ci`             | Gate a deploy/CI pipeline on a run (start, wait, assert).        |
+| `roark-concepts`      | What each domain object *is*. The shared definitions the others reference. |
+
+`roark-concepts` is generated, not hand-written: it is synced from
+`src/packages/roark-concepts` in `roarkhq/app-roark-analytics` by a workflow
+there, and the same corpus composes Roark's in-product assistant prompt, so the
+two cannot describe the product differently. Edits made here are overwritten by
+the next sync.
+
+The division of labour is the point. A **concept** says what a thing is and which
+choice is right; a **skill** says which call to make and what the API will
+reject, including where the public vocabulary diverges from the internal one
+(`type: 'IMPROV'` over the API where the concept says `mode: 'UNSCRIPTED'`).
 
 `roark-overview` also carries two cross-cutting references every other skill leans
 on: `references/primitives.md` (the object model, and exactly which primitives the

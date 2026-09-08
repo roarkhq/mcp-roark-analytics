@@ -76,6 +76,21 @@ actually create through the SDK - is in
 [references/primitives.md](references/primitives.md). Read it before inventing a
 method name.
 
+## Where the definitions live
+
+The **`roark-concepts`** skill holds what each domain object *is*: personas,
+flows, scripted graphs, run plans, metrics, templates, config-as-code. It is
+generated from Roark's own corpus and shared with the in-product assistant, so
+the two cannot describe the product differently, and it is the thing to trust
+when a skill and your memory disagree.
+
+The split is worth keeping straight: a **concept** says what a thing is and which
+choice is right; a **skill** says which call to make and what the API will
+reject. When you need a definition, read the concept file rather than
+reconstructing it from a skill: the nine of them sit alongside
+[personas](../roark-concepts/personas.md) in that directory, and
+[references/primitives.md](references/primitives.md) routes to the right one.
+
 ## Which skill to use
 
 - **`build-run-plan`** - configure and start a simulation: pick a testing goal,

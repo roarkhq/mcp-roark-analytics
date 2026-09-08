@@ -1,28 +1,27 @@
 # Customer flow authoring
 
-A flow is one type of conversation. Confirm exact payloads with the MCP docs
-search tool, especially the SCRIPTED step graph, which is intricate.
+What a flow is, how to choose improv over scripted, and what variants cost:
+`../../roark-concepts/flows.md`. This file is the API shape. Confirm exact
+payloads with the MCP docs search tool, especially the SCRIPTED step graph, which
+is intricate.
 
 ## Modes
 
-- **IMPROV** - the simulated caller improvises from a free-text brief. Best for
-  realistic, open-ended conversations. Quick to author: a brief per variant.
-- **SCRIPTED** - a step graph the conversation follows. Best for IVR menus, DTMF
-  entry, and precise routing. Its own skill: **`author-scripted-flows`** (covers
-  the `DETERMINISTIC` vs `ADAPTIVE` branching modes too).
-- **VOICEMAIL** - Roark-seeded greeting flows for voicemail testing; read-only.
+The concept names the API spellings; `VOICEMAIL` flows are Roark-seeded and
+read-only, and scripted graphs have their own skill,
+**`author-scripted-flows`**.
 
-## Anatomy
+## Anatomy, as the API addresses it
 
-- **Happy path** - the way the flow is meant to go. Addressed by
-  `PUT /customer-flow/{flowId}/happy-path`, and covered in a run plan with
-  `happyPath: true`. It has no standalone id.
-- **Edge cases** - every other way of running the flow. Each has an id, and can
-  carry its own persona override and variables. This is what a run plan selects
-  with `edgeCases`.
-- **Agent expectations** - short LLM-graded pass/fail statements
-  ("confirms the appointment time"). Flow-level ones apply to every variant; an
-  edge case can add its own. Graded by the `agent_expectations` metric.
+The concept describes variants; these are the handles you use on them.
+
+- **Happy path** - addressed by `PUT /customer-flow/{flowId}/happy-path`, and
+  covered in a run plan with `happyPath: true`. It has **no standalone id**.
+- **Edge cases** - each has an id, and can carry its own persona override and
+  variables. This is what a run plan selects with `edgeCases`.
+- **Agent expectations** - flow-level ones apply to every variant; an edge case
+  can add its own. Graded by the `agent_expectations` metric, which the run plan
+  must actually attach.
 - **Variables** - `{{placeholder}}` tokens filled per attachment or at run time.
 
 ## Operations
