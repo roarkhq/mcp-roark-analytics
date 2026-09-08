@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.14.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.14.0...v3.14.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **skills:** add the AGENT_DTMF step type and correct the agent-role rule ([#39](https://github.com/roarkhq/mcp-roark-analytics/issues/39)) ([a5d0a91](https://github.com/roarkhq/mcp-roark-analytics/commit/a5d0a91a6b7705d426c25195e4c4f600f823b94a))
+
 ## [3.14.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.13.0...v3.14.0) (2026-09-08)
 
 
