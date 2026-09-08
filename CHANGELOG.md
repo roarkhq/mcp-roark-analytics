@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.14.3](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.14.2...v3.14.3) (2026-09-08)
+
+
+### Documentation
+
+* **skills:** point the skills at the shared concepts ([#42](https://github.com/roarkhq/mcp-roark-analytics/issues/42)) ([2f4a55b](https://github.com/roarkhq/mcp-roark-analytics/commit/2f4a55b84466ad2ecfc83b871a7bb3238b34d160))
+
 ## [3.14.2](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.14.1...v3.14.2) (2026-09-08)
 
 
