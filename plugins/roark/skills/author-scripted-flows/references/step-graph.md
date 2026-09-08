@@ -21,6 +21,7 @@ Per-type extra fields:
 | type | extra field | notes |
 | --- | --- | --- |
 | `AGENT_TURN` | `content?: string \| null` | what the agent says |
+| `AGENT_DTMF` | `dtmfDigits?: string \| null` | the agent sends tones; same charset as `CUSTOMER_DTMF` |
 | `CUSTOMER_TURN` | `content?: string \| null` | what the caller says |
 | `CUSTOMER_FIRST_MESSAGE` | `content?: string \| null` | the caller's opening line |
 | `CUSTOMER_DTMF` | `dtmfDigits?: string \| null` | required in practice; `0-9 * # w/W` |
@@ -49,9 +50,9 @@ Each step object is validated strictly: fields that do not belong to the step's
 
 ## Rules and limits
 
-- **Role alternation**: `AGENT_TURN` is the only agent role; every other type is
-  a customer turn. Turns must strictly alternate across every edge, including
-  merge edges. Violations return `ROLE_ALTERNATION`.
+- **Role alternation**: `AGENT_TURN` and `AGENT_DTMF` are the agent roles; every
+  other type is a customer turn. Turns must strictly alternate across every edge,
+  including merge edges. Violations return `ROLE_ALTERNATION`.
 - **Bounds**: at most **100 steps** across at most **25 leaf paths**
   (`TOO_MANY_STEPS`, `TOO_MANY_PATHS`).
 - **No cycles** (`CYCLE`); the graph must be non-empty (`EMPTY_GRAPH`).

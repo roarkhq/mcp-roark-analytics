@@ -77,8 +77,9 @@ Sends a **`graph`** (required, min 1 step) instead of a happy path and edge case
 }
 ```
 
-Step `type` is one of `AGENT_TURN`, `CUSTOMER_TURN`, `CUSTOMER_FIRST_MESSAGE`,
-`CUSTOMER_SILENCE`, `CUSTOMER_DTMF`, `VOICEMAIL`, `SCENARIO_LINK`, carrying
+Step `type` is one of `AGENT_TURN`, `AGENT_DTMF`, `CUSTOMER_TURN`,
+`CUSTOMER_FIRST_MESSAGE`, `CUSTOMER_SILENCE`, `CUSTOMER_DTMF`, `VOICEMAIL`,
+`SCENARIO_LINK`, carrying
 `content`, `silenceDurationSeconds`, `dtmfDigits`, or `flow` as appropriate. Steps
 nest via `steps` (more than one = a branch) and rejoin via `mergeInto` naming a
 `ref`. There are **no UUIDs** in config: each apply replaces the whole graph. Roles

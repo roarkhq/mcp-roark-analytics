@@ -58,7 +58,8 @@ variants, edit the graph.
 
 ## DTMF and IVR
 
-DTMF lives only on `CUSTOMER_DTMF` steps, in the `dtmfDigits` string:
+DTMF lives on the two DTMF steps - `CUSTOMER_DTMF` for the caller, `AGENT_DTMF`
+for the agent under test - in the `dtmfDigits` string:
 
 - Valid characters: `0-9`, `*`, `#`, and `w`/`W` for a short pause.
 - Example: `"1w2w3#"` presses 1, pause, 2, pause, 3, then #.
@@ -91,6 +92,7 @@ title). Full field-by-field detail and the graph rules are in
 | type | role | carries |
 | --- | --- | --- |
 | `AGENT_TURN` | agent | `content?` (what the agent says) |
+| `AGENT_DTMF` | agent | `dtmfDigits` (the agent sends tones) |
 | `CUSTOMER_TURN` | customer | `content?` |
 | `CUSTOMER_FIRST_MESSAGE` | customer | `content?` (opens the call) |
 | `CUSTOMER_DTMF` | customer | `dtmfDigits` (required) |
@@ -99,9 +101,9 @@ title). Full field-by-field detail and the graph rules are in
 | `SCENARIO_LINK` | customer | `linkedCustomerFlowId?`, `linkedCustomerFlowVariantId?` |
 
 **Roles must strictly alternate** along
-every edge: `AGENT_TURN` is the only agent role; every other type counts as a
-customer turn, so an agent turn must be followed by a customer turn and vice
-versa (violations return `ROLE_ALTERNATION`).
+every edge: `AGENT_TURN` and `AGENT_DTMF` are the agent roles; every other type
+counts as a customer turn, so an agent turn must be followed by a customer turn
+and vice versa (violations return `ROLE_ALTERNATION`).
 
 ## Editing an existing graph
 
