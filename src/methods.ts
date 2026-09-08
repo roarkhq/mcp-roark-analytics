@@ -257,6 +257,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/environment/{environmentId}',
   },
   {
+    clientCallName: 'client.simulationTemplate.list',
+    fullyQualifiedName: 'simulationTemplate.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/template',
+  },
+  {
     clientCallName: 'client.customerFlow.create',
     fullyQualifiedName: 'customerFlow.create',
     httpMethod: 'post',
