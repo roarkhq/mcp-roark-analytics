@@ -5,12 +5,11 @@ What a flow is, how to choose improv over scripted, and what variants cost:
 payloads with the MCP docs search tool, especially the SCRIPTED step graph, which
 is intricate.
 
-## Modes, as the API spells them
+## Modes
 
-The public field is `type`, not `mode`, and improv is `IMPROV`, not
-`UNSCRIPTED`. `SCRIPTED` and `VOICEMAIL` are spelled the same either way.
-`VOICEMAIL` flows are Roark-seeded and read-only. Scripted graphs have their own
-skill, **`author-scripted-flows`**.
+The concept names the API spellings; `VOICEMAIL` flows are Roark-seeded and
+read-only, and scripted graphs have their own skill,
+**`author-scripted-flows`**.
 
 ## Anatomy, as the API addresses it
 

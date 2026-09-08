@@ -78,12 +78,10 @@ becomes its own variant / billable call.
 
 ## Branching mode
 
-`../roark-concepts/scripted-flows.md` covers what the two modes do and the cost
-difference that makes the choice matter. In the product they are labelled
-"Simulate every path" (`DETERMINISTIC`) and "Adapt to your agent" (`ADAPTIVE`).
-
-Over the API the field is **`branchingMode`**, not the `scriptedBranchingMode`
-the concept names, and `ADAPTIVE` requires `SCRIPTED`.
+`../roark-concepts/scripted-flows.md` covers what the two modes do, the cost
+difference that makes the choice matter, and what the field is called over the
+API. In the product they are labelled "Simulate every path" (`DETERMINISTIC`)
+and "Adapt to your agent" (`ADAPTIVE`), and `ADAPTIVE` requires `SCRIPTED`.
 
 ## Step types
 

@@ -86,8 +86,10 @@ when a skill and your memory disagree.
 
 The split is worth keeping straight: a **concept** says what a thing is and which
 choice is right; a **skill** says which call to make and what the API will
-reject. When you need a definition, read
-`../roark-concepts/<name>.md` rather than reconstructing it from a skill.
+reject. When you need a definition, read the concept file rather than
+reconstructing it from a skill: the nine of them sit alongside
+[personas](../roark-concepts/personas.md) in that directory, and
+[references/primitives.md](references/primitives.md) routes to the right one.
 
 ## Which skill to use
 

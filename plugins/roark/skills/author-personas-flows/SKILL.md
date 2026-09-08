@@ -50,14 +50,11 @@ code-switching, idle handling) is in
 ## Customer flows
 
 `../roark-concepts/flows.md` covers what a flow is, how to choose improv over
-scripted, and why variants are where cost lives. Two things it does not say,
-because they are API rather than domain:
-
-- The public field is **`type`**, and improv is spelled **`IMPROV`**. The concept
-  calls the same things `mode` and `UNSCRIPTED`, which is the internal vocabulary.
-  `SCRIPTED` and `VOICEMAIL` match on both.
-- Agent expectations are graded by the `agent_expectations` metric, so a flow
-  carrying expectations still needs that metric attached to be scored.
+scripted, why variants are where cost lives, and the field names the public API
+spells differently from the internal model. One thing it does not say, because
+it is about attaching rather than authoring: agent expectations are graded by the
+`agent_expectations` metric, so a flow carrying expectations still needs that
+metric attached to be scored.
 
 Reuse existing flows first:
 
