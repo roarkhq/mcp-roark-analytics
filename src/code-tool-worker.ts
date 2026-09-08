@@ -149,6 +149,7 @@ const fuse = new Fuse(
     'client.simulationPersona.update',
     'client.simulationEnvironment.getByID',
     'client.simulationEnvironment.list',
+    'client.simulationTemplate.list',
     'client.customerFlow.create',
     'client.customerFlow.delete',
     'client.customerFlow.getByID',
