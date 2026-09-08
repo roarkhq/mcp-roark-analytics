@@ -14,6 +14,13 @@ description: >-
 Metrics grade each finished call. A run plan attaches them by id or slug (see
 `build-run-plan`). This skill covers choosing them and creating new ones.
 
+**Read first:** `../roark-concepts/metrics.md`. It carries what a definition
+says, why a check is what turns a completed run into a pass or a fail, which
+calculation types are billed and which are free, and the chain from a question to
+a chart. The single rule worth internalising before you start: a run that
+completes is not a run that passed, and a gate built without checks passes
+vacuously forever.
+
 ## First: prefer built-in metrics
 
 Roark ships a large library of audio-native and conversational metrics. Before

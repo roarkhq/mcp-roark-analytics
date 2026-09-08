@@ -16,6 +16,12 @@ A **run plan** is the test matrix: which agent endpoints to call, which customer
 flows to run and how much of each, with which personas, graded by which metrics.
 A **run** executes a plan and places one simulated call per test case.
 
+**Read first:** `../roark-concepts/run-plans.md` for what a plan must bind, why
+variant selection is never defaulted, the multiplication that decides what a run
+costs, and what a run snapshots when it starts. `../roark-concepts/templates.md`
+covers choosing a template by the question being asked. This skill is the order
+of operations and the payloads.
+
 Work in this order. Do not skip step 5 (the call-count preview).
 
 ## 1. Pin down the goal
@@ -56,8 +62,9 @@ If the user has no flows yet, author one with `client.customerFlow.create(...)`
 
 ## 3. Choose what to run for each flow
 
-Flow selection is deliberate and **never defaulted**, because each thing you
-select is a separate billable call. For each attached flow you set:
+Selection is never defaulted, and `../roark-concepts/run-plans.md` explains why
+an omission would otherwise spend money quietly. Mechanically, for each attached
+flow you set:
 
 - `happyPath: true` to run its happy path, and/or
 - `edgeCases: 'ALL'` (every edge case the flow has at run time) or an array of

@@ -14,6 +14,12 @@ A simulated call is a **persona** (the caller) running a **customer flow** (what
 the conversation is about). `build-run-plan` attaches these; this skill creates
 them when they do not exist.
 
+**Read first:** `../roark-concepts/personas.md` and `../roark-concepts/flows.md`.
+They carry what these objects are and the one rule that silently ruins a test - a
+trait written into a brief changes nothing, because language, voice, pace,
+emotion and background noise are read from the persona and nowhere else. This
+skill is the SDK calls; `references/personas.md` is the accepted values.
+
 ## Personas
 
 Roark ships a large system persona library. Prefer reusing one:
@@ -43,17 +49,15 @@ code-switching, idle handling) is in
 
 ## Customer flows
 
-A **customer flow** is one type of conversation. It has:
+`../roark-concepts/flows.md` covers what a flow is, how to choose improv over
+scripted, and why variants are where cost lives. Two things it does not say,
+because they are API rather than domain:
 
-- a **type**: `IMPROV` (the simulated caller improvises from a brief),
-  `SCRIPTED` (a step graph the conversation follows), or `VOICEMAIL`
-  (Roark-seeded, read-only).
-- a **happy path**: the way the conversation is meant to go.
-- **edge cases**: every other way of running it (an angry caller, a wrong number,
-  a mid-call correction). Each edge case can carry its own persona and variables.
-- **agent expectations**: short pass/fail statements the agent is graded against
-  (e.g. "greets the caller by name once"), evaluated by the `agent_expectations`
-  metric.
+- The public field is **`type`**, and improv is spelled **`IMPROV`**. The concept
+  calls the same things `mode` and `UNSCRIPTED`, which is the internal vocabulary.
+  `SCRIPTED` and `VOICEMAIL` match on both.
+- Agent expectations are graded by the `agent_expectations` metric, so a flow
+  carrying expectations still needs that metric attached to be scored.
 
 Reuse existing flows first:
 

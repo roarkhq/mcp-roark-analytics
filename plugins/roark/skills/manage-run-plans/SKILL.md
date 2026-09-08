@@ -18,6 +18,11 @@ re-running, and retiring plans.
 Reach for this when the user says "our nightly suite", "change what the billing
 tests cover", "run the same tests as last time", or "what plans do we have".
 
+**Read first:** `../roark-concepts/run-plans.md`. The part that matters most here
+is that a run snapshots the plan when it starts, so editing a flow, persona or
+metric never changes a run that already happened. That is what makes two runs
+comparable, and it is why re-running is how a change gets picked up.
+
 ## Find a plan
 
 ```ts

@@ -11,6 +11,11 @@ description: >-
 
 After `build-run-plan` starts a run, this skill reads what came back.
 
+**Worth knowing before you report a result:** a run that completes is not a run
+that passed. Completion means the calls happened; the checks say whether the
+agent met the bar, and a run with no checks attached has nothing to fail. See
+`../roark-concepts/metrics.md`.
+
 ## 1. Poll the run
 
 ```ts

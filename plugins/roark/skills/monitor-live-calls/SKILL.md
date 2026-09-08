@@ -13,8 +13,16 @@ description: >-
 
 Simulations test an agent *before* it ships (see `build-run-plan`). This skill is
 the other half: grading the **real production conversations** an agent has after
-it ships. Two resources do this, and they reference metrics **by id, not slug**
-(unlike run plans):
+it ships.
+
+**Read first:** the collectors section of `../roark-concepts/metrics.md`,
+especially that **collectors only score forward**. A collector attached today
+says nothing about last month, so a new metric plus a new collector plus a new
+chart correctly shows an empty chart, and scoring the past is a separate
+backfill. That surprise is most of the support load on this workflow.
+
+Two resources do this, and they reference metrics **by id, not slug** (unlike run
+plans):
 
 - **metric policy** - a standing rule: "when a live call/chat matches these
   conditions, automatically collect these metrics." Fires on new production
