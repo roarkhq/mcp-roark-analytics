@@ -245,10 +245,28 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/persona/{personaId}',
   },
   {
+    clientCallName: 'client.simulationEnvironment.create',
+    fullyQualifiedName: 'simulationEnvironment.create',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/environment',
+  },
+  {
+    clientCallName: 'client.simulationEnvironment.update',
+    fullyQualifiedName: 'simulationEnvironment.update',
+    httpMethod: 'put',
+    httpPath: '/v1/simulation/environment/{environmentId}',
+  },
+  {
     clientCallName: 'client.simulationEnvironment.list',
     fullyQualifiedName: 'simulationEnvironment.list',
     httpMethod: 'get',
     httpPath: '/v1/simulation/environment',
+  },
+  {
+    clientCallName: 'client.simulationEnvironment.delete',
+    fullyQualifiedName: 'simulationEnvironment.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/simulation/environment/{environmentId}',
   },
   {
     clientCallName: 'client.simulationEnvironment.getByID',
@@ -285,6 +303,12 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'customerFlow.delete',
     httpMethod: 'delete',
     httpPath: '/v1/customer-flow/{flowId}',
+  },
+  {
+    clientCallName: 'client.customerFlow.duplicate',
+    fullyQualifiedName: 'customerFlow.duplicate',
+    httpMethod: 'post',
+    httpPath: '/v1/customer-flow/{flowId}/duplicate',
   },
   {
     clientCallName: 'client.customerFlow.getByID',
