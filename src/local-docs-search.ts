@@ -2342,6 +2342,36 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'update',
+    endpoint: '/v1/agent/{agentId}/prompts',
+    httpMethod: 'put',
+    summary: "Set an agent's prompt",
+    description:
+      "Sets the agent's API-managed prompt. This is its own version history (`source: API_MANAGED`), separate from prompts observed on calls, edited in the app, or managed by config-as-code. Setting the same content twice is a no-op (no new version). Roark does not run your agent and no metric reads this prompt: it is stored and versioned for your reference.",
+    stainlessPath: '(resource) agentPrompt > (method) update',
+    qualified: 'client.agentPrompt.update',
+    params: ['agentId: string;', 'prompt: string;'],
+    response: '{ data: { changed: boolean; promptId: string; versionNumber: number; }; }',
+    markdown:
+      "## update\n\n`client.agentPrompt.update(agentId: string, prompt: string): { data: object; }`\n\n**put** `/v1/agent/{agentId}/prompts`\n\nSets the agent's API-managed prompt. This is its own version history (`source: API_MANAGED`), separate from prompts observed on calls, edited in the app, or managed by config-as-code. Setting the same content twice is a no-op (no new version). Roark does not run your agent and no metric reads this prompt: it is stored and versioned for your reference.\n\n### Parameters\n\n- `agentId: string`\n\n- `prompt: string`\n  The prompt content to set.\n\n### Returns\n\n- `{ data: { changed: boolean; promptId: string; versionNumber: number; }; }`\n\n  - `data: { changed: boolean; promptId: string; versionNumber: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst agentPrompt = await client.agentPrompt.update('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {\n  prompt: 'x',\n});\n\nconsole.log(agentPrompt);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agentPrompt.update',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst agentPrompt = await client.agentPrompt.update('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {\n  prompt: 'x',\n});\n\nconsole.log(agentPrompt.data);",
+      },
+      python: {
+        method: 'agent_prompt.update',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nagent_prompt = client.agent_prompt.update(\n    agent_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n    prompt="x",\n)\nprint(agent_prompt.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent/$AGENT_ID/prompts \\\n    -X PUT \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "prompt": "x"\n        }\'',
+      },
+    },
+  },
+  {
     name: 'list',
     endpoint: '/v1/http-request-definition',
     httpMethod: 'get',
