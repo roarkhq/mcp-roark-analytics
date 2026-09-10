@@ -401,6 +401,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/agent/endpoint/{endpointId}',
   },
   {
+    clientCallName: 'client.agentPrompt.update',
+    fullyQualifiedName: 'agentPrompt.update',
+    httpMethod: 'put',
+    httpPath: '/v1/agent/{agentId}/prompts',
+  },
+  {
     clientCallName: 'client.agentPrompt.list',
     fullyQualifiedName: 'agentPrompt.list',
     httpMethod: 'get',
