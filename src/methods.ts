@@ -401,6 +401,18 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/agent/endpoint/{endpointId}',
   },
   {
+    clientCallName: 'client.agentPrompt.list',
+    fullyQualifiedName: 'agentPrompt.list',
+    httpMethod: 'get',
+    httpPath: '/v1/agent/{agentId}/prompts',
+  },
+  {
+    clientCallName: 'client.agentPrompt.listVersions',
+    fullyQualifiedName: 'agentPrompt.listVersions',
+    httpMethod: 'get',
+    httpPath: '/v1/agent/{agentId}/prompts/{promptId}/versions',
+  },
+  {
     clientCallName: 'client.httpRequestDefinition.create',
     fullyQualifiedName: 'httpRequestDefinition.create',
     httpMethod: 'post',

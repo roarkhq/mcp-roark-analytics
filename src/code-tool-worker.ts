@@ -173,6 +173,8 @@ const fuse = new Fuse(
     'client.agentEndpoint.getByID',
     'client.agentEndpoint.list',
     'client.agentEndpoint.update',
+    'client.agentPrompt.list',
+    'client.agentPrompt.listVersions',
     'client.httpRequestDefinition.create',
     'client.httpRequestDefinition.getByID',
     'client.httpRequestDefinition.list',
