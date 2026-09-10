@@ -85,6 +85,27 @@ plugin's MCP server uses the `roark` key, so its tools are exposed as
 `mcp__roark__*`. See the [plugin README](./plugins/roark/README.md) for the
 complete setup and the available skills.
 
+### Skills in other agents
+
+The skills are plain Agent Skills (`SKILL.md` + `references/`), so they are not
+Claude-specific. Install them into any agent
+with the `skills` CLI, which reads this repository directly:
+
+```sh
+npx skills add roarkhq/mcp-roark-analytics
+```
+
+Codex, Cursor, Gemini CLI and GitHub Copilot read the universal
+`.agents/skills/` layout the CLI installs into; Claude Code gets
+`.claude/skills/`. Repeat `-a` to pick targets
+(`-a codex -a cursor`), and add `-g` for a user-level rather than project-level
+install.
+
+This installs the skills only. Configure the MCP server separately, as above, if
+you also want the Roark API tools. See the
+[plugin README](./plugins/roark/README.md) for which agents this works with and
+why the skills must stay installed together.
+
 ## Code Mode
 
 This MCP server is built on the "Code Mode" tool scheme. In this MCP Server,

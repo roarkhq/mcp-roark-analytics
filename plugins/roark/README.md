@@ -79,8 +79,34 @@ https://docs.roark.ai.
 ## Other agents
 
 The skills follow the open Agent Skills format (`SKILL.md` + `references/`), so
-they port to Cursor, Codex, and other agents: copy the `skills/*` directories
-into your agent's skills location.
+they are not Claude-specific. Install them into any agent with the `skills` CLI,
+which reads this repository directly:
+
+```sh
+npx skills add roarkhq/mcp-roark-analytics
+```
+
+That installs all 15 skills. Pass `-a` to choose targets, repeating the flag per
+agent (a comma-separated list is parsed as one name and rejected):
+
+```sh
+npx skills add roarkhq/mcp-roark-analytics -a codex -a cursor -a gemini-cli -a github-copilot
+```
+
+Codex, Cursor, Gemini CLI and GitHub Copilot all read the universal
+`.agents/skills/` layout, which is where the CLI puts them, so nothing needs
+converting. Claude Code gets `.claude/skills/` instead. Add `-g` to install for
+your user rather than the current project.
+
+The MCP is separate: the CLI installs skills only. Agents that want the Roark
+API tools as well still configure the MCP server, per the [root
+README](../../README.md).
+
+**Keep the skills together.** 24 of the cross-references in this tree point from
+one skill into another, mostly into `roark-concepts`. Any install that packages
+skills individually breaks those links. That rules out Claude Desktop, whose
+Customize -> Skills screen takes one zip per skill and has no notion of sibling
+skills; use Claude Code or one of the `.agents/skills/` agents instead.
 
 ## For maintainers
 
