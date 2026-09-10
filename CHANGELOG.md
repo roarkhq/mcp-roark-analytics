@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.19.0...v3.19.1) (2026-09-10)
+
+
+### Documentation
+
+* document installing the skills into non-Claude agents ([#45](https://github.com/roarkhq/mcp-roark-analytics/issues/45)) ([46a08df](https://github.com/roarkhq/mcp-roark-analytics/commit/46a08dfac7d89d9e7bfbbd269ba7305c7489ff59))
+
 ## [3.19.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v3.18.0...v3.19.0) (2026-09-10)
 
 
