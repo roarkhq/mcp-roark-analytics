@@ -18,11 +18,11 @@ renames both halves of this: the field is `type` and the improv value is
 `mode: 'UNSCRIPTED'`. `SCRIPTED` and `VOICEMAIL` are spelled the same on both.
 
 **Improv (`UNSCRIPTED`, `IMPROV` over the API)** is the default and right for
-most tests. The flow
-carries a _brief_ - a few sentences telling the simulated customer what they want
-and what context they bring - and the simulator improvises around it. Because the
-caller reacts rather than recites, it tests what an agent does with a
-conversation rather than whether it survives a fixed script.
+most tests. The flow carries a _brief_ - a few sentences telling the simulated
+customer what they want and what context they bring - and the simulator
+improvises around it. Because the caller reacts rather than recites, it tests
+what an agent does with a conversation rather than whether it survives a fixed
+script.
 
 **Scripted** replaces the brief with an exact step graph. Reach for it only when
 the precise turns are under test: IVR and DTMF menus, verbatim compliance
