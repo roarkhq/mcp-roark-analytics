@@ -3,12 +3,20 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ClientOptions } from '@roarkanalytics/sdk';
+import cors from 'cors';
 import express from 'express';
 import pino from 'pino';
 import pinoHttp from 'pino-http';
 import { getStainlessApiKey, parseClientAuthHeaders } from './auth';
 import { getLogger } from './logger';
 import { McpOptions } from './options';
+import {
+  clientOptionsForRequest,
+  protectedResourceMetadata,
+  resolveProjectId,
+  UnauthorizedError,
+  validateAccessToken,
+} from './oauth';
 import { initMcpServer, newMcpServer } from './server';
 
 const newServer = async ({
@@ -26,7 +34,20 @@ const newServer = async ({
   const customInstructionsPath = mcpOptions.customInstructionsPath;
   const server = await newMcpServer({ stainlessApiKey, customInstructionsPath });
 
-  const authOptions = parseClientAuthHeaders(req, false);
+  // Remote OAuth mode: validate the AS-issued access token, enforce project
+  // membership, and exchange it for a short-lived project-scoped credential.
+  // Without oauth config we fall back to the legacy bearer-passthrough behavior
+  // (local stdio + API-key installs).
+  let authOptions: Partial<ClientOptions>;
+  if (mcpOptions.oauth) {
+    const rawProjectId = req.params?.['projectId'];
+    const pathProjectId = typeof rawProjectId === 'string' ? rawProjectId : undefined;
+    const claims = await validateAccessToken(req, mcpOptions.oauth);
+    const projectId = resolveProjectId(claims, mcpOptions.oauth, pathProjectId);
+    authOptions = await clientOptionsForRequest(mcpOptions.oauth, claims, projectId);
+  } else {
+    authOptions = parseClientAuthHeaders(req, false);
+  }
 
   let upstreamClientEnvs: Record<string, string> | undefined;
   const clientEnvsHeader = req.headers['x-stainless-mcp-client-envs'];
@@ -97,7 +118,21 @@ const newServer = async ({
 const post =
   (options: { clientOptions: ClientOptions; mcpOptions: McpOptions }) =>
   async (req: express.Request, res: express.Response) => {
-    const server = await newServer({ ...options, req, res });
+    let server: McpServer | null;
+    try {
+      server = await newServer({ ...options, req, res });
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        res.setHeader('WWW-Authenticate', error.wwwAuthenticate);
+        res.status(error.status).json({
+          jsonrpc: '2.0',
+          error: { code: -32001, message: error.message },
+          id: req.body?.id ?? null,
+        });
+        return;
+      }
+      throw error;
+    }
     // If we return null, we already set the authorization error.
     if (server === null) return;
     const transport = new StreamableHTTPServerTransport();
@@ -145,6 +180,15 @@ export const streamableHTTPApp = ({
 }): express.Express => {
   const app = express();
   app.set('query parser', 'extended');
+  // Browser-based clients (Claude web, ChatGPT web) need CORS on the MCP and
+  // metadata endpoints, and must be able to read the challenge header.
+  app.use(
+    cors({
+      origin: true,
+      exposedHeaders: ['WWW-Authenticate', 'mcp-session-id'],
+      allowedHeaders: ['authorization', 'content-type', 'mcp-session-id'],
+    }),
+  );
   app.use(express.json());
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const existing = req.headers['mcp-session-id'];
@@ -197,9 +241,28 @@ export const streamableHTTPApp = ({
   app.get('/health', async (req: express.Request, res: express.Response) => {
     res.status(200).send('OK');
   });
+
+  // RFC 9728 Protected Resource Metadata — the discovery entrypoint every OAuth
+  // MCP client hits first. Only served in remote OAuth mode.
+  if (mcpOptions.oauth) {
+    const oauth = mcpOptions.oauth;
+    app.get('/.well-known/oauth-protected-resource', (_req, res) => {
+      res.status(200).json(protectedResourceMetadata(oauth));
+    });
+    app.get('/.well-known/oauth-protected-resource/mcp/:projectId', (_req, res) => {
+      res.status(200).json(protectedResourceMetadata(oauth));
+    });
+  }
+
   app.get('/', get);
   app.post('/', post({ clientOptions, mcpOptions }));
   app.delete('/', del);
+
+  // Project-scoped connector URL: /mcp/<projectId>. The project is enforced
+  // against the token's authorized projects in newServer().
+  app.get('/mcp/:projectId', get);
+  app.post('/mcp/:projectId', post({ clientOptions, mcpOptions }));
+  app.delete('/mcp/:projectId', del);
 
   return app;
 };

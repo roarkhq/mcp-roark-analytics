@@ -5,6 +5,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import z from 'zod';
 import { readEnv } from './util';
+import type { OAuthConfig } from './oauth';
 
 export type CLIOptions = McpOptions & {
   debug: boolean;
@@ -25,6 +26,12 @@ export type McpOptions = {
   codeBlockedMethods?: string[] | undefined;
   codeExecutionMode: McpCodeExecutionMode;
   customInstructionsPath?: string | undefined;
+  /**
+   * Remote OAuth resource-server config. When set (http transport), every request
+   * must carry a valid access token; when unset the server keeps the legacy
+   * bearer-passthrough behavior (local stdio + API-key installs).
+   */
+  oauth?: OAuthConfig | undefined;
 };
 
 export type McpCodeExecutionMode = 'stainless-sandbox' | 'local';
@@ -114,6 +121,36 @@ export function parseCLIOptions(): CLIOptions {
       default: 'stdio',
       description: 'What transport to use; stdio for local servers or http for remote servers',
     })
+    .option('oauth-issuer', {
+      type: 'string',
+      default: readEnv('MCP_OAUTH_ISSUER'),
+      description: 'Authorization server issuer URL. Enables remote OAuth resource-server mode.',
+    })
+    .option('oauth-audience', {
+      type: 'string',
+      default: readEnv('MCP_OAUTH_AUDIENCE'),
+      description: 'This resource server identifier; the audience every access token must carry.',
+    })
+    .option('oauth-jwks-url', {
+      type: 'string',
+      default: readEnv('MCP_OAUTH_JWKS_URL'),
+      description: 'JWKS endpoint for verifying access tokens. Defaults to <issuer>/.well-known/jwks.json.',
+    })
+    .option('oauth-resource-base-url', {
+      type: 'string',
+      default: readEnv('MCP_OAUTH_RESOURCE_BASE_URL'),
+      description: 'Public base URL of this resource server, used to build metadata URLs.',
+    })
+    .option('internal-token', {
+      type: 'string',
+      default: readEnv('ROARK_INTERNAL_TOKEN'),
+      description: 'Internal HMAC token used to mint short-lived downstream credentials.',
+    })
+    .option('customer-api-base-url', {
+      type: 'string',
+      default: readEnv('ROARK_BASE_URL'),
+      description: 'customer-api base URL that minted credentials are used against.',
+    })
     .env('MCP_SERVER')
     .version(true)
     .help();
@@ -144,6 +181,10 @@ export function parseCLIOptions(): CLIOptions {
     : process.stderr.isTTY ? 'pretty'
     : 'json';
 
+  // When unset, an http server runs in legacy bearer-passthrough mode (a static
+  // token in the Authorization header). Remote account-based auth needs this set.
+  const oauth = buildOAuthConfig(argv);
+
   return {
     ...(includeCodeTool !== undefined && { includeCodeTool }),
     ...(includeDocsTools !== undefined && { includeDocsTools }),
@@ -156,12 +197,41 @@ export function parseCLIOptions(): CLIOptions {
     codeBlockedMethods: argv.codeBlockedMethods,
     codeExecutionMode,
     customInstructionsPath: argv.customInstructionsPath,
+    ...(oauth && { oauth }),
     transport,
     logFormat,
     port: argv.port,
     socket: argv.socket,
   };
 }
+
+/**
+ * Assembles the OAuth resource-server config from CLI/env, or returns undefined
+ * when the required fields are absent (legacy passthrough mode). All of issuer,
+ * audience, resource base URL, internal token and customer-api base URL are
+ * required together; the JWKS URL defaults to the issuer's well-known path.
+ */
+const buildOAuthConfig = (argv: {
+  oauthIssuer?: string | undefined;
+  oauthAudience?: string | undefined;
+  oauthJwksUrl?: string | undefined;
+  oauthResourceBaseUrl?: string | undefined;
+  internalToken?: string | undefined;
+  customerApiBaseUrl?: string | undefined;
+}): OAuthConfig | undefined => {
+  const { oauthIssuer, oauthAudience, oauthResourceBaseUrl, internalToken, customerApiBaseUrl } = argv;
+  if (!oauthIssuer || !oauthAudience || !oauthResourceBaseUrl || !internalToken || !customerApiBaseUrl) {
+    return undefined;
+  }
+  return {
+    issuer: oauthIssuer,
+    audience: oauthAudience,
+    jwksUrl: argv.oauthJwksUrl ?? `${oauthIssuer.replace(/\/$/, '')}/.well-known/jwks.json`,
+    resourceBaseUrl: oauthResourceBaseUrl,
+    internalToken,
+    customerApiBaseUrl,
+  };
+};
 
 const coerceArray = <T extends z.ZodTypeAny>(zodType: T) =>
   z.preprocess(
