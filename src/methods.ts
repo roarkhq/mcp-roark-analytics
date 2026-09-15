@@ -209,6 +209,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/plan/jobs',
   },
   {
+    clientCallName: 'client.simulationRunPlanJob.cancel',
+    fullyQualifiedName: 'simulationRunPlanJob.cancel',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/plan/job/{jobId}/cancel',
+  },
+  {
     clientCallName: 'client.simulationRunPlanJob.getByID',
     fullyQualifiedName: 'simulationRunPlanJob.getByID',
     httpMethod: 'get',
@@ -465,6 +471,42 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'webhook.getByID',
     httpMethod: 'get',
     httpPath: '/v1/webhook/{webhookId}',
+  },
+  {
+    clientCallName: 'client.benchmark.getLeaderboard',
+    fullyQualifiedName: 'benchmark.getLeaderboard',
+    httpMethod: 'get',
+    httpPath: '/v1/benchmark/leaderboard',
+  },
+  {
+    clientCallName: 'client.benchmark.getTarget',
+    fullyQualifiedName: 'benchmark.getTarget',
+    httpMethod: 'get',
+    httpPath: '/v1/benchmark/target/{targetKey}',
+  },
+  {
+    clientCallName: 'client.benchmark.listMetrics',
+    fullyQualifiedName: 'benchmark.listMetrics',
+    httpMethod: 'get',
+    httpPath: '/v1/benchmark/metric',
+  },
+  {
+    clientCallName: 'client.benchmark.listSuites',
+    fullyQualifiedName: 'benchmark.listSuites',
+    httpMethod: 'get',
+    httpPath: '/v1/benchmark/suite',
+  },
+  {
+    clientCallName: 'client.benchmark.listTargetHistory',
+    fullyQualifiedName: 'benchmark.listTargetHistory',
+    httpMethod: 'get',
+    httpPath: '/v1/benchmark/target/{targetKey}/history',
+  },
+  {
+    clientCallName: 'client.benchmark.listTargetScoreSamples',
+    fullyQualifiedName: 'benchmark.listTargetScoreSamples',
+    httpMethod: 'get',
+    httpPath: '/v1/benchmark/target/{targetKey}/score-sample',
   },
   {
     clientCallName: 'client.config.apply',
