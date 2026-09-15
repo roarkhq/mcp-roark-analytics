@@ -174,13 +174,17 @@ const mintEphemeralApiKey = async (
     return cached.apiKey;
   }
 
+  // Reuse customer-api's internal-trust path: the internal token authenticates
+  // the call and the acting project/user are asserted via headers (the same
+  // contract the assistant lambda uses).
   const res = await fetch(`${config.customerApiBaseUrl.replace(/\/$/, '')}/internal/mcp/ephemeral-key`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       'x-roark-internal-token': config.internalToken,
+      'x-roark-acting-project-id': projectId,
+      'x-roark-acting-user-id': claims.sub,
     },
-    body: JSON.stringify({ userId: claims.sub, projectId }),
   });
   if (!res.ok) {
     throw new UnauthorizedError(

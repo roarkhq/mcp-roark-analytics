@@ -139,14 +139,14 @@ project-scoped credential (the incoming token is never forwarded). This is what 
 add the server to Claude, ChatGPT, Cursor, VS Code, etc. and sign in with their Roark
 account instead of pasting an API key.
 
-| Variable | Meaning |
-| -------- | ------- |
-| `MCP_OAUTH_ISSUER` | Authorization server issuer URL (enables OAuth mode) |
-| `MCP_OAUTH_AUDIENCE` | This resource server's identifier; the `aud` every token must carry |
-| `MCP_OAUTH_RESOURCE_BASE_URL` | Public base URL of this server, used to build metadata URLs |
-| `MCP_OAUTH_JWKS_URL` | JWKS endpoint (defaults to `<issuer>/.well-known/jwks.json`) |
-| `ROARK_INTERNAL_TOKEN` | Internal token used to mint short-lived downstream credentials |
-| `ROARK_BASE_URL` | customer-api base URL the minted credential is used against |
+| Variable                      | Meaning                                                             |
+| ----------------------------- | ------------------------------------------------------------------- |
+| `MCP_OAUTH_ISSUER`            | Authorization server issuer URL (enables OAuth mode)                |
+| `MCP_OAUTH_AUDIENCE`          | This resource server's identifier; the `aud` every token must carry |
+| `MCP_OAUTH_RESOURCE_BASE_URL` | Public base URL of this server, used to build metadata URLs         |
+| `MCP_OAUTH_JWKS_URL`          | JWKS endpoint (defaults to `<issuer>/.well-known/jwks.json`)        |
+| `ROARK_INTERNAL_TOKEN`        | Internal token used to mint short-lived downstream credentials      |
+| `ROARK_BASE_URL`              | customer-api base URL the minted credential is used against         |
 
 Project selection uses a project-scoped connector URL: `https://<host>/mcp/<projectId>`.
 When these variables are unset the server keeps the legacy header/Bearer behavior above.
