@@ -17,9 +17,12 @@ Each node is one turn, typed by who speaks and how:
 
 - `AGENT_TURN` - a line the agent under test is expected to produce. In an IVR
   phase this is the menu prompt.
-- `CUSTOMER_TURN` - a line the simulated caller speaks.
-- `CUSTOMER_FIRST_MESSAGE` - a verbatim customer opening. Only needed when the
-  caller must speak first; usually the agent opens.
+- `CUSTOMER_TURN` - a line the simulated caller speaks, phrased by the persona.
+- `CUSTOMER_VERBATIM_TURN` - a line the simulated caller says word for word. As
+  an opening step (directly under the start) it is said the moment the call
+  connects, before the agent speaks; only needed when the caller must open, and
+  usually the agent does. `CUSTOMER_FIRST_MESSAGE` is the retired name for that
+  opening case and is still accepted.
 - `CUSTOMER_SILENCE` - the caller says nothing, for a stated duration.
 - `CUSTOMER_DTMF` - the caller presses keys, where a `w` means a pause.
 - `AGENT_DTMF` - the agent under test sends keypad tones, carrying `dtmfDigits`
@@ -45,6 +48,35 @@ branch.
 Beyond those: complete every branch to a natural ending, converge instead of
 duplicating identical steps, and use `{{variable}}` placeholders rather than real
 personal data.
+
+## Script adherence
+
+`scriptAdherence`, exposed as `scriptAdherence` over the public API and as
+`adherence` in config files, decides how closely a run follows the script.
+`LOOSE` (the default) hands the whole script to the simulated customer as one
+prompt; it keeps the call moving whatever the agent says. `STRICT` runs the
+script as a state machine on the agent service: at every agent step the
+simulated customer waits, silent, until the agent has said the expected line,
+and only then moves on. It cannot provide the next step's answer early because
+it has not been told that step exists yet. Strict flows run on voice calls only
+(a run that pairs one with a chat agent is refused), always on the standard
+simulation provider, and never on realtime models.
+
+`offScriptPolicy` (STRICT only) says what the simulated customer does when the
+agent does not say the expected line. Each unmatched utterance is an attempt:
+`reaction` runs per attempt (`STAY_SILENT`, `REPEAT` its last scripted line,
+`RESPOND` once in character without moving on, or `SAY` a fixed `sayLine`), and
+`then` runs when attempts reach `maxAttempts` or the agent stays silent for
+`waitSeconds` (`HANG_UP` ends the call with ended reason `SCRIPT_DIVERGED`,
+`HANG_UP_INVALIDATE` ends it the same way and invalidates the run: the call keeps
+its transcript and recording but is scored by nothing and excluded from the run's
+totals, hidden in the run list behind "Show invalidated runs", `MOVE_ON` advances
+anyway, `ADAPT` hands the rest of the call to loose behaviour). Unset means stay
+silent, 3 attempts, hang up. The flow's policy is the default for every agent
+step; an `AGENT_TURN` step can carry its own `offScriptPolicy`, which replaces it
+at that step. Invalidate when a missed step makes the rest of the call
+meaningless, an authentication menu for instance: put `HANG_UP_INVALIDATE` on that
+step and keep a gentler policy on the flow.
 
 ## Branching modes
 
