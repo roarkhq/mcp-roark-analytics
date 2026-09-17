@@ -10,13 +10,7 @@ import pinoHttp from 'pino-http';
 import { getStainlessApiKey, parseClientAuthHeaders } from './auth';
 import { getLogger } from './logger';
 import { McpOptions } from './options';
-import {
-  clientOptionsForRequest,
-  protectedResourceMetadata,
-  resolveProjectId,
-  UnauthorizedError,
-  validateAccessToken,
-} from './oauth';
+import { protectedResourceMetadata, requireBearer, UnauthorizedError } from './oauth';
 import { initMcpServer, newMcpServer } from './server';
 
 const newServer = async ({
@@ -34,17 +28,15 @@ const newServer = async ({
   const customInstructionsPath = mcpOptions.customInstructionsPath;
   const server = await newMcpServer({ stainlessApiKey, customInstructionsPath });
 
-  // Remote OAuth mode: validate the AS-issued access token, enforce project
-  // membership, and exchange it for a short-lived project-scoped credential.
-  // Without oauth config we fall back to the legacy bearer-passthrough behavior
-  // (local stdio + API-key installs).
+  // Remote OAuth mode: a bearer is mandatory and a missing one is answered with
+  // 401 + WWW-Authenticate so the client discovers the authorization server. The
+  // token is a Roark API key and is forwarded to the SDK unchanged. Without oauth
+  // config we keep the legacy optional-bearer behavior (local installs).
   let authOptions: Partial<ClientOptions>;
   if (mcpOptions.oauth) {
     const rawProjectId = req.params?.['projectId'];
     const pathProjectId = typeof rawProjectId === 'string' ? rawProjectId : undefined;
-    const claims = await validateAccessToken(req, mcpOptions.oauth);
-    const projectId = resolveProjectId(claims, mcpOptions.oauth, pathProjectId);
-    authOptions = await clientOptionsForRequest(mcpOptions.oauth, claims, projectId);
+    authOptions = requireBearer(req, mcpOptions.oauth, pathProjectId);
   } else {
     authOptions = parseClientAuthHeaders(req, false);
   }
@@ -242,15 +234,21 @@ export const streamableHTTPApp = ({
     res.status(200).send('OK');
   });
 
-  // RFC 9728 Protected Resource Metadata — the discovery entrypoint every OAuth
-  // MCP client hits first. Only served in remote OAuth mode.
+  // RFC 9728 Protected Resource Metadata, the discovery entrypoint every OAuth
+  // MCP client hits first. Served per resource: the server origin, and each
+  // project-scoped connector URL (its `resource` is what the client echoes to
+  // the authorization server, which is how consent learns the project). Only
+  // served in remote OAuth mode.
   if (mcpOptions.oauth) {
     const oauth = mcpOptions.oauth;
     app.get('/.well-known/oauth-protected-resource', (_req, res) => {
       res.status(200).json(protectedResourceMetadata(oauth));
     });
-    app.get('/.well-known/oauth-protected-resource/mcp/:projectId', (_req, res) => {
-      res.status(200).json(protectedResourceMetadata(oauth));
+    app.get('/.well-known/oauth-protected-resource/mcp/:projectId', (req, res) => {
+      const projectId = req.params['projectId'];
+      res
+        .status(200)
+        .json(protectedResourceMetadata(oauth, typeof projectId === 'string' ? projectId : undefined));
     });
   }
 
@@ -258,8 +256,9 @@ export const streamableHTTPApp = ({
   app.post('/', post({ clientOptions, mcpOptions }));
   app.delete('/', del);
 
-  // Project-scoped connector URL: /mcp/<projectId>. The project is enforced
-  // against the token's authorized projects in newServer().
+  // Project-scoped connector URL: /mcp/<projectId>. The project id only selects
+  // the metadata `resource`; access is governed by the key the authorization
+  // server minted for that project.
   app.get('/mcp/:projectId', get);
   app.post('/mcp/:projectId', post({ clientOptions, mcpOptions }));
   app.delete('/mcp/:projectId', del);
