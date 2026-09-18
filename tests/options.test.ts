@@ -66,3 +66,74 @@ describe('docs search mode', () => {
     cleanup();
   });
 });
+
+describe('remote OAuth resource-server mode', () => {
+  const OAUTH_ENV = ['MCP_OAUTH_ISSUER', 'MCP_OAUTH_RESOURCE_BASE_URL'] as const;
+  let savedEnv: Record<string, string | undefined>;
+
+  beforeEach(() => {
+    savedEnv = Object.fromEntries(OAUTH_ENV.map((key) => [key, process.env[key]]));
+    for (const key of OAUTH_ENV) delete process.env[key];
+  });
+
+  afterEach(() => {
+    for (const key of OAUTH_ENV) {
+      const value = savedEnv[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  it('stays off by default, leaving the server in legacy optional-bearer mode', () => {
+    const cleanup = mockArgv([]);
+
+    expect(parseCLIOptions().oauth).toBeUndefined();
+
+    cleanup();
+  });
+
+  it('turns on when both the issuer and this server public base URL are given', () => {
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.api.roark.ai',
+    ]);
+
+    expect(parseCLIOptions().oauth).toEqual({
+      issuer: 'https://mcp-oauth.api.roark.ai',
+      resourceBaseUrl: 'https://mcp.api.roark.ai',
+    });
+
+    cleanup();
+  });
+
+  it('reads the same pair from the environment', () => {
+    process.env['MCP_OAUTH_ISSUER'] = 'https://mcp-oauth.api.roark.ai';
+    process.env['MCP_OAUTH_RESOURCE_BASE_URL'] = 'https://mcp.api.roark.ai';
+    const cleanup = mockArgv([]);
+
+    expect(parseCLIOptions().oauth).toEqual({
+      issuer: 'https://mcp-oauth.api.roark.ai',
+      resourceBaseUrl: 'https://mcp.api.roark.ai',
+    });
+
+    cleanup();
+  });
+
+  // Half a config would advertise metadata we cannot build URLs for, or demand a
+  // bearer while pointing clients at nothing. Both halves or neither.
+  it('stays off when only the issuer is set', () => {
+    const cleanup = mockArgv(['--oauth-issuer=https://mcp-oauth.api.roark.ai']);
+
+    expect(parseCLIOptions().oauth).toBeUndefined();
+
+    cleanup();
+  });
+
+  it('stays off when only the resource base URL is set', () => {
+    const cleanup = mockArgv(['--oauth-resource-base-url=https://mcp.api.roark.ai']);
+
+    expect(parseCLIOptions().oauth).toBeUndefined();
+
+    cleanup();
+  });
+});
