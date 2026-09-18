@@ -52,6 +52,21 @@ Resolve in order - language, then a fitting accent, then an age it supports.
 "um" and "uh"). How the caller sounds, and the group that most directly stresses
 transcription and turn-taking.
 
+**Turn-taking.** `interruption` is how much the caller talks while the agent is
+_still speaking_: `OFF` (waits its turn), `BACKCHANNEL` (listening noises like
+"mm-hm" that never take the floor, which is a direct test of whether the agent
+wrongly stops for one), then `OCCASIONAL` and `HEAVY`, which also cut in.
+Timing is randomised per agent turn, so two runs of the same persona do not
+interrupt at identical moments.
+
+`responseTiming` is deprecated and no longer offered. It set how long the caller
+waited once the agent had _stopped_, and measured across production simulations
+it moved the reply gap by less than the noise floor, because model and speech
+latency dominate it. It was mostly reached for as a way to get a caller who
+talks over the agent, which is what `interruption` does properly. Stored values
+are still honoured; `BARGE_IN` in particular meant quick endpointing AND talking
+over the agent, and is stored as `QUICK` plus `interruption: OCCASIONAL`.
+
 **Behavioural profile.** `baseEmotion`, `intentClarity`, `confirmationStyle`,
 `memoryReliability`. How the caller _acts_: standing mood, how plainly they
 state what they want, whether they read details back, whether they remember what
