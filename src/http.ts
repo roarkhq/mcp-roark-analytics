@@ -174,6 +174,15 @@ export const streamableHTTPApp = ({
   app.set('query parser', 'extended');
   // Browser-based clients (Claude web, ChatGPT web) need CORS on the MCP and
   // metadata endpoints, and must be able to read the challenge header.
+  //
+  // `origin: true` reflects the caller's Origin, which CodeQL flags as permissive.
+  // It is deliberate: this is a public resource server whose only credential is
+  // the bearer a client attaches per request. No cookies are ever set and
+  // `credentials` stays off, so reflecting the origin is equivalent to `*` and
+  // grants a page nothing it could not already do with a token it holds. An
+  // allowlist would have to enumerate every MCP client's web origin (Claude,
+  // ChatGPT, Cursor, VS Code webviews, Inspector on localhost) and break the
+  // next one to appear.
   app.use(
     cors({
       origin: true,
