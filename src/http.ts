@@ -24,14 +24,14 @@ const newServer = async ({
   req: express.Request;
   res: express.Response;
 }): Promise<McpServer | null> => {
-  const stainlessApiKey = getStainlessApiKey(req, mcpOptions);
-  const customInstructionsPath = mcpOptions.customInstructionsPath;
-  const server = await newMcpServer({ stainlessApiKey, customInstructionsPath });
-
   // Remote OAuth mode: a bearer is mandatory and a missing one is answered with
   // 401 + WWW-Authenticate so the client discovers the authorization server. The
   // token is a Roark API key and is forwarded to the SDK unchanged. Without oauth
   // config we keep the legacy optional-bearer behavior (local installs).
+  //
+  // This runs before the server is built on purpose: `newMcpServer` fetches the
+  // instructions document over the network, and an unauthenticated caller should
+  // not be able to make us do that.
   let authOptions: Partial<ClientOptions>;
   if (mcpOptions.oauth) {
     const rawProjectId = req.params?.['projectId'];
@@ -40,6 +40,10 @@ const newServer = async ({
   } else {
     authOptions = parseClientAuthHeaders(req, false);
   }
+
+  const stainlessApiKey = getStainlessApiKey(req, mcpOptions);
+  const customInstructionsPath = mcpOptions.customInstructionsPath;
+  const server = await newMcpServer({ stainlessApiKey, customInstructionsPath });
 
   let upstreamClientEnvs: Record<string, string> | undefined;
   const clientEnvsHeader = req.headers['x-stainless-mcp-client-envs'];
