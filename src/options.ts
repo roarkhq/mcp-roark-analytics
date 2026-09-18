@@ -5,6 +5,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import z from 'zod';
 import { readEnv } from './util';
+import type { OAuthConfig } from './oauth';
 
 export type CLIOptions = McpOptions & {
   debug: boolean;
@@ -25,6 +26,13 @@ export type McpOptions = {
   codeBlockedMethods?: string[] | undefined;
   codeExecutionMode: McpCodeExecutionMode;
   customInstructionsPath?: string | undefined;
+  /**
+   * Remote OAuth resource-server config. When set (http transport), every request
+   * must carry a bearer and a missing one is answered with a 401 challenge that
+   * points at the authorization server; when unset the server keeps the legacy
+   * optional-bearer behavior (local stdio + API-key installs).
+   */
+  oauth?: OAuthConfig | undefined;
 };
 
 export type McpCodeExecutionMode = 'stainless-sandbox' | 'local';
@@ -114,6 +122,16 @@ export function parseCLIOptions(): CLIOptions {
       default: 'stdio',
       description: 'What transport to use; stdio for local servers or http for remote servers',
     })
+    .option('oauth-issuer', {
+      type: 'string',
+      default: readEnv('MCP_OAUTH_ISSUER'),
+      description: 'Authorization server issuer URL. Enables remote OAuth resource-server mode.',
+    })
+    .option('oauth-resource-base-url', {
+      type: 'string',
+      default: readEnv('MCP_OAUTH_RESOURCE_BASE_URL'),
+      description: 'Public base URL of this resource server, used to build metadata and resource URLs.',
+    })
     .env('MCP_SERVER')
     .version(true)
     .help();
@@ -144,6 +162,10 @@ export function parseCLIOptions(): CLIOptions {
     : process.stderr.isTTY ? 'pretty'
     : 'json';
 
+  // When unset, an http server runs in legacy optional-bearer mode (a static
+  // token in the Authorization header). Remote account-based auth needs this set.
+  const oauth = buildOAuthConfig(argv);
+
   return {
     ...(includeCodeTool !== undefined && { includeCodeTool }),
     ...(includeDocsTools !== undefined && { includeDocsTools }),
@@ -156,12 +178,29 @@ export function parseCLIOptions(): CLIOptions {
     codeBlockedMethods: argv.codeBlockedMethods,
     codeExecutionMode,
     customInstructionsPath: argv.customInstructionsPath,
+    ...(oauth && { oauth }),
     transport,
     logFormat,
     port: argv.port,
     socket: argv.socket,
   };
 }
+
+/**
+ * Assembles the OAuth resource-server config from CLI/env, or returns undefined
+ * when either field is absent (legacy optional-bearer mode). Both the issuer and
+ * this server's public base URL are required together.
+ */
+const buildOAuthConfig = (argv: {
+  oauthIssuer?: string | undefined;
+  oauthResourceBaseUrl?: string | undefined;
+}): OAuthConfig | undefined => {
+  const { oauthIssuer, oauthResourceBaseUrl } = argv;
+  if (!oauthIssuer || !oauthResourceBaseUrl) {
+    return undefined;
+  }
+  return { issuer: oauthIssuer, resourceBaseUrl: oauthResourceBaseUrl };
+};
 
 const coerceArray = <T extends z.ZodTypeAny>(zodType: T) =>
   z.preprocess(

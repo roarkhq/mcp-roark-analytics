@@ -3,12 +3,14 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ClientOptions } from '@roarkanalytics/sdk';
+import cors from 'cors';
 import express from 'express';
 import pino from 'pino';
 import pinoHttp from 'pino-http';
 import { getStainlessApiKey, parseClientAuthHeaders } from './auth';
 import { getLogger } from './logger';
 import { McpOptions } from './options';
+import { protectedResourceMetadata, requireBearer, UnauthorizedError } from './oauth';
 import { initMcpServer, newMcpServer } from './server';
 
 const newServer = async ({
@@ -22,11 +24,26 @@ const newServer = async ({
   req: express.Request;
   res: express.Response;
 }): Promise<McpServer | null> => {
+  // Remote OAuth mode: a bearer is mandatory and a missing one is answered with
+  // 401 + WWW-Authenticate so the client discovers the authorization server. The
+  // token is a Roark API key and is forwarded to the SDK unchanged. Without oauth
+  // config we keep the legacy optional-bearer behavior (local installs).
+  //
+  // This runs before the server is built on purpose: `newMcpServer` fetches the
+  // instructions document over the network, and an unauthenticated caller should
+  // not be able to make us do that.
+  let authOptions: Partial<ClientOptions>;
+  if (mcpOptions.oauth) {
+    const rawProjectId = req.params?.['projectId'];
+    const pathProjectId = typeof rawProjectId === 'string' ? rawProjectId : undefined;
+    authOptions = requireBearer(req, mcpOptions.oauth, pathProjectId);
+  } else {
+    authOptions = parseClientAuthHeaders(req, false);
+  }
+
   const stainlessApiKey = getStainlessApiKey(req, mcpOptions);
   const customInstructionsPath = mcpOptions.customInstructionsPath;
   const server = await newMcpServer({ stainlessApiKey, customInstructionsPath });
-
-  const authOptions = parseClientAuthHeaders(req, false);
 
   let upstreamClientEnvs: Record<string, string> | undefined;
   const clientEnvsHeader = req.headers['x-stainless-mcp-client-envs'];
@@ -97,7 +114,21 @@ const newServer = async ({
 const post =
   (options: { clientOptions: ClientOptions; mcpOptions: McpOptions }) =>
   async (req: express.Request, res: express.Response) => {
-    const server = await newServer({ ...options, req, res });
+    let server: McpServer | null;
+    try {
+      server = await newServer({ ...options, req, res });
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        res.setHeader('WWW-Authenticate', error.wwwAuthenticate);
+        res.status(error.status).json({
+          jsonrpc: '2.0',
+          error: { code: -32001, message: error.message },
+          id: req.body?.id ?? null,
+        });
+        return;
+      }
+      throw error;
+    }
     // If we return null, we already set the authorization error.
     if (server === null) return;
     const transport = new StreamableHTTPServerTransport();
@@ -145,6 +176,24 @@ export const streamableHTTPApp = ({
 }): express.Express => {
   const app = express();
   app.set('query parser', 'extended');
+  // Browser-based clients (Claude web, ChatGPT web) need CORS on the MCP and
+  // metadata endpoints, and must be able to read the challenge header.
+  //
+  // `origin: true` reflects the caller's Origin, which CodeQL flags as permissive.
+  // It is deliberate: this is a public resource server whose only credential is
+  // the bearer a client attaches per request. No cookies are ever set and
+  // `credentials` stays off, so reflecting the origin is equivalent to `*` and
+  // grants a page nothing it could not already do with a token it holds. An
+  // allowlist would have to enumerate every MCP client's web origin (Claude,
+  // ChatGPT, Cursor, VS Code webviews, Inspector on localhost) and break the
+  // next one to appear.
+  app.use(
+    cors({
+      origin: true,
+      exposedHeaders: ['WWW-Authenticate', 'mcp-session-id'],
+      allowedHeaders: ['authorization', 'content-type', 'mcp-session-id'],
+    }),
+  );
   app.use(express.json());
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const existing = req.headers['mcp-session-id'];
@@ -197,9 +246,35 @@ export const streamableHTTPApp = ({
   app.get('/health', async (req: express.Request, res: express.Response) => {
     res.status(200).send('OK');
   });
+
+  // RFC 9728 Protected Resource Metadata, the discovery entrypoint every OAuth
+  // MCP client hits first. Served per resource: the server origin, and each
+  // project-scoped connector URL (its `resource` is what the client echoes to
+  // the authorization server, which is how consent learns the project). Only
+  // served in remote OAuth mode.
+  if (mcpOptions.oauth) {
+    const oauth = mcpOptions.oauth;
+    app.get('/.well-known/oauth-protected-resource', (_req, res) => {
+      res.status(200).json(protectedResourceMetadata(oauth));
+    });
+    app.get('/.well-known/oauth-protected-resource/mcp/:projectId', (req, res) => {
+      const projectId = req.params['projectId'];
+      res
+        .status(200)
+        .json(protectedResourceMetadata(oauth, typeof projectId === 'string' ? projectId : undefined));
+    });
+  }
+
   app.get('/', get);
   app.post('/', post({ clientOptions, mcpOptions }));
   app.delete('/', del);
+
+  // Project-scoped connector URL: /mcp/<projectId>. The project id only selects
+  // the metadata `resource`; access is governed by the key the authorization
+  // server minted for that project.
+  app.get('/mcp/:projectId', get);
+  app.post('/mcp/:projectId', post({ clientOptions, mcpOptions }));
+  app.delete('/mcp/:projectId', del);
 
   return app;
 };

@@ -129,6 +129,31 @@ Launching the client with `--transport=http` launches the server as a remote ser
 
 Authorization can be provided via the `Authorization` header using the Bearer scheme.
 
+### Remote OAuth (account-based) mode
+
+When the OAuth environment variables are set, the HTTP server runs as an MCP OAuth
+**resource server** (RFC 9728): it serves `/.well-known/oauth-protected-resource` (and a
+project-scoped copy under `/mcp/<projectId>`) pointing at Roark's authorization server, and
+rejects requests without a bearer with `401` + `WWW-Authenticate`. This is what lets users add
+the server to Claude, ChatGPT, Cursor, VS Code, etc. and sign in with their Roark account
+instead of pasting an API key.
+
+The access token the authorization server issues **is a Roark API key**: it is minted on the
+consent page with the permissions the user picked (same picker as the CLI login), expires, and
+is rotated by the client's refresh token. The server forwards it to the API as the SDK bearer
+unchanged; the API validates it on every call.
+
+| Variable                      | Meaning                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `MCP_OAUTH_ISSUER`            | Authorization server issuer URL (enables OAuth mode)                     |
+| `MCP_OAUTH_RESOURCE_BASE_URL` | Public base URL of this server, used to build metadata and resource URLs |
+| `ROARK_BASE_URL`              | API base URL the forwarded key is used against (SDK default)             |
+
+Project selection uses a project-scoped connector URL: `https://<host>/mcp/<projectId>`. Its
+metadata's `resource` is that URL, which clients echo to the authorization server so consent
+is pinned to the right project. When these variables are unset the server keeps the legacy
+header/Bearer behavior above.
+
 Additionally, authorization can be provided via the following headers:
 
 | Header                     | Equivalent client option | Security scheme |
