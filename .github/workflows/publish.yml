@@ -145,6 +145,37 @@ jobs:
           rm -f "$tarball"
           echo 'the packed tarball carries the entry point, the server and the tool table'
 
+      # The tool table addresses the SDK by string, so nothing above this point
+      # has asked whether those strings resolve. v4.0.0 shipped because of that:
+      # the table was regenerated to `client.autoimproveJob.*` while the range
+      # stayed `^3.2.0`, and the published server pulls an SDK where all eight
+      # of those tools are `undefined`.
+      #
+      # Installed from the packed tarball into a scratch directory, not probed
+      # in place. This repository resolves from `pnpm-lock.yaml`; a user
+      # resolves from the range in the published package.json. Only the second
+      # answer matters, and only an install can give it.
+      - name: Every tool resolves on the SDK that ships with it
+        working-directory: dist
+        run: |
+          set -euo pipefail
+
+          npm pack --loglevel=error >/dev/null
+          tarball=$(ls -- *.tgz)
+          probe="$RUNNER_TEMP/mcp-resolution-probe"
+          rm -rf "$probe"
+          mkdir -p "$probe"
+          # `npm init -y` first: installing into a bare directory makes npm walk
+          # up looking for a package.json and it would find this repository's.
+          (
+            cd "$probe"
+            npm init -y >/dev/null
+            npm install "$GITHUB_WORKSPACE/dist/$tarball" --loglevel=error --no-audit --no-fund >/dev/null
+          )
+          rm -f "$tarball"
+
+          node "$GITHUB_WORKSPACE/scripts/check-sdk-resolution.cjs" "$probe"
+
       # A `release` event carries no inputs, so `inputs.tag` is empty there:
       # default it to `latest`. A release always publishes; only a manual dispatch
       # can ask for a dry run.
