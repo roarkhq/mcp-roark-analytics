@@ -18,8 +18,8 @@ importers:
         specifier: ^1.27.1
         version: 1.30.0(zod@3.25.76)
       '@roarkanalytics/sdk':
-        specifier: ^3.2.0
-        version: 3.2.0
+        specifier: ^4.0.0
+        version: 4.0.0
       '@valtown/deno-http-worker':
         specifier: ^0.0.21
         version: 0.0.21
@@ -581,8 +581,8 @@ packages:
     resolution: {integrity: sha512-SEeaJLb3qBNF/OaXnaR1NmmBbFYk1zC0ZH/52fATcRPLFg/p791YrcyFFy44Bo9sLaGuSuLp5Q6axbb/O+v/RA==}
     engines: {node: ^14.18.0 || >=16.0.0}
 
-  '@roarkanalytics/sdk@3.2.0':
-    resolution: {integrity: sha512-dZm7nhil+zSvh1jGWOp12znFbn1HYx5SocvzrDS82ljPQUATVqyLkloc0ANft3pSb3SiaaNuWd/Z46z912lTxg==}
+  '@roarkanalytics/sdk@4.0.0':
+    resolution: {integrity: sha512-yr1WMoZ3VgQcD0qzKAJARPAHwZb2t66/4UGhZEtWZ13jeUPJkngWOSiH1wSEVNSwxvV79zG0YacmPjwwwvnsew==}
 
   '@sinclair/typebox@0.27.12':
     resolution: {integrity: sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==}
@@ -1752,7 +1752,7 @@ packages:
     engines: {node: '>=10'}
 
   jq-web@https://github.com/stainless-api/jq-web/releases/download/v0.8.8/jq-web.tar.gz:
-    resolution: {tarball: https://github.com/stainless-api/jq-web/releases/download/v0.8.8/jq-web.tar.gz}
+    resolution: {integrity: sha512-6nmDSHGJm8Cclf2oSuO9xQ7vt5x5bDiuTKX2rkyW1K7Uo2SHeI4ZvpgMITKy+8p3bbEnKovTPGoHhApa6v/PbA==, tarball: https://github.com/stainless-api/jq-web/releases/download/v0.8.8/jq-web.tar.gz}
     version: 0.8.8
 
   js-tokens@4.0.0:
@@ -2408,7 +2408,7 @@ packages:
         optional: true
 
   tsc-multi@https://github.com/stainless-api/tsc-multi/releases/download/v1.1.11/tsc-multi.tgz:
-    resolution: {tarball: https://github.com/stainless-api/tsc-multi/releases/download/v1.1.11/tsc-multi.tgz}
+    resolution: {integrity: sha512-LrjLRdfDnJ6UcZPSsxxY8QDnZmS3ZpPyvzgjUlNMjjRoTAUVqeL+IWrIzEU3Z+CwVrpVI97PePRLenEfCtR/UQ==, tarball: https://github.com/stainless-api/tsc-multi/releases/download/v1.1.11/tsc-multi.tgz}
     version: 1.1.11
     engines: {node: '>=14'}
     hasBin: true
@@ -3194,7 +3194,7 @@ snapshots:
 
   '@pkgr/core@0.3.6': {}
 
-  '@roarkanalytics/sdk@3.2.0': {}
+  '@roarkanalytics/sdk@4.0.0': {}
 
   '@sinclair/typebox@0.27.12': {}
 
