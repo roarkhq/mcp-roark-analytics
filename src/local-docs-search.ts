@@ -1655,6 +1655,199 @@ const EMBEDDED_METHODS: MethodEntry[] = [
   },
   {
     name: 'list',
+    endpoint: '/v1/agent-config',
+    httpMethod: 'get',
+    summary: 'List managed configs',
+    description: 'List the managed agent configs in this project, most recent first.',
+    stainlessPath: '(resource) agentConfig > (method) list',
+    qualified: 'client.agentConfig.list',
+    response:
+      '{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }[]; }',
+    markdown:
+      "## list\n\n`client.agentConfig.list(): { data: object[]; }`\n\n**get** `/v1/agent-config`\n\nList the managed agent configs in this project, most recent first.\n\n### Returns\n\n- `{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }[]; }`\n\n  - `data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst agentConfigs = await client.agentConfig.list();\n\nconsole.log(agentConfigs);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agentConfig.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst agentConfigs = await client.agentConfig.list();\n\nconsole.log(agentConfigs.data);",
+      },
+      python: {
+        method: 'agent_config.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nagent_configs = client.agent_config.list()\nprint(agent_configs.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent-config \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getById',
+    endpoint: '/v1/agent-config/{key}',
+    httpMethod: 'get',
+    summary: 'Get a managed config',
+    description: 'Fetch one managed config with its channel pointers and recent revisions, newest first.',
+    stainlessPath: '(resource) agentConfig > (method) getById',
+    qualified: 'client.agentConfig.getByID',
+    params: ['key: string;'],
+    response:
+      "{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; revisions: { id: string; createdAt: string; createdByType: 'CUSTOMER' | 'AUTOIMPROVE'; document: object; parentRevisionId: string; summary: string; }[]; stagingRevisionId: string; updatedAt: string; }; }",
+    markdown:
+      "## getById\n\n`client.agentConfig.getByID(key: string): { data: object; }`\n\n**get** `/v1/agent-config/{key}`\n\nFetch one managed config with its channel pointers and recent revisions, newest first.\n\n### Parameters\n\n- `key: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; revisions: { id: string; createdAt: string; createdByType: 'CUSTOMER' | 'AUTOIMPROVE'; document: object; parentRevisionId: string; summary: string; }[]; stagingRevisionId: string; updatedAt: string; }; }`\n\n  - `data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; revisions: { id: string; createdAt: string; createdByType: 'CUSTOMER' | 'AUTOIMPROVE'; document: object; parentRevisionId: string; summary: string; }[]; stagingRevisionId: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.agentConfig.getByID('x');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agentConfig.getByID',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.agentConfig.getByID('x');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'agent_config.get_by_id',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.agent_config.get_by_id(\n    "x",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent-config/$KEY \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'update',
+    endpoint: '/v1/agent-config/{key}',
+    httpMethod: 'put',
+    summary: 'Write a config revision',
+    description:
+      'Write a new revision onto a channel. Writing production creates the key when it does not exist; writing staging stages a candidate that only Roark-recognized simulation sessions will read. Every write is a new revision; nothing is overwritten.',
+    stainlessPath: '(resource) agentConfig > (method) update',
+    qualified: 'client.agentConfig.update',
+    params: [
+      'key: string;',
+      "channel: 'production' | 'staging';",
+      'document: object;',
+      'agentId?: string;',
+      'summary?: string;',
+    ],
+    response:
+      '{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }; }',
+    markdown:
+      "## update\n\n`client.agentConfig.update(key: string, channel: 'production' | 'staging', document: object, agentId?: string, summary?: string): { data: object; }`\n\n**put** `/v1/agent-config/{key}`\n\nWrite a new revision onto a channel. Writing production creates the key when it does not exist; writing staging stages a candidate that only Roark-recognized simulation sessions will read. Every write is a new revision; nothing is overwritten.\n\n### Parameters\n\n- `key: string`\n\n- `channel: 'production' | 'staging'`\n  Which channel to write.\n\n- `document: object`\n  The full config JSON for the new revision.\n\n- `agentId?: string`\n  Link this config to a Roark agent (the one your calls report). Required before Autoimprove can run on it: the link is how a fix finds the config channel.\n\n- `summary?: string`\n  One-line story of the change.\n\n### Returns\n\n- `{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }; }`\n\n  - `data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst agentConfig = await client.agentConfig.update('x', {\n  channel: 'production',\n  document: { foo: 'string' },\n});\n\nconsole.log(agentConfig);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agentConfig.update',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst agentConfig = await client.agentConfig.update('x', {\n  channel: 'production',\n  document: { foo: 'string' },\n});\n\nconsole.log(agentConfig.data);",
+      },
+      python: {
+        method: 'agent_config.update',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nagent_config = client.agent_config.update(\n    key="x",\n    channel="production",\n    document={\n        "foo": "string",\n    },\n)\nprint(agent_config.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent-config/$KEY \\\n    -X PUT \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "channel": "production",\n          "document": {\n            "foo": "string"\n          }\n        }\'',
+      },
+    },
+  },
+  {
+    name: 'resolve',
+    endpoint: '/v1/agent-config/{key}/resolve',
+    httpMethod: 'post',
+    summary: 'Resolve config for a session',
+    description:
+      'The call your agent makes at session start. Returns the config JSON for this session, with per-session simulation recognition built in: when the session was originated by a Roark simulation (matched by caller number against the calls Roark has in flight), the STAGING revision is served for that session only, so Autoimprove candidates are tested on your real deployment. Real traffic always resolves to production; any recognition miss degrades to production too.\n\nOn the first fetch of an unknown key, pass `defaults` (your baked-in config): the key is registered and the defaults become revision 1. That makes integration a single call.\n\nCache the response per session; do not fetch per turn.',
+    stainlessPath: '(resource) agentConfig > (method) resolve',
+    qualified: 'client.agentConfig.resolve',
+    params: [
+      'key: string;',
+      'defaults?: object;',
+      'session?: { calledNumber?: string; callerNumber?: string; sessionId?: string; };',
+    ],
+    response:
+      "{ data: { channel: 'production' | 'staging'; document: object; key: string; revisionId: string; simulationJobId: string; }; }",
+    markdown:
+      "## resolve\n\n`client.agentConfig.resolve(key: string, defaults?: object, session?: { calledNumber?: string; callerNumber?: string; sessionId?: string; }): { data: object; }`\n\n**post** `/v1/agent-config/{key}/resolve`\n\nThe call your agent makes at session start. Returns the config JSON for this session, with per-session simulation recognition built in: when the session was originated by a Roark simulation (matched by caller number against the calls Roark has in flight), the STAGING revision is served for that session only, so Autoimprove candidates are tested on your real deployment. Real traffic always resolves to production; any recognition miss degrades to production too.\n\nOn the first fetch of an unknown key, pass `defaults` (your baked-in config): the key is registered and the defaults become revision 1. That makes integration a single call.\n\nCache the response per session; do not fetch per turn.\n\n### Parameters\n\n- `key: string`\n\n- `defaults?: object`\n  Your baked-in config. On the first fetch of an unknown key this registers the config and becomes revision 1, so integration is a single call. Ignored once the key exists.\n\n- `session?: { calledNumber?: string; callerNumber?: string; sessionId?: string; }`\n  Session context. When the call was originated by a Roark simulation, Roark recognizes it here and serves the staging revision for this session only; real traffic always gets production.\n\n### Returns\n\n- `{ data: { channel: 'production' | 'staging'; document: object; key: string; revisionId: string; simulationJobId: string; }; }`\n\n  - `data: { channel: 'production' | 'staging'; document: object; key: string; revisionId: string; simulationJobId: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.agentConfig.resolve('x');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agentConfig.resolve',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.agentConfig.resolve('x');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'agent_config.resolve',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.agent_config.resolve(\n    key="x",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent-config/$KEY/resolve \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'promote',
+    endpoint: '/v1/agent-config/{key}/promote',
+    httpMethod: 'post',
+    summary: 'Promote staging to production',
+    description:
+      'Point the production channel at the staging revision. Real traffic reads it from the next session onward; roll back by writing the prior revision id to production (the chain preserves every state).',
+    stainlessPath: '(resource) agentConfig > (method) promote',
+    qualified: 'client.agentConfig.promote',
+    params: ['key: string;'],
+    response:
+      '{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }; }',
+    markdown:
+      "## promote\n\n`client.agentConfig.promote(key: string): { data: object; }`\n\n**post** `/v1/agent-config/{key}/promote`\n\nPoint the production channel at the staging revision. Real traffic reads it from the next session onward; roll back by writing the prior revision id to production (the chain preserves every state).\n\n### Parameters\n\n- `key: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }; }`\n\n  - `data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.agentConfig.promote('x');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agentConfig.promote',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.agentConfig.promote('x');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'agent_config.promote',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.agent_config.promote(\n    "x",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent-config/$KEY/promote \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'deleteStaging',
+    endpoint: '/v1/agent-config/{key}/staging',
+    httpMethod: 'delete',
+    summary: 'Discard the staging revision',
+    description:
+      'Clear the staging channel. Production is untouched; recognized simulation sessions go back to reading production.',
+    stainlessPath: '(resource) agentConfig > (method) deleteStaging',
+    qualified: 'client.agentConfig.deleteStaging',
+    params: ['key: string;'],
+    response:
+      '{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }; }',
+    markdown:
+      "## deleteStaging\n\n`client.agentConfig.deleteStaging(key: string): { data: object; }`\n\n**delete** `/v1/agent-config/{key}/staging`\n\nClear the staging channel. Production is untouched; recognized simulation sessions go back to reading production.\n\n### Parameters\n\n- `key: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }; }`\n\n  - `data: { id: string; agentId: string; createdAt: string; key: string; productionRevisionId: string; stagingRevisionId: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.agentConfig.deleteStaging('x');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agentConfig.deleteStaging',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.agentConfig.deleteStaging('x');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'agent_config.delete_staging',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.agent_config.delete_staging(\n    "x",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent-config/$KEY/staging \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'list',
     endpoint: '/v1/autoimprove/job',
     httpMethod: 'get',
     summary: 'List Autoimprove jobs',
@@ -1663,9 +1856,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     stainlessPath: '(resource) autoimproveJob > (method) list',
     qualified: 'client.autoimproveJob.list',
     response:
-      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }[]; }",
+      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }[]; }",
     markdown:
-      "## list\n\n`client.autoimproveJob.list(): { data: object[]; }`\n\n**get** `/v1/autoimprove/job`\n\nList the Autoimprove jobs in this project, most recent first, capped at 100.\n\nA job is one autonomous engagement: Roark improving one agent toward one objective metric on a staging copy, with a human-gated promote to production at the end.\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }[]; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst autoimproveJobs = await client.autoimproveJob.list();\n\nconsole.log(autoimproveJobs);\n```",
+      "## list\n\n`client.autoimproveJob.list(): { data: object[]; }`\n\n**get** `/v1/autoimprove/job`\n\nList the Autoimprove jobs in this project, most recent first, capped at 100.\n\nA job is one autonomous engagement: Roark improving one agent toward one objective metric on a staging copy, with a human-gated promote to production at the end.\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }[]; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst autoimproveJobs = await client.autoimproveJob.list();\n\nconsole.log(autoimproveJobs);\n```",
     perLanguage: {
       typescript: {
         method: 'client.autoimproveJob.list',
@@ -1694,9 +1887,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     qualified: 'client.autoimproveJob.getByID',
     params: ['jobId: string;'],
     response:
-      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; logEntries: { id: string; configPushId: string; createdAt: string; kind: string; orderIndex: number; passRateAfter: number; passRateBefore: number; questionOptions: string[]; simulationRunPlanJobId: string; text: string; trialCount: number; }[]; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
+      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; logEntries: { id: string; configPushId: string; createdAt: string; kind: string; orderIndex: number; passRateAfter: number; passRateBefore: number; questionOptions: string[]; simulationRunPlanJobId: string; text: string; trialCount: number; }[]; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
     markdown:
-      "## getById\n\n`client.autoimproveJob.getByID(jobId: string): { data: object; }`\n\n**get** `/v1/autoimprove/job/{jobId}`\n\nFetch one job with its full worklog: every step Roark took, the validation batches with their pass-rate movement, any question it is waiting on, and its final report once concluded.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; logEntries: { id: string; configPushId: string; createdAt: string; kind: string; orderIndex: number; passRateAfter: number; passRateBefore: number; questionOptions: string[]; simulationRunPlanJobId: string; text: string; trialCount: number; }[]; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; logEntries: { id: string; configPushId: string; createdAt: string; kind: string; orderIndex: number; passRateAfter: number; passRateBefore: number; questionOptions: string[]; simulationRunPlanJobId: string; text: string; trialCount: number; }[]; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.autoimproveJob.getByID('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+      "## getById\n\n`client.autoimproveJob.getByID(jobId: string): { data: object; }`\n\n**get** `/v1/autoimprove/job/{jobId}`\n\nFetch one job with its full worklog: every step Roark took, the validation batches with their pass-rate movement, any question it is waiting on, and its final report once concluded.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; logEntries: { id: string; configPushId: string; createdAt: string; kind: string; orderIndex: number; passRateAfter: number; passRateBefore: number; questionOptions: string[]; simulationRunPlanJobId: string; text: string; trialCount: number; }[]; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; logEntries: { id: string; configPushId: string; createdAt: string; kind: string; orderIndex: number; passRateAfter: number; passRateBefore: number; questionOptions: string[]; simulationRunPlanJobId: string; text: string; trialCount: number; }[]; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.autoimproveJob.getByID('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
     perLanguage: {
       typescript: {
         method: 'client.autoimproveJob.getByID',
@@ -1720,7 +1913,7 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     httpMethod: 'post',
     summary: 'Start an Autoimprove job',
     description:
-      'Commission Roark on an objective. It clones the agent into a staging shadow (or uses your designated staging agent), authors a validation suite of simulated callers, measures a baseline, changes the staging configuration, and re-tests until the objective metric passes its target. Production is never touched by the loop; verified changes wait for promotion.\n\nRequires an active provider integration (Vapi or Retell) with agent config writes enabled. One live job per agent: starting a second returns a conflict.\n\nThe job runs asynchronously; poll GET /v1/autoimprove/job/{jobId} or watch it in the dashboard. When its status is NEEDS_INPUT, answer via the answer endpoint; when AWAITING_PROMOTE, promote or dismiss.',
+      'Commission Roark on an objective. It clones the agent into a staging shadow (or uses your designated staging agent), authors a validation suite of simulated callers, measures a baseline, changes the staging configuration, and re-tests until the objective metric passes its target. Production is never touched by the loop; verified changes wait for promotion.\n\nRequires an active provider integration (Vapi, Retell, or ElevenLabs) with agent config writes enabled. One live job per agent: starting a second returns a conflict.\n\nThe job runs asynchronously; poll GET /v1/autoimprove/job/{jobId} or watch it in the dashboard. When its status is NEEDS_INPUT, answer via the answer endpoint; when AWAITING_PROMOTE, promote or dismiss.',
     stainlessPath: '(resource) autoimproveJob > (method) create',
     qualified: 'client.autoimproveJob.create',
     params: [
@@ -1735,9 +1928,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       'validationRunPlanId?: string;',
     ],
     response:
-      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
+      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
     markdown:
-      "## create\n\n`client.autoimproveJob.create(agentId: string, objectiveLabel: string, objectiveMetricDefinitionId: string, customerIntegrationId?: string, maxIterations?: number, maxSimCalls?: number, stagingAgentId?: string, targetValue?: number, validationRunPlanId?: string): { data: object; }`\n\n**post** `/v1/autoimprove/job`\n\nCommission Roark on an objective. It clones the agent into a staging shadow (or uses your designated staging agent), authors a validation suite of simulated callers, measures a baseline, changes the staging configuration, and re-tests until the objective metric passes its target. Production is never touched by the loop; verified changes wait for promotion.\n\nRequires an active provider integration (Vapi or Retell) with agent config writes enabled. One live job per agent: starting a second returns a conflict.\n\nThe job runs asynchronously; poll GET /v1/autoimprove/job/{jobId} or watch it in the dashboard. When its status is NEEDS_INPUT, answer via the answer endpoint; when AWAITING_PROMOTE, promote or dismiss.\n\n### Parameters\n\n- `agentId: string`\n  The production agent to improve. It is never modified until you promote.\n\n- `objectiveLabel: string`\n  Human-readable label for the objective, shown everywhere the job appears.\n\n- `objectiveMetricDefinitionId: string`\n  The metric that defines success: a pass/fail metric, or a threshold variant of a scale metric (for example \"PII Handling >= 4\"). Roark measures the pass rate of this metric across simulated calls.\n\n- `customerIntegrationId?: string`\n  The provider integration whose credentials Roark uses. Omit to use the project's active integration for the agent's provider. The integration must have agent config writes enabled.\n\n- `maxIterations?: number`\n  Cap on decision turns. Defaults to 50.\n\n- `maxSimCalls?: number`\n  Cap on simulated calls dialed. Defaults to 200.\n\n- `stagingAgentId?: string`\n  An existing agent to stage changes on instead of the default shadow clone. Must be a different agent from agentId, on the same provider.\n\n- `targetValue?: number`\n  The pass-rate percentage that counts as fixed. Defaults to 90.\n\n- `validationRunPlanId?: string`\n  An existing simulation run plan to validate with. Omit to let Roark author its own suite.\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst autoimproveJob = await client.autoimproveJob.create({\n  agentId: 'b3b0c8e2-4c1d-4f6a-9e2b-1a2b3c4d5e6f',\n  objectiveLabel: 'Consent collection should pass',\n  objectiveMetricDefinitionId: 'f2f0c8e2-4c1d-4f6a-9e2b-1a2b3c4d5e6f',\n});\n\nconsole.log(autoimproveJob);\n```",
+      "## create\n\n`client.autoimproveJob.create(agentId: string, objectiveLabel: string, objectiveMetricDefinitionId: string, customerIntegrationId?: string, maxIterations?: number, maxSimCalls?: number, stagingAgentId?: string, targetValue?: number, validationRunPlanId?: string): { data: object; }`\n\n**post** `/v1/autoimprove/job`\n\nCommission Roark on an objective. It clones the agent into a staging shadow (or uses your designated staging agent), authors a validation suite of simulated callers, measures a baseline, changes the staging configuration, and re-tests until the objective metric passes its target. Production is never touched by the loop; verified changes wait for promotion.\n\nRequires an active provider integration (Vapi, Retell, or ElevenLabs) with agent config writes enabled. One live job per agent: starting a second returns a conflict.\n\nThe job runs asynchronously; poll GET /v1/autoimprove/job/{jobId} or watch it in the dashboard. When its status is NEEDS_INPUT, answer via the answer endpoint; when AWAITING_PROMOTE, promote or dismiss.\n\n### Parameters\n\n- `agentId: string`\n  The production agent to improve. It is never modified until you promote.\n\n- `objectiveLabel: string`\n  Human-readable label for the objective, shown everywhere the job appears.\n\n- `objectiveMetricDefinitionId: string`\n  The metric that defines success: a pass/fail metric, or a threshold variant of a scale metric (for example \"PII Handling >= 4\"). Roark measures the pass rate of this metric across simulated calls.\n\n- `customerIntegrationId?: string`\n  The provider integration whose credentials Roark uses. Omit to use the project's active integration for the agent's provider. The integration must have agent config writes enabled.\n\n- `maxIterations?: number`\n  Cap on decision turns. Defaults to 50.\n\n- `maxSimCalls?: number`\n  Cap on simulated calls dialed. Defaults to 200.\n\n- `stagingAgentId?: string`\n  An existing agent to stage changes on instead of the default shadow clone. Must be a different agent from agentId, on the same provider.\n\n- `targetValue?: number`\n  The pass-rate percentage that counts as fixed. Defaults to 90.\n\n- `validationRunPlanId?: string`\n  An existing simulation run plan to validate with. Omit to let Roark author its own suite.\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst autoimproveJob = await client.autoimproveJob.create({\n  agentId: 'b3b0c8e2-4c1d-4f6a-9e2b-1a2b3c4d5e6f',\n  objectiveLabel: 'Consent collection should pass',\n  objectiveMetricDefinitionId: 'f2f0c8e2-4c1d-4f6a-9e2b-1a2b3c4d5e6f',\n});\n\nconsole.log(autoimproveJob);\n```",
     perLanguage: {
       typescript: {
         method: 'client.autoimproveJob.create',
@@ -1796,9 +1989,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     qualified: 'client.autoimproveJob.promote',
     params: ['jobId: string;'],
     response:
-      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
+      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
     markdown:
-      "## promote\n\n`client.autoimproveJob.promote(jobId: string): { data: object; }`\n\n**post** `/v1/autoimprove/job/{jobId}/promote`\n\nApply the verified staging changes to the PRODUCTION agent. Only a job in AWAITING_PROMOTE can be promoted.\n\nA snapshot of the production configuration is taken immediately before the write, so the promote is fully rollbackable. After the promote the staging shadow and its phone number are cleaned up.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.autoimproveJob.promote('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+      "## promote\n\n`client.autoimproveJob.promote(jobId: string): { data: object; }`\n\n**post** `/v1/autoimprove/job/{jobId}/promote`\n\nApply the verified staging changes to the PRODUCTION agent. Only a job in AWAITING_PROMOTE can be promoted.\n\nA snapshot of the production configuration is taken immediately before the write, so the promote is fully rollbackable. After the promote the staging shadow and its phone number are cleaned up.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.autoimproveJob.promote('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
     perLanguage: {
       typescript: {
         method: 'client.autoimproveJob.promote',
@@ -1827,9 +2020,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     qualified: 'client.autoimproveJob.dismiss',
     params: ['jobId: string;'],
     response:
-      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
+      "{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }",
     markdown:
-      "## dismiss\n\n`client.autoimproveJob.dismiss(jobId: string): { data: object; }`\n\n**post** `/v1/autoimprove/job/{jobId}/dismiss`\n\nDiscard a verified job without promoting: production stays untouched and the staging resources are cleaned up. Only a job in AWAITING_PROMOTE can be dismissed.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.autoimproveJob.dismiss('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+      "## dismiss\n\n`client.autoimproveJob.dismiss(jobId: string): { data: object; }`\n\n**post** `/v1/autoimprove/job/{jobId}/dismiss`\n\nDiscard a verified job without promoting: production stays untouched and the staging resources are cleaned up. Only a job in AWAITING_PROMOTE can be dismissed.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }; }`\n\n  - `data: { id: string; agentId: string; baselineValue: number; concludedAt: string; createdAt: string; currentValue: number; customerIntegrationId: string; finalReport: string; initiatedByUserId: string; issueId: string; iterationCount: number; maxIterations: number; maxSimCalls: number; objectiveId: string; objectiveLabel: string; objectiveMetricDefinitionId: string; organizationId: string; projectId: string; simCallsUsed: number; stagingAgentId: string; stagingKind: 'DESIGNATED' | 'SHADOW' | 'CHANNEL'; status: string; targetValue: number; trigger: 'ISSUE' | 'RUN_THRESHOLD_FAILED' | 'USER' | 'DEGRADATION'; updatedAt: string; validationRunPlanId: string; workingMemory: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.autoimproveJob.dismiss('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
     perLanguage: {
       typescript: {
         method: 'client.autoimproveJob.dismiss',
