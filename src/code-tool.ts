@@ -321,9 +321,16 @@ const localDenoHandler = async ({
 
       // Strip null/undefined values so that the worker SDK client can fall back to
       // reading from environment variables (including any upstreamClientEnvs).
+      //
+      // This is an allow-list, not a spread of `client`: the worker runs in a separate Deno
+      // process and only what is named here crosses into it. `project` has to be named or a
+      // pinned connector silently loses its project, and every call from inside the sandbox
+      // fails with "this credential is not tied to a single project". Code the model writes can
+      // still override it per call with `client.withOptions({ project })`.
       const opts = {
         ...(client.baseURL != null ? { baseURL: client.baseURL } : undefined),
         ...(client.bearerToken != null ? { bearerToken: client.bearerToken } : undefined),
+        ...(client.project != null ? { project: client.project } : undefined),
         defaultHeaders: {
           'X-Stainless-MCP': 'true',
         },
