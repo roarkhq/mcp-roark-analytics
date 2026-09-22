@@ -132,11 +132,10 @@ Authorization can be provided via the `Authorization` header using the Bearer sc
 ### Remote OAuth (account-based) mode
 
 When the OAuth environment variables are set, the HTTP server runs as an MCP OAuth
-**resource server** (RFC 9728): it serves `/.well-known/oauth-protected-resource` (and a
-project-scoped copy under `/mcp/<projectId>`) pointing at Roark's authorization server, and
-rejects requests without a bearer with `401` + `WWW-Authenticate`. This is what lets users add
-the server to Claude, ChatGPT, Cursor, VS Code, etc. and sign in with their Roark account
-instead of pasting an API key.
+**resource server** (RFC 9728): it serves Protected Resource Metadata pointing at Roark's
+authorization server, and rejects requests without a bearer with `401` + `WWW-Authenticate`.
+This is what lets users add the server to Claude, ChatGPT, Cursor, VS Code, etc. and sign in
+with their Roark account instead of pasting an API key.
 
 The access token the authorization server issues **is a Roark API key**: it is minted on the
 consent page with the permissions the user picked (same picker as the CLI login), expires, and
@@ -149,10 +148,44 @@ unchanged; the API validates it on every call.
 | `MCP_OAUTH_RESOURCE_BASE_URL` | Public base URL of this server, used to build metadata and resource URLs |
 | `ROARK_BASE_URL`              | API base URL the forwarded key is used against (SDK default)             |
 
-Project selection uses a project-scoped connector URL: `https://<host>/mcp/<projectId>`. Its
-metadata's `resource` is that URL, which clients echo to the authorization server so consent
-is pinned to the right project. When these variables are unset the server keeps the legacy
-header/Bearer behavior above.
+#### Connector URLs
+
+There are two, and the difference is what the user consents to:
+
+| URL                              | Consent grants                         | The credential                       |
+| -------------------------------- | -------------------------------------- | ------------------------------------ |
+| `https://<host>/mcp`             | act as the person, in one organization | reaches every project they belong to |
+| `https://<host>/mcp/<projectId>` | access to that one project             | pinned to it                         |
+
+`https://<host>/mcp` is the one to hand out. Added once, it follows the person across every
+project they are a member of, so someone in five projects adds one connector rather than five.
+
+Each URL publishes its own metadata (`/.well-known/oauth-protected-resource`, plus a copy under
+the connector's path), and the `resource` identifier is the connector URL itself. Clients echo
+that back to the authorization server per RFC 8707, which is how consent knows which of the two
+grants is being asked for.
+
+A pinned URL is not merely cosmetic: the project in the path becomes the SDK's `project`, so a
+user credential used on `/mcp/<projectId>` acts on that project only.
+
+#### Choosing a project on the unpinned connector
+
+The unpinned connector deliberately sets no project, because there is no single right answer: the
+credential reaches several. Code written in the `execute` tool names one per call:
+
+```js
+async function run(client) {
+  return await client.withOptions({ project: 'proj_123' }).call.list({ limit: 10 });
+}
+```
+
+Calls that name no project fail with `400` and a message listing where to find the available ones
+(`GET /v1/projects`). This is the `project` client option rather than a default header on purpose:
+a default header would win over `withOptions`, and a pinned connector could then never reach
+another project the credential legitimately covers.
+
+When the OAuth variables are unset the server keeps the legacy header/Bearer behavior above, and
+the stdio transport used by local installs is unaffected either way.
 
 Additionally, authorization can be provided via the following headers:
 
