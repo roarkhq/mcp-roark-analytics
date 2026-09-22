@@ -126,5 +126,12 @@ export const requireBearer = (
   if (!token) {
     throw new UnauthorizedError('Missing bearer token', bearerChallenge(config, connector));
   }
-  return { bearerToken: token, ...(connector.kind === 'project' && { project: connector.projectId }) };
+  // Assigned rather than conditionally spread: a spread of `cond && { project }` is not checked
+  // against `ClientOptions`, so on an SDK without the option the pin would compile and then
+  // silently vanish. This way the dependency is enforced by the build.
+  const options: Partial<ClientOptions> = { bearerToken: token };
+  if (connector.kind === 'project') {
+    options.project = connector.projectId;
+  }
+  return options;
 };
