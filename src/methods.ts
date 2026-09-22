@@ -287,6 +287,42 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/template',
   },
   {
+    clientCallName: 'client.agentConfig.update',
+    fullyQualifiedName: 'agentConfig.update',
+    httpMethod: 'put',
+    httpPath: '/v1/agent-config/{key}',
+  },
+  {
+    clientCallName: 'client.agentConfig.list',
+    fullyQualifiedName: 'agentConfig.list',
+    httpMethod: 'get',
+    httpPath: '/v1/agent-config',
+  },
+  {
+    clientCallName: 'client.agentConfig.deleteStaging',
+    fullyQualifiedName: 'agentConfig.deleteStaging',
+    httpMethod: 'delete',
+    httpPath: '/v1/agent-config/{key}/staging',
+  },
+  {
+    clientCallName: 'client.agentConfig.getByID',
+    fullyQualifiedName: 'agentConfig.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/agent-config/{key}',
+  },
+  {
+    clientCallName: 'client.agentConfig.promote',
+    fullyQualifiedName: 'agentConfig.promote',
+    httpMethod: 'post',
+    httpPath: '/v1/agent-config/{key}/promote',
+  },
+  {
+    clientCallName: 'client.agentConfig.resolve',
+    fullyQualifiedName: 'agentConfig.resolve',
+    httpMethod: 'post',
+    httpPath: '/v1/agent-config/{key}/resolve',
+  },
+  {
     clientCallName: 'client.autoimproveJob.create',
     fullyQualifiedName: 'autoimproveJob.create',
     httpMethod: 'post',
