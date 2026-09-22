@@ -10,8 +10,26 @@ import pinoHttp from 'pino-http';
 import { getStainlessApiKey, parseClientAuthHeaders } from './auth';
 import { getLogger } from './logger';
 import { McpOptions } from './options';
-import { protectedResourceMetadata, requireBearer, UnauthorizedError } from './oauth';
+import {
+  Connector,
+  ORIGIN_CONNECTOR,
+  protectedResourceMetadata,
+  requireBearer,
+  UnauthorizedError,
+} from './oauth';
 import { initMcpServer, newMcpServer } from './server';
+
+/**
+ * Which connector URL this request arrived on.
+ *
+ * `req.path` is the path within the matched route, so `/mcp` and `/mcp/<id>` are distinguishable
+ * from the legacy `/` transport without threading a flag through every handler.
+ */
+const connectorFrom = (req: express.Request): Connector => {
+  const projectId = req.params?.['projectId'];
+  if (typeof projectId === 'string' && projectId.length > 0) return { kind: 'project', projectId };
+  return req.path === '/mcp' || req.path.startsWith('/mcp/') ? { kind: 'mcp' } : ORIGIN_CONNECTOR;
+};
 
 const newServer = async ({
   clientOptions,
@@ -34,9 +52,7 @@ const newServer = async ({
   // not be able to make us do that.
   let authOptions: Partial<ClientOptions>;
   if (mcpOptions.oauth) {
-    const rawProjectId = req.params?.['projectId'];
-    const pathProjectId = typeof rawProjectId === 'string' ? rawProjectId : undefined;
-    authOptions = requireBearer(req, mcpOptions.oauth, pathProjectId);
+    authOptions = requireBearer(req, mcpOptions.oauth, connectorFrom(req));
   } else {
     authOptions = parseClientAuthHeaders(req, false);
   }
@@ -257,11 +273,21 @@ export const streamableHTTPApp = ({
     app.get('/.well-known/oauth-protected-resource', (_req, res) => {
       res.status(200).json(protectedResourceMetadata(oauth));
     });
+    // The single connector. Its `resource` carries no project, which is what tells the
+    // authorization server to mint a credential for the person rather than for one project.
+    app.get('/.well-known/oauth-protected-resource/mcp', (_req, res) => {
+      res.status(200).json(protectedResourceMetadata(oauth, { kind: 'mcp' }));
+    });
     app.get('/.well-known/oauth-protected-resource/mcp/:projectId', (req, res) => {
       const projectId = req.params['projectId'];
       res
         .status(200)
-        .json(protectedResourceMetadata(oauth, typeof projectId === 'string' ? projectId : undefined));
+        .json(
+          protectedResourceMetadata(
+            oauth,
+            typeof projectId === 'string' ? { kind: 'project', projectId } : undefined,
+          ),
+        );
     });
   }
 
@@ -269,9 +295,16 @@ export const streamableHTTPApp = ({
   app.post('/', post({ clientOptions, mcpOptions }));
   app.delete('/', del);
 
-  // Project-scoped connector URL: /mcp/<projectId>. The project id only selects
-  // the metadata `resource`; access is governed by the key the authorization
-  // server minted for that project.
+  // The connector URL: <base>/mcp, with no project in it. One URL, added once, that reaches
+  // every project the person belongs to. Registered BEFORE the pinned route so express does not
+  // match a bare `/mcp` as `/mcp/:projectId` with an empty parameter.
+  app.get('/mcp', get);
+  app.post('/mcp', post({ clientOptions, mcpOptions }));
+  app.delete('/mcp', del);
+
+  // Pinned connector URL: /mcp/<projectId>. Still supported, and now enforced rather than
+  // decorative: the project in the path becomes the SDK's project, so a user-scoped credential
+  // used here acts on that project only.
   app.get('/mcp/:projectId', get);
   app.post('/mcp/:projectId', post({ clientOptions, mcpOptions }));
   app.delete('/mcp/:projectId', del);

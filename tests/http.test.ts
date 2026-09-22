@@ -131,6 +131,39 @@ describe('remote OAuth mode', () => {
     });
   });
 
+  it('points the challenge at the unpinned connector, with no project in the resource', async () => {
+    // The single connector a person adds once. Its `resource` carries no project, which is the
+    // signal the authorization server reads to mint a credential for the person.
+    const request = await serve(options);
+    const res = await request('/mcp', postJson(INITIALIZE));
+
+    expect(res.status).toBe(401);
+    expect(res.headers.get('www-authenticate')).toBe(
+      'Bearer resource_metadata="https://mcp.api.test/.well-known/oauth-protected-resource/mcp"',
+    );
+  });
+
+  it('serves the unpinned connector once a bearer is present', async () => {
+    const request = await serve(options);
+    const res = await request('/mcp', postJson(INITIALIZE, { authorization: 'Bearer roark_test_key' }));
+
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('"serverInfo"');
+  });
+
+  it('serves unpinned metadata, and does not mistake /mcp for an empty project id', async () => {
+    // Registration order matters: `/mcp/:projectId` would otherwise be a candidate match for a
+    // bare `/mcp`, and the resource would come out as `<base>/mcp/` with a trailing slash.
+    const request = await serve(options);
+    const res = await request('/.well-known/oauth-protected-resource/mcp');
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      resource: 'https://mcp.api.test/mcp',
+      authorization_servers: ['https://mcp-oauth.api.test'],
+    });
+  });
+
   it('serves project-scoped metadata whose resource matches the connector URL', async () => {
     const request = await serve(options);
     const res = await request(`/.well-known/oauth-protected-resource/mcp/${PROJECT}`);
@@ -148,6 +181,7 @@ describe('legacy mode', () => {
     const request = await serve(baseOptions);
 
     expect((await request('/.well-known/oauth-protected-resource')).status).toBe(404);
+    expect((await request('/.well-known/oauth-protected-resource/mcp')).status).toBe(404);
     expect((await request(`/.well-known/oauth-protected-resource/mcp/${PROJECT}`)).status).toBe(404);
   });
 
@@ -157,5 +191,12 @@ describe('legacy mode', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get('www-authenticate')).toBeNull();
+  });
+
+  it('serves the unpinned connector path too, so a local install can use one URL', async () => {
+    const request = await serve(baseOptions);
+    const res = await request('/mcp', postJson(INITIALIZE));
+
+    expect(res.status).toBe(200);
   });
 });

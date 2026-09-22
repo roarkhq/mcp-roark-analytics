@@ -34,23 +34,50 @@ export class UnauthorizedError extends Error {
 const stripSlash = (url: string): string => url.replace(/\/+$/, '');
 
 /**
- * The resource identifier (RFC 8707) for a request: the project-scoped connector
- * URL when a project is in the path, else the server origin. Clients send it back
- * to the authorization server as `resource`, which is how consent learns which
- * project the connector was added for.
+ * Which connector URL a request arrived on. There are three, and the difference is the whole
+ * point of this PR:
+ *
+ *  - `origin`  the bare server origin, the legacy `/` transport.
+ *  - `mcp`     the single connector, `<base>/mcp`. No project in the URL: the credential is
+ *              user-scoped and names a project per request. This is what a person adds to
+ *              Claude or Cursor once and never revisits.
+ *  - `project` a pinned connector, `<base>/mcp/<projectId>`. Still supported, and now actually
+ *              enforced: the project in the path becomes the SDK's project, so a user-scoped
+ *              credential used on a pinned URL acts only on that project.
  */
-export const resourceIdentifier = (config: OAuthConfig, projectId?: string): string =>
-  projectId ? `${stripSlash(config.resourceBaseUrl)}/mcp/${projectId}` : stripSlash(config.resourceBaseUrl);
+export type Connector = { kind: 'origin' } | { kind: 'mcp' } | { kind: 'project'; projectId: string };
 
-/** Where this server publishes its Protected Resource Metadata, per resource. */
-export const protectedResourceMetadataUrl = (config: OAuthConfig, projectId?: string): string =>
-  projectId ?
-    `${stripSlash(config.resourceBaseUrl)}/.well-known/oauth-protected-resource/mcp/${projectId}`
-  : `${stripSlash(config.resourceBaseUrl)}/.well-known/oauth-protected-resource`;
+export const ORIGIN_CONNECTOR: Connector = { kind: 'origin' };
+
+/** The path a connector is served on, relative to the origin. */
+const connectorPath = (connector: Connector): string =>
+  connector.kind === 'origin' ? ''
+  : connector.kind === 'mcp' ? '/mcp'
+  : `/mcp/${connector.projectId}`;
+
+/**
+ * The resource identifier (RFC 8707) for a request: the connector URL it arrived on. Clients
+ * send it back to the authorization server as `resource`, which is how consent learns whether
+ * the grant is for one project or for the person.
+ */
+export const resourceIdentifier = (config: OAuthConfig, connector: Connector = ORIGIN_CONNECTOR): string =>
+  `${stripSlash(config.resourceBaseUrl)}${connectorPath(connector)}`;
+
+/**
+ * Where this server publishes its Protected Resource Metadata, per resource.
+ *
+ * RFC 9728 puts the resource's path after the well-known segment, so this is literally the
+ * origin, the well-known path, and the connector path, in that order.
+ */
+export const protectedResourceMetadataUrl = (
+  config: OAuthConfig,
+  connector: Connector = ORIGIN_CONNECTOR,
+): string =>
+  `${stripSlash(config.resourceBaseUrl)}/.well-known/oauth-protected-resource${connectorPath(connector)}`;
 
 /** RFC 9728 Protected Resource Metadata document. */
-export const protectedResourceMetadata = (config: OAuthConfig, projectId?: string) => ({
-  resource: resourceIdentifier(config, projectId),
+export const protectedResourceMetadata = (config: OAuthConfig, connector: Connector = ORIGIN_CONNECTOR) => ({
+  resource: resourceIdentifier(config, connector),
   authorization_servers: [stripSlash(config.issuer)],
   bearer_methods_supported: ['header'],
   scopes_supported: ['mcp'],
@@ -59,11 +86,11 @@ export const protectedResourceMetadata = (config: OAuthConfig, projectId?: strin
 
 const bearerChallenge = (
   config: OAuthConfig,
-  projectId: string | undefined,
+  connector: Connector,
   error?: string,
   description?: string,
 ): string => {
-  const parts = [`Bearer resource_metadata="${protectedResourceMetadataUrl(config, projectId)}"`];
+  const parts = [`Bearer resource_metadata="${protectedResourceMetadataUrl(config, connector)}"`];
   if (error) parts.push(`error="${error}"`);
   if (description) parts.push(`error_description="${description}"`);
   return parts.join(', ');
@@ -83,15 +110,21 @@ const extractBearer = (req: IncomingMessage): string | undefined => {
  * {@link UnauthorizedError} (401 + challenge) when it is missing, which is the
  * signal an MCP client needs to start the OAuth flow. Validity is decided by
  * customer-api on each call; an expired or revoked key surfaces there.
+ *
+ * A pinned connector also fixes the SDK's `project`. This is `project` rather than a
+ * `defaultHeaders` entry deliberately: code the model writes inside the execution tool can still
+ * call `client.withOptions({ project })` to reach another project the credential covers, which a
+ * default header would silently override. On the unpinned `/mcp` connector no project is set at
+ * all, and choosing one is the caller's job.
  */
 export const requireBearer = (
   req: IncomingMessage,
   config: OAuthConfig,
-  projectId?: string,
+  connector: Connector = ORIGIN_CONNECTOR,
 ): Partial<ClientOptions> => {
   const token = extractBearer(req);
   if (!token) {
-    throw new UnauthorizedError('Missing bearer token', bearerChallenge(config, projectId));
+    throw new UnauthorizedError('Missing bearer token', bearerChallenge(config, connector));
   }
-  return { bearerToken: token };
+  return { bearerToken: token, ...(connector.kind === 'project' && { project: connector.projectId }) };
 };
