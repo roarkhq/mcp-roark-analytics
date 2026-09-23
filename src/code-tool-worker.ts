@@ -132,6 +132,7 @@ const fuse = new Fuse(
     'client.metricVariant.getByID',
     'client.metricVariant.list',
     'client.metricVariant.update',
+    'client.simulation.mockTool',
     'client.simulation.run',
     'client.simulationJob.getByID',
     'client.simulationJob.lookup',

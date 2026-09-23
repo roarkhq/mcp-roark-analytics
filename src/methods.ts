@@ -155,6 +155,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/metric/definitions/{idOrSlug}/variants/{variantId}',
   },
   {
+    clientCallName: 'client.simulation.mockTool',
+    fullyQualifiedName: 'simulation.mockTool',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/tool-mock',
+  },
+  {
     clientCallName: 'client.simulation.run',
     fullyQualifiedName: 'simulation.run',
     httpMethod: 'post',
