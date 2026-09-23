@@ -896,6 +896,42 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'mockTool',
+    endpoint: '/v1/simulation/tool-mock',
+    httpMethod: 'post',
+    summary: 'Mock a tool call during a test call',
+    description:
+      'The server half of the tool guard for code-first agents. When a guarded tool fires during a Roark test call, send the invocation here instead of executing it: Roark answers with a simulated backend response that is valid JSON, shaped by the tool contract you pass, consistent with the test scenario, and consistent with earlier mocked responses in the same call. Real callers are never affected: the guard only diverts when the agent-config resolve response identified the session as a Roark simulation, and this endpoint independently re-validates the simulation before answering.\n\nFailure contract for your wrapper: `404` means the simulation id is unknown to this project (treat the session as real). `409` means the simulation has already ended (stale session state: do NOT execute the real tool; return your static fallback). `5xx` means generation failed (return your static fallback).\n\nIdentical retries (same tool, same arguments) within a few minutes return the stored response, so double-fired handlers stay consistent.',
+    stainlessPath: '(resource) simulation > (method) mockTool',
+    qualified: 'client.simulation.mockTool',
+    params: [
+      'simulationJobId: string;',
+      'toolName: string;',
+      'arguments?: object;',
+      'sessionId?: string;',
+      'toolDescription?: string;',
+    ],
+    response: '{ data: { reused: boolean; simulationJobId: string; toolName: string; result?: object; }; }',
+    markdown:
+      "## mockTool\n\n`client.simulation.mockTool(simulationJobId: string, toolName: string, arguments?: object, sessionId?: string, toolDescription?: string): { data: object; }`\n\n**post** `/v1/simulation/tool-mock`\n\nThe server half of the tool guard for code-first agents. When a guarded tool fires during a Roark test call, send the invocation here instead of executing it: Roark answers with a simulated backend response that is valid JSON, shaped by the tool contract you pass, consistent with the test scenario, and consistent with earlier mocked responses in the same call. Real callers are never affected: the guard only diverts when the agent-config resolve response identified the session as a Roark simulation, and this endpoint independently re-validates the simulation before answering.\n\nFailure contract for your wrapper: `404` means the simulation id is unknown to this project (treat the session as real). `409` means the simulation has already ended (stale session state: do NOT execute the real tool; return your static fallback). `5xx` means generation failed (return your static fallback).\n\nIdentical retries (same tool, same arguments) within a few minutes return the stored response, so double-fired handlers stay consistent.\n\n### Parameters\n\n- `simulationJobId: string`\n  The simulation this session belongs to, from the agent-config resolve response (`simulationJobId`). Roark re-validates it against the live simulation before answering.\n\n- `toolName: string`\n  The tool the agent invoked.\n\n- `arguments?: object`\n  The arguments the agent called the tool with, verbatim.\n\n- `sessionId?: string`\n  Your session or room identifier, echoed back in logs for correlation.\n\n- `toolDescription?: string`\n  The tool's contract: its description and, ideally, its parameter and return shape. The more contract you pass, the more faithful the simulated response.\n\n### Returns\n\n- `{ data: { reused: boolean; simulationJobId: string; toolName: string; result?: object; }; }`\n\n  - `data: { reused: boolean; simulationJobId: string; toolName: string; result?: object; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulation.mockTool({\n  simulationJobId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n  toolName: 'book_appointment',\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulation.mockTool',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.simulation.mockTool({\n  simulationJobId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n  toolName: 'book_appointment',\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'simulation.mock_tool',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.simulation.mock_tool(\n    simulation_job_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n    tool_name="book_appointment",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/tool-mock \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "simulationJobId": "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n          "toolName": "book_appointment",\n          "arguments": {\n            "date": "2026-10-01",\n            "time": "15:00"\n          },\n          "toolDescription": "Books an appointment. Args: date (YYYY-MM-DD), time (HH:MM). Returns {confirmationId, status}."\n        }\'',
+      },
+    },
+  },
+  {
     name: 'lookup',
     endpoint: '/v1/simulation/job/lookup',
     httpMethod: 'get',
