@@ -461,6 +461,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/agent',
   },
   {
+    clientCallName: 'client.agent.build',
+    fullyQualifiedName: 'agent.build',
+    httpMethod: 'post',
+    httpPath: '/v1/agent/build',
+  },
+  {
     clientCallName: 'client.agent.getByID',
     fullyQualifiedName: 'agent.getByID',
     httpMethod: 'get',

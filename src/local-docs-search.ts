@@ -2606,6 +2606,37 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'build',
+    endpoint: '/v1/agent/build',
+    httpMethod: 'post',
+    summary: 'Build a Roark-hosted agent',
+    description:
+      'Creates a new Roark-hosted agent from a one-line job description. Roark authors the system prompt and hosts the config, so the agent is live and self-improvable from creation.',
+    stainlessPath: '(resource) agent > (method) build',
+    qualified: 'client.agent.build',
+    params: ['jobDescription: string;', 'name: string;', 'voice?: string;'],
+    response:
+      '{ data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }; }',
+    markdown:
+      "## build\n\n`client.agent.build(jobDescription: string, name: string, voice?: string): { data: object; }`\n\n**post** `/v1/agent/build`\n\nCreates a new Roark-hosted agent from a one-line job description. Roark authors the system prompt and hosts the config, so the agent is live and self-improvable from creation.\n\n### Parameters\n\n- `jobDescription: string`\n  One-line description of what the agent should do. Roark authors the system prompt from this.\n\n- `name: string`\n  Name of the agent\n\n- `voice?: string`\n  Optional voice label for the hosted agent\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }; }`\n\n  - `data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.agent.build({ jobDescription: 'x', name: 'x' });\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.agent.build',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.agent.build({ jobDescription: 'x', name: 'x' });\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'agent.build',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.agent.build(\n    job_description="x",\n    name="x",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/agent/build \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "jobDescription": "x",\n          "name": "x"\n        }\'',
+      },
+    },
+  },
+  {
     name: 'update',
     endpoint: '/v1/agent/{agentId}',
     httpMethod: 'put',
