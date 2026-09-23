@@ -179,6 +179,36 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/job/lookup',
   },
   {
+    clientCallName: 'client.simulationJobToolMock.list',
+    fullyQualifiedName: 'simulationJobToolMock.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/job/{jobId}/tool-mock',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.create',
+    fullyQualifiedName: 'simulationToolFixture.create',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/tool-fixture',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.update',
+    fullyQualifiedName: 'simulationToolFixture.update',
+    httpMethod: 'put',
+    httpPath: '/v1/simulation/tool-fixture/{fixtureId}',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.list',
+    fullyQualifiedName: 'simulationToolFixture.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/tool-fixture',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.delete',
+    fullyQualifiedName: 'simulationToolFixture.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/simulation/tool-fixture/{fixtureId}',
+  },
+  {
     clientCallName: 'client.simulationRunPlan.create',
     fullyQualifiedName: 'simulationRunPlan.create',
     httpMethod: 'post',
