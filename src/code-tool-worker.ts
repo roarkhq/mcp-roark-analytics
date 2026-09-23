@@ -180,6 +180,7 @@ const fuse = new Fuse(
     'client.customerFlowEdgeCase.promote',
     'client.customerFlowEdgeCase.remove',
     'client.customerFlowEdgeCase.update',
+    'client.agent.build',
     'client.agent.create',
     'client.agent.getByID',
     'client.agent.list',
