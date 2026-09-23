@@ -911,9 +911,10 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       'sessionId?: string;',
       'toolDescription?: string;',
     ],
-    response: '{ data: { reused: boolean; simulationJobId: string; toolName: string; result?: object; }; }',
+    response:
+      "{ data: { reused: boolean; simulationJobId: string; source: 'GENERATED' | 'FIXTURE'; toolName: string; result?: object; }; }",
     markdown:
-      "## mockTool\n\n`client.simulation.mockTool(simulationJobId: string, toolName: string, arguments?: object, sessionId?: string, toolDescription?: string): { data: object; }`\n\n**post** `/v1/simulation/tool-mock`\n\nThe server half of the tool guard for code-first agents. When a guarded tool fires during a Roark test call, send the invocation here instead of executing it: Roark answers with a simulated backend response that is valid JSON, shaped by the tool contract you pass, consistent with the test scenario, and consistent with earlier mocked responses in the same call. Real callers are never affected: the guard only diverts when the agent-config resolve response identified the session as a Roark simulation, and this endpoint independently re-validates the simulation before answering.\n\nFailure contract for your wrapper: `404` means the simulation id is unknown to this project (treat the session as real). `409` means the simulation has already ended (stale session state: do NOT execute the real tool; return your static fallback). `5xx` means generation failed (return your static fallback).\n\nIdentical retries (same tool, same arguments) within a few minutes return the stored response, so double-fired handlers stay consistent.\n\n### Parameters\n\n- `simulationJobId: string`\n  The simulation this session belongs to, from the agent-config resolve response (`simulationJobId`). Roark re-validates it against the live simulation before answering.\n\n- `toolName: string`\n  The tool the agent invoked.\n\n- `arguments?: object`\n  The arguments the agent called the tool with, verbatim.\n\n- `sessionId?: string`\n  Your session or room identifier, echoed back in logs for correlation.\n\n- `toolDescription?: string`\n  The tool's contract: its description and, ideally, its parameter and return shape. The more contract you pass, the more faithful the simulated response.\n\n### Returns\n\n- `{ data: { reused: boolean; simulationJobId: string; toolName: string; result?: object; }; }`\n\n  - `data: { reused: boolean; simulationJobId: string; toolName: string; result?: object; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulation.mockTool({\n  simulationJobId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n  toolName: 'book_appointment',\n});\n\nconsole.log(response);\n```",
+      "## mockTool\n\n`client.simulation.mockTool(simulationJobId: string, toolName: string, arguments?: object, sessionId?: string, toolDescription?: string): { data: object; }`\n\n**post** `/v1/simulation/tool-mock`\n\nThe server half of the tool guard for code-first agents. When a guarded tool fires during a Roark test call, send the invocation here instead of executing it: Roark answers with a simulated backend response that is valid JSON, shaped by the tool contract you pass, consistent with the test scenario, and consistent with earlier mocked responses in the same call. Real callers are never affected: the guard only diverts when the agent-config resolve response identified the session as a Roark simulation, and this endpoint independently re-validates the simulation before answering.\n\nFailure contract for your wrapper: `404` means the simulation id is unknown to this project (treat the session as real). `409` means the simulation has already ended (stale session state: do NOT execute the real tool; return your static fallback). `5xx` means generation failed (return your static fallback).\n\nIdentical retries (same tool, same arguments) within a few minutes return the stored response, so double-fired handlers stay consistent.\n\n### Parameters\n\n- `simulationJobId: string`\n  The simulation this session belongs to, from the agent-config resolve response (`simulationJobId`). Roark re-validates it against the live simulation before answering.\n\n- `toolName: string`\n  The tool the agent invoked.\n\n- `arguments?: object`\n  The arguments the agent called the tool with, verbatim.\n\n- `sessionId?: string`\n  Your session or room identifier, echoed back in logs for correlation.\n\n- `toolDescription?: string`\n  The tool's contract: its description and, ideally, its parameter and return shape. The more contract you pass, the more faithful the simulated response.\n\n### Returns\n\n- `{ data: { reused: boolean; simulationJobId: string; source: 'GENERATED' | 'FIXTURE'; toolName: string; result?: object; }; }`\n\n  - `data: { reused: boolean; simulationJobId: string; source: 'GENERATED' | 'FIXTURE'; toolName: string; result?: object; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulation.mockTool({\n  simulationJobId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n  toolName: 'book_appointment',\n});\n\nconsole.log(response);\n```",
     perLanguage: {
       typescript: {
         method: 'client.simulation.mockTool',
@@ -989,6 +990,163 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       http: {
         example:
           'curl https://api.roark.ai/v1/simulation/job/$JOB_ID \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'list',
+    endpoint: '/v1/simulation/job/{jobId}/tool-mock',
+    httpMethod: 'get',
+    summary: 'List mocked tool invocations',
+    description:
+      "Every guarded tool invocation Roark answered during this simulation: what the agent tried to call, with what arguments, and the simulated response it received. Use this to assert tool behavior in CI after a test call, with zero real side effects. Empty when the agent's tools are not guarded (see the tool guard docs).",
+    stainlessPath: '(resource) simulationJobToolMock > (method) list',
+    qualified: 'client.simulationJobToolMock.list',
+    params: ['jobId: string;'],
+    response:
+      "{ data: { id: string; createdAt: string; sessionId: string; source: 'GENERATED' | 'FIXTURE'; toolName: string; arguments?: object; result?: object; }[]; }",
+    markdown:
+      "## list\n\n`client.simulationJobToolMock.list(jobId: string): { data: object[]; }`\n\n**get** `/v1/simulation/job/{jobId}/tool-mock`\n\nEvery guarded tool invocation Roark answered during this simulation: what the agent tried to call, with what arguments, and the simulated response it received. Use this to assert tool behavior in CI after a test call, with zero real side effects. Empty when the agent's tools are not guarded (see the tool guard docs).\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; sessionId: string; source: 'GENERATED' | 'FIXTURE'; toolName: string; arguments?: object; result?: object; }[]; }`\n\n  - `data: { id: string; createdAt: string; sessionId: string; source: 'GENERATED' | 'FIXTURE'; toolName: string; arguments?: object; result?: object; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationJobToolMocks = await client.simulationJobToolMock.list(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(simulationJobToolMocks);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationJobToolMock.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationJobToolMocks = await client.simulationJobToolMock.list(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(simulationJobToolMocks.data);",
+      },
+      python: {
+        method: 'simulation_job_tool_mock.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_job_tool_mocks = client.simulation_job_tool_mock.list(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(simulation_job_tool_mocks.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/job/$JOB_ID/tool-mock \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'list',
+    endpoint: '/v1/simulation/tool-fixture',
+    httpMethod: 'get',
+    summary: 'List tool fixtures',
+    description: 'All deterministic tool responses configured for this project, optionally filtered by tool.',
+    stainlessPath: '(resource) simulationToolFixture > (method) list',
+    qualified: 'client.simulationToolFixture.list',
+    params: ['toolName?: string;'],
+    response:
+      '{ data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }[]; }',
+    markdown:
+      "## list\n\n`client.simulationToolFixture.list(toolName?: string): { data: object[]; }`\n\n**get** `/v1/simulation/tool-fixture`\n\nAll deterministic tool responses configured for this project, optionally filtered by tool.\n\n### Parameters\n\n- `toolName?: string`\n  Only fixtures for this tool.\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }[]; }`\n\n  - `data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationToolFixtures = await client.simulationToolFixture.list();\n\nconsole.log(simulationToolFixtures);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationToolFixture.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationToolFixtures = await client.simulationToolFixture.list();\n\nconsole.log(simulationToolFixtures.data);",
+      },
+      python: {
+        method: 'simulation_tool_fixture.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_tool_fixtures = client.simulation_tool_fixture.list()\nprint(simulation_tool_fixtures.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/tool-fixture \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'create',
+    endpoint: '/v1/simulation/tool-fixture',
+    httpMethod: 'post',
+    summary: 'Set a tool fixture',
+    description:
+      'Create-or-replace by scope: one fixture per tool project-wide, plus one per (tool, flow variant). Setting the same scope twice replaces the response, so CI can apply fixtures idempotently. During Roark test calls the tool guard answers with the fixture verbatim instead of generating a response; real callers are never affected.',
+    stainlessPath: '(resource) simulationToolFixture > (method) create',
+    qualified: 'client.simulationToolFixture.create',
+    params: [
+      'toolName: string;',
+      'customerFlowVariantId?: string;',
+      'description?: string;',
+      'enabled?: boolean;',
+      'response?: object;',
+    ],
+    response:
+      '{ data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }; }',
+    markdown:
+      "## create\n\n`client.simulationToolFixture.create(toolName: string, customerFlowVariantId?: string, description?: string, enabled?: boolean, response?: object): { data: object; }`\n\n**post** `/v1/simulation/tool-fixture`\n\nCreate-or-replace by scope: one fixture per tool project-wide, plus one per (tool, flow variant). Setting the same scope twice replaces the response, so CI can apply fixtures idempotently. During Roark test calls the tool guard answers with the fixture verbatim instead of generating a response; real callers are never affected.\n\n### Parameters\n\n- `toolName: string`\n  The tool this fixture answers for.\n\n- `customerFlowVariantId?: string`\n  Pin the fixture to one flow variant (scenario). Omit for a project-wide fixture. A variant-pinned fixture beats the project-wide one.\n\n- `description?: string`\n  Why this fixture exists.\n\n- `enabled?: boolean`\n  Defaults to true.\n\n- `response?: object`\n  The exact JSON to return.\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }; }`\n\n  - `data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationToolFixture = await client.simulationToolFixture.create({\n  toolName: 'lookup_availability',\n});\n\nconsole.log(simulationToolFixture);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationToolFixture.create',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationToolFixture = await client.simulationToolFixture.create({\n  toolName: 'lookup_availability',\n});\n\nconsole.log(simulationToolFixture.data);",
+      },
+      python: {
+        method: 'simulation_tool_fixture.create',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_tool_fixture = client.simulation_tool_fixture.create(\n    tool_name="lookup_availability",\n)\nprint(simulation_tool_fixture.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/tool-fixture \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "toolName": "lookup_availability",\n          "description": "Forces the no-availability branch",\n          "response": {\n            "slots": []\n          }\n        }\'',
+      },
+    },
+  },
+  {
+    name: 'update',
+    endpoint: '/v1/simulation/tool-fixture/{fixtureId}',
+    httpMethod: 'put',
+    summary: 'Update a tool fixture',
+    description: 'Change the response, description, or enabled state of an existing fixture.',
+    stainlessPath: '(resource) simulationToolFixture > (method) update',
+    qualified: 'client.simulationToolFixture.update',
+    params: ['fixtureId: string;', 'description?: string;', 'enabled?: boolean;', 'response?: object;'],
+    response:
+      '{ data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }; }',
+    markdown:
+      "## update\n\n`client.simulationToolFixture.update(fixtureId: string, description?: string, enabled?: boolean, response?: object): { data: object; }`\n\n**put** `/v1/simulation/tool-fixture/{fixtureId}`\n\nChange the response, description, or enabled state of an existing fixture.\n\n### Parameters\n\n- `fixtureId: string`\n\n- `description?: string`\n\n- `enabled?: boolean`\n\n- `response?: object`\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }; }`\n\n  - `data: { id: string; createdAt: string; customerFlowVariantId: string; description: string; enabled: boolean; toolName: string; updatedAt: string; response?: object; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationToolFixture = await client.simulationToolFixture.update(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(simulationToolFixture);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationToolFixture.update',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationToolFixture = await client.simulationToolFixture.update(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(simulationToolFixture.data);",
+      },
+      python: {
+        method: 'simulation_tool_fixture.update',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_tool_fixture = client.simulation_tool_fixture.update(\n    fixture_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(simulation_tool_fixture.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/tool-fixture/$FIXTURE_ID \\\n    -X PUT \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'delete',
+    endpoint: '/v1/simulation/tool-fixture/{fixtureId}',
+    httpMethod: 'delete',
+    summary: 'Delete a tool fixture',
+    description: 'The tool goes back to scenario-aware generated responses in test calls.',
+    stainlessPath: '(resource) simulationToolFixture > (method) delete',
+    qualified: 'client.simulationToolFixture.delete',
+    params: ['fixtureId: string;'],
+    response: '{ data: { deleted: boolean; }; }',
+    markdown:
+      "## delete\n\n`client.simulationToolFixture.delete(fixtureId: string): { data: object; }`\n\n**delete** `/v1/simulation/tool-fixture/{fixtureId}`\n\nThe tool goes back to scenario-aware generated responses in test calls.\n\n### Parameters\n\n- `fixtureId: string`\n\n### Returns\n\n- `{ data: { deleted: boolean; }; }`\n\n  - `data: { deleted: boolean; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationToolFixture = await client.simulationToolFixture.delete(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(simulationToolFixture);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationToolFixture.delete',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationToolFixture = await client.simulationToolFixture.delete(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(simulationToolFixture.data);",
+      },
+      python: {
+        method: 'simulation_tool_fixture.delete',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_tool_fixture = client.simulation_tool_fixture.delete(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(simulation_tool_fixture.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/tool-fixture/$FIXTURE_ID \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
       },
     },
   },
