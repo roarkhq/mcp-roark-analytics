@@ -106,7 +106,32 @@ jobs:
           set -euo pipefail
 
           sdk_range=$(jq -r -e '.dependencies["@roarkanalytics/sdk"]' package.json)
-          floor="${sdk_range#^}"
+
+          # Ask the registry which PUBLISHED versions satisfy the range rather
+          # than deriving the floor from the string. `${sdk_range#^}` would do
+          # for the caret this package has always declared and silently lie
+          # about anything else: `~4.2.0` and `>=4.2.0 <5` survive it unchanged
+          # and get handed to `npm install` as a range, which then resolves to
+          # the NEWEST match - the exact answer this step exists to stop
+          # trusting - while the log still calls it the floor.
+          #
+          # `npm view pkg@<range> version` filters by the range and prints the
+          # matches ascending, so `.[0]` is the lowest published version a
+          # consumer could land on, whatever syntax the range is written in. It
+          # is one string for a single match and an array for several, hence the
+          # jq. (`versions`, plural, ignores the range and lists everything.)
+          if ! matching=$(npm view "@roarkanalytics/sdk@$sdk_range" version --json 2>/dev/null) ||
+             [ -z "$matching" ]; then
+            # The "generator outran the release" case, which is precisely what
+            # this step is here to catch, so it gets the same crafted message the
+            # script gives its own failures rather than a bare npm 404 forty
+            # lines further down.
+            echo "::error::no published @roarkanalytics/sdk satisfies $sdk_range, so this package cannot be \
+          installed at all. Either the SDK release the regenerated table needs is not out yet - in which case this \
+          stays red until it is, which is correct - or the range was bumped to a version that will never exist."
+            exit 1
+          fi
+          floor=$(jq -r 'if type == "array" then .[0] else . end' <<<"$matching")
 
           # In its own directory rather than alongside the server: resolution is
           # nearest-first, so an SDK installed next to the tarball could be shaded
