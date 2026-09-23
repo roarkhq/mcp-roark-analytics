@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.3.0...v4.3.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **deps:** require @roarkanalytics/sdk ^4.3.0 ([#107](https://github.com/roarkhq/mcp-roark-analytics/issues/107)) ([9e7591b](https://github.com/roarkhq/mcp-roark-analytics/commit/9e7591bff148b3c26d2aa8ed68ed90c39f32d898))
+
 ## [4.3.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.2.1...v4.3.0) (2026-09-23)
 
 
