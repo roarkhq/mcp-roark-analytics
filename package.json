@@ -29,7 +29,7 @@
     "prepublishOnly": "echo 'to publish, run pnpm build && (cd dist; pnpm publish)' && exit 1"
   },
   "dependencies": {
-    "@roarkanalytics/sdk": "^4.0.0",
+    "@roarkanalytics/sdk": "^4.2.0",
     "ajv": "^8.18.0",
     "@cloudflare/cabidela": "^0.2.4",
     "@hono/node-server": "^1.19.10",

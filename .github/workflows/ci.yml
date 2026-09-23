@@ -76,3 +76,91 @@ jobs:
       # fine.
       - name: Check the bundle was produced
         run: test -f roarkanalytics_sdk_api.mcpb
+
+      # The header of this file says the point of the split is that this package
+      # compiles against a *published* SDK. It does - but compiling is not the
+      # question, because the method table addresses the SDK by string and tsc
+      # cannot follow a string. The question is whether the range in package.json
+      # is true, and until now nothing asked it.
+      #
+      # `publish.yml` probes the RESOLVED SDK, which for a caret range is the
+      # newest version npm had at that instant. That is a race against the SDK's
+      # own release and it is run after release-please has already cut the tag.
+      # Worse, this package ships no shrinkwrap, so winning that race on the
+      # runner says nothing about a consumer's machine: they re-resolve the range
+      # themselves and may land anywhere inside it.
+      #
+      # 4.2.0 went out that way. It declares `^4.0.0` and its table names
+      # `agent.build` (SDK 4.2.0) plus six `agentConfig.*` methods (SDK 4.1.0);
+      # installed against the 4.0.0 that same range admits, seven of a hundred
+      # tools are undefined at call time. The publish was green because it ran
+      # two hours after the SDK's.
+      #
+      # So ask the question that has no race in it: does the table resolve on the
+      # OLDEST SDK the range allows? Two files in this repository decide it, it
+      # is false the moment the generator outruns the range, and it is asked
+      # here - on the regeneration PR, where the fix is a one-line bump instead
+      # of a re-release.
+      - name: Every tool resolves on the oldest SDK the range allows
+        run: |
+          set -euo pipefail
+
+          sdk_range=$(jq -r -e '.dependencies["@roarkanalytics/sdk"]' package.json)
+
+          # Ask the registry which PUBLISHED versions satisfy the range rather
+          # than deriving the floor from the string. `${sdk_range#^}` would do
+          # for the caret this package has always declared and silently lie
+          # about anything else: `~4.2.0` and `>=4.2.0 <5` survive it unchanged
+          # and get handed to `npm install` as a range, which then resolves to
+          # the NEWEST match - the exact answer this step exists to stop
+          # trusting - while the log still calls it the floor.
+          #
+          # `npm view pkg@<range> version` filters by the range and prints the
+          # matches ascending, so `.[0]` is the lowest published version a
+          # consumer could land on, whatever syntax the range is written in. It
+          # is one string for a single match and an array for several, hence the
+          # jq. (`versions`, plural, ignores the range and lists everything.)
+          if ! matching=$(npm view "@roarkanalytics/sdk@$sdk_range" version --json 2>/dev/null) ||
+             [ -z "$matching" ]; then
+            # The "generator outran the release" case, which is precisely what
+            # this step is here to catch, so it gets the same crafted message the
+            # script gives its own failures rather than a bare npm 404 forty
+            # lines further down.
+            echo "::error::no published @roarkanalytics/sdk satisfies $sdk_range, so this package cannot be \
+          installed at all. Either the SDK release the regenerated table needs is not out yet - in which case this \
+          stays red until it is, which is correct - or the range was bumped to a version that will never exist."
+            exit 1
+          fi
+          floor=$(jq -r 'if type == "array" then .[0] else . end' <<<"$matching")
+
+          # In its own directory rather than alongside the server: resolution is
+          # nearest-first, so an SDK installed next to the tarball could be shaded
+          # by one nested under it and the check would answer for the wrong
+          # version. The table comes from the tarball install, the SDK from here,
+          # and check-sdk-resolution.cjs is told to keep the two apart.
+          floor_sdk="$RUNNER_TEMP/floor-sdk"
+          rm -rf "$floor_sdk"
+          mkdir -p "$floor_sdk"
+          (
+            cd "$floor_sdk"
+            npm init -y >/dev/null
+            npm install "@roarkanalytics/sdk@$floor" --loglevel=error --no-audit --no-fund >/dev/null
+          )
+
+          cd dist
+          npm pack --loglevel=error >/dev/null
+          tarball=$(ls -- *.tgz)
+          probe="$RUNNER_TEMP/floor-probe"
+          rm -rf "$probe"
+          mkdir -p "$probe"
+          # `npm init -y` first, or npm walks up looking for a package.json and
+          # finds this repository's.
+          (
+            cd "$probe"
+            npm init -y >/dev/null
+            npm install "$GITHUB_WORKSPACE/dist/$tarball" --loglevel=error --no-audit --no-fund >/dev/null
+          )
+          rm -f "$tarball"
+
+          echo "package.json declares $sdk_range, so the oldest SDK a consumer may resolve is $floor"
+          node "$GITHUB_WORKSPACE/scripts/check-sdk-resolution.cjs" "$probe" "$floor_sdk"
