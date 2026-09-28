@@ -80,6 +80,65 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'get',
+    endpoint: '/v1/me',
+    httpMethod: 'get',
+    summary: 'Describe the current credential',
+    description:
+      'Returns the scope of the credential making the request, the organization it acts in, its default project (if any) and the permissions it was granted. Works for both project-scoped API keys and user-scoped credentials from the CLI or an MCP connector.',
+    stainlessPath: '(resource) me > (method) get',
+    qualified: 'client.me.get',
+    response:
+      "{ data: { defaultProject: { id: string; name: string; slug: string; }; grantedPermissions: string[]; organization: { id: string; name: string; }; scopes: string[]; tokenScope: 'PROJECT' | 'USER'; user: { id: string; email: string; name: string; }; }; }",
+    markdown:
+      "## get\n\n`client.me.get(): { data: object; }`\n\n**get** `/v1/me`\n\nReturns the scope of the credential making the request, the organization it acts in, its default project (if any) and the permissions it was granted. Works for both project-scoped API keys and user-scoped credentials from the CLI or an MCP connector.\n\n### Returns\n\n- `{ data: { defaultProject: { id: string; name: string; slug: string; }; grantedPermissions: string[]; organization: { id: string; name: string; }; scopes: string[]; tokenScope: 'PROJECT' | 'USER'; user: { id: string; email: string; name: string; }; }; }`\n\n  - `data: { defaultProject: { id: string; name: string; slug: string; }; grantedPermissions: string[]; organization: { id: string; name: string; }; scopes: string[]; tokenScope: 'PROJECT' | 'USER'; user: { id: string; email: string; name: string; }; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst me = await client.me.get();\n\nconsole.log(me);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.me.get',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst me = await client.me.get();\n\nconsole.log(me.data);",
+      },
+      python: {
+        method: 'me.get',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nme = client.me.get()\nprint(me.data)',
+      },
+      http: {
+        example: 'curl https://api.roark.ai/v1/me \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'list',
+    endpoint: '/v1/projects',
+    httpMethod: 'get',
+    summary: 'List projects available to this credential',
+    description:
+      'Returns every project the calling credential may act on, with the permissions it holds in each. A project-scoped API key returns the single project it is bound to. A user-scoped credential returns the projects in its organization where the holder is an active member. Use the returned id in the X-Roark-Project-Id header.',
+    stainlessPath: '(resource) project > (method) list',
+    qualified: 'client.project.list',
+    response:
+      '{ data: { projects: { id: string; grantedPermissions: string[]; name: string; organization: object; slug: string; }[]; }; }',
+    markdown:
+      "## list\n\n`client.project.list(): { data: object; }`\n\n**get** `/v1/projects`\n\nReturns every project the calling credential may act on, with the permissions it holds in each. A project-scoped API key returns the single project it is bound to. A user-scoped credential returns the projects in its organization where the holder is an active member. Use the returned id in the X-Roark-Project-Id header.\n\n### Returns\n\n- `{ data: { projects: { id: string; grantedPermissions: string[]; name: string; organization: object; slug: string; }[]; }; }`\n\n  - `data: { projects: { id: string; grantedPermissions: string[]; name: string; organization: { id: string; name: string; }; slug: string; }[]; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst projects = await client.project.list();\n\nconsole.log(projects);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.project.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst projects = await client.project.list();\n\nconsole.log(projects.data);",
+      },
+      python: {
+        method: 'project.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nprojects = client.project.list()\nprint(projects.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/projects \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'list',
     endpoint: '/v1/call',
     httpMethod: 'get',

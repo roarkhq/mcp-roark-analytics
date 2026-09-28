@@ -109,6 +109,8 @@ function getTSDiagnostics(code: string): string[] {
 const fuse = new Fuse(
   [
     'client.health.get',
+    'client.me.get',
+    'client.project.list',
     'client.call.appendToolInvocations',
     'client.call.create',
     'client.call.getByID',
