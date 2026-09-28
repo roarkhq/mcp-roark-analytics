@@ -155,6 +155,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/metric/definitions/{idOrSlug}/variants/{variantId}',
   },
   {
+    clientCallName: 'client.simulation.mockTool',
+    fullyQualifiedName: 'simulation.mockTool',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/tool-mock',
+  },
+  {
     clientCallName: 'client.simulation.run',
     fullyQualifiedName: 'simulation.run',
     httpMethod: 'post',
@@ -171,6 +177,36 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'simulationJob.lookup',
     httpMethod: 'get',
     httpPath: '/v1/simulation/job/lookup',
+  },
+  {
+    clientCallName: 'client.simulationJobToolMock.list',
+    fullyQualifiedName: 'simulationJobToolMock.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/job/{jobId}/tool-mock',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.create',
+    fullyQualifiedName: 'simulationToolFixture.create',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/tool-fixture',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.update',
+    fullyQualifiedName: 'simulationToolFixture.update',
+    httpMethod: 'put',
+    httpPath: '/v1/simulation/tool-fixture/{fixtureId}',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.list',
+    fullyQualifiedName: 'simulationToolFixture.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/tool-fixture',
+  },
+  {
+    clientCallName: 'client.simulationToolFixture.delete',
+    fullyQualifiedName: 'simulationToolFixture.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/simulation/tool-fixture/{fixtureId}',
   },
   {
     clientCallName: 'client.simulationRunPlan.create',
@@ -459,6 +495,12 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'agent.list',
     httpMethod: 'get',
     httpPath: '/v1/agent',
+  },
+  {
+    clientCallName: 'client.agent.build',
+    fullyQualifiedName: 'agent.build',
+    httpMethod: 'post',
+    httpPath: '/v1/agent/build',
   },
   {
     clientCallName: 'client.agent.getByID',

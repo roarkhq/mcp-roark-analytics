@@ -1,5 +1,68 @@
 # Changelog
 
+## [4.7.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.6.0...v4.7.0) (2026-09-28)
+
+
+### Features
+
+* **mcp:** mcp update ([#117](https://github.com/roarkhq/mcp-roark-analytics/issues/117)) ([20952f8](https://github.com/roarkhq/mcp-roark-analytics/commit/20952f88d6d3745b47ca7099799fbf3311e591bf))
+
+## [4.6.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.5.1...v4.6.0) (2026-09-25)
+
+
+### Features
+
+* **mcp:** mcp update ([#115](https://github.com/roarkhq/mcp-roark-analytics/issues/115)) ([1cd08c5](https://github.com/roarkhq/mcp-roark-analytics/commit/1cd08c5bf6f0b3fba75793ae2f5c3766449bb6a0))
+
+## [4.5.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.5.0...v4.5.1) (2026-09-24)
+
+
+### Documentation
+
+* **concepts:** sync from app-roark-analytics@e65b8b3 ([#113](https://github.com/roarkhq/mcp-roark-analytics/issues/113)) ([3283cd0](https://github.com/roarkhq/mcp-roark-analytics/commit/3283cd0197da61d169ea4ec2a0bed5569c4c43a6))
+
+## [4.5.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.4.0...v4.5.0) (2026-09-24)
+
+
+### Features
+
+* **mcp:** mcp update ([#111](https://github.com/roarkhq/mcp-roark-analytics/issues/111)) ([af5d228](https://github.com/roarkhq/mcp-roark-analytics/commit/af5d2283da0d35b020656f0d30859ad89724ff28))
+
+## [4.4.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.3.1...v4.4.0) (2026-09-23)
+
+
+### Features
+
+* **mcp:** mcp update ([#109](https://github.com/roarkhq/mcp-roark-analytics/issues/109)) ([0097715](https://github.com/roarkhq/mcp-roark-analytics/commit/00977153ec0c3a38920923579a98420373efade5))
+
+## [4.3.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.3.0...v4.3.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **deps:** require @roarkanalytics/sdk ^4.3.0 ([#107](https://github.com/roarkhq/mcp-roark-analytics/issues/107)) ([9e7591b](https://github.com/roarkhq/mcp-roark-analytics/commit/9e7591bff148b3c26d2aa8ed68ed90c39f32d898))
+
+## [4.3.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.2.1...v4.3.0) (2026-09-23)
+
+
+### Features
+
+* **mcp:** mcp update ([#105](https://github.com/roarkhq/mcp-roark-analytics/issues/105)) ([7f792ee](https://github.com/roarkhq/mcp-roark-analytics/commit/7f792eec1f39b9ced9e0ba9bf0850c8cf9d8cec5))
+
+## [4.2.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.2.0...v4.2.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **deps:** require @roarkanalytics/sdk ^4.2.0 ([#103](https://github.com/roarkhq/mcp-roark-analytics/issues/103)) ([eb95a56](https://github.com/roarkhq/mcp-roark-analytics/commit/eb95a56d0abc012da9462555d32163de81b14939))
+
+## [4.2.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.1.0...v4.2.0) (2026-09-23)
+
+
+### Features
+
+* **mcp:** mcp update ([#101](https://github.com/roarkhq/mcp-roark-analytics/issues/101)) ([f7f40a9](https://github.com/roarkhq/mcp-roark-analytics/commit/f7f40a9a4e2a2fe456f024875ce793235c9cf72d))
+
 ## [4.1.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.0.1...v4.1.0) (2026-09-22)
 
 

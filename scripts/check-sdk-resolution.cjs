@@ -22,13 +22,61 @@
 // repository's `node_modules`: the repo resolves from `pnpm-lock.yaml`, a user
 // resolves from the published range, and it is the published one whose answer
 // matters.
+//
+// The optional second argument is what makes that question answerable BEFORE a
+// release is cut, and it is the one this package most needs answered. With no
+// argument the SDK is resolved the way the server would resolve it - whichever
+// version npm picked when the runner installed, which for a caret range is the
+// NEWEST one published at that instant. That is a race against the SDK's own
+// release, and winning it proves nothing about anyone else's install: this
+// package ships no shrinkwrap, so a consumer re-resolves the range on their own
+// machine and may land anywhere in it.
+//
+// 4.2.0 is what that costs. It went to npm declaring `^4.0.0` while the table
+// named `agent.build` (SDK 4.2.0) and six `agentConfig.*` methods (SDK 4.1.0).
+// The publish passed because it happened two hours after the SDK's, so the
+// runner resolved 4.2.0. Install it next to an SDK 4.0.0 that the same range
+// admits - an older lockfile, a pinned SDK elsewhere in the tree - and seven of
+// a hundred tools are `undefined` at call time. The CLI hit the same bug the
+// same day and was caught by its shrinkwrap; there is nothing here to catch it.
+//
+// Pointed at a directory holding one specific SDK, this asks the strict version
+// instead: does the table resolve on the OLDEST version the range admits? There
+// is no race in that. It is decided by two files in this repository, it is false
+// the moment the generator outruns the range, and `ci.yml` asks it on the
+// regeneration PR itself.
 const { createRequire } = require('node:module');
+const fs = require('node:fs');
 const path = require('node:path');
+
+// The SDK's `exports` map does not list `./package.json`, so requiring it throws
+// ERR_PACKAGE_PATH_NOT_EXPORTED. Resolve the entry point and walk up to the
+// manifest beside it instead. Only used to name a version in the message, so a
+// miss degrades to "unknown" rather than failing the check.
+const versionOfResolvedSdk = (resolver) => {
+  try {
+    let directory = path.dirname(resolver.resolve('@roarkanalytics/sdk'));
+    for (;;) {
+      const manifest = path.join(directory, 'package.json');
+      if (fs.existsSync(manifest)) {
+        return JSON.parse(fs.readFileSync(manifest, 'utf8')).version ?? 'unknown';
+      }
+      const parent = path.dirname(directory);
+      if (parent === directory) return 'unknown';
+      directory = parent;
+    }
+  } catch {
+    return 'unknown';
+  }
+};
 
 const main = () => {
   const probe = process.argv[2];
+  const sdkDir = process.argv[3];
   if (!probe) {
-    throw new Error('usage: check-sdk-resolution.cjs <directory where the tarball is installed>');
+    throw new Error(
+      'usage: check-sdk-resolution.cjs <directory where the tarball is installed> [directory to resolve the SDK from]',
+    );
   }
 
   // Resolve from inside the probe directory, so this reads the installed tree
@@ -44,8 +92,16 @@ const main = () => {
   // Resolve the SDK from the server's own location, not from this script's. npm
   // may hoist it or nest it under the server, and the server reads whichever is
   // nested-or-hoisted relative to itself.
-  const fromServer = createRequire(methodsPath);
+  //
+  // Unless a directory was named, in which case resolve from there: the caller
+  // has installed one specific SDK and wants the table judged against THAT
+  // rather than against whatever the probe install resolved. Kept in its own
+  // directory rather than installed beside the tarball, because a copy nested
+  // under the server would win over a hoisted one and the check would quietly
+  // answer for the wrong version.
+  const fromServer = createRequire(sdkDir ? path.join(sdkDir, 'index.js') : methodsPath);
   const sdk = fromServer('@roarkanalytics/sdk');
+  const sdkVersion = versionOfResolvedSdk(fromServer);
   const Roark = sdk.default ?? sdk.Roark ?? sdk;
   // The constructor refuses to build without credentials and resource
   // accessors live on the instance, so there has to be one. Nothing here
@@ -69,15 +125,29 @@ const main = () => {
     for (const method of missing) {
       console.error(`  ${method.clientCallName}`);
     }
+    // Two callers with two different things to do about it, so the remedy is
+    // worded per caller rather than left as one sentence that is half wrong
+    // whichever way it is read.
     throw new Error(
-      `${missing.length} of ${sdkMethods.length} tools do not resolve on the SDK this build ships against ` +
-        '(listed above). The method table names resources the pinned @roarkanalytics/sdk does not have. ' +
-        'Either the SDK release carrying them is not out yet, or the dependency range in package.json was ' +
-        'not moved with the regenerated table.',
+      sdkDir ?
+        `${missing.length} of ${sdkMethods.length} tools do not resolve on @roarkanalytics/sdk@${sdkVersion}, ` +
+          'the oldest version the range in package.json admits (listed above). This package ships no ' +
+          'shrinkwrap, so that range is the only thing standing between a consumer and a tool that returns ' +
+          'undefined. Raise the floor to the SDK release carrying these methods - the regeneration that added ' +
+          'them to the table is what should have moved it. If that release is not on npm yet this stays red ' +
+          'until it is, which is correct: the tools cannot work before it exists.'
+      : `${missing.length} of ${sdkMethods.length} tools do not resolve on the SDK this build ships against ` +
+          `(@roarkanalytics/sdk@${sdkVersion}, listed above). The method table names resources the pinned ` +
+          '@roarkanalytics/sdk does not have. Either the SDK release carrying them is not out yet, or the ' +
+          'dependency range in package.json was not moved with the regenerated table.',
     );
   }
 
-  console.log(`all ${sdkMethods.length} tools resolve on the SDK this build ships against`);
+  console.log(
+    sdkDir ?
+      `all ${sdkMethods.length} tools resolve on @roarkanalytics/sdk@${sdkVersion}, the oldest the range admits`
+    : `all ${sdkMethods.length} tools resolve on the SDK this build ships against (@roarkanalytics/sdk@${sdkVersion})`,
+  );
 };
 
 try {
