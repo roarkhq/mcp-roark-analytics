@@ -167,6 +167,7 @@ export async function initMcpServer(params: {
       handler: mcpTool.handler,
       reqContext: {
         client,
+        project: params.clientOptions?.project ?? undefined,
         stainlessApiKey: params.stainlessApiKey ?? params.mcpOptions?.stainlessApiKey,
         upstreamClientEnvs: params.upstreamClientEnvs,
         mcpSessionId: params.mcpSessionId,

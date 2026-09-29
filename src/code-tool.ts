@@ -327,10 +327,13 @@ const localDenoHandler = async ({
       // pinned connector silently loses its project, and every call from inside the sandbox
       // fails with "this credential is not tied to a single project". Code the model writes can
       // still override it per call with `client.withOptions({ project })`.
+      //
+      // It comes off `reqContext`, not the client: `client.project` is the `/v1/projects`
+      // resource accessor, so reading the option there returns a resource object.
       const opts = {
         ...(client.baseURL != null ? { baseURL: client.baseURL } : undefined),
         ...(client.bearerToken != null ? { bearerToken: client.bearerToken } : undefined),
-        ...(client.project != null ? { project: client.project } : undefined),
+        ...(reqContext.project != null ? { project: reqContext.project } : undefined),
         defaultHeaders: {
           'X-Stainless-MCP': 'true',
         },

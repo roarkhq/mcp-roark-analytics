@@ -18,8 +18,8 @@ importers:
         specifier: ^1.27.1
         version: 1.30.0(zod@3.25.76)
       '@roarkanalytics/sdk':
-        specifier: ^4.12.0
-        version: 4.12.0
+        specifier: ^4.15.0
+        version: 4.15.0
       '@valtown/deno-http-worker':
         specifier: ^0.0.21
         version: 0.0.21
@@ -581,8 +581,8 @@ packages:
     resolution: {integrity: sha512-SEeaJLb3qBNF/OaXnaR1NmmBbFYk1zC0ZH/52fATcRPLFg/p791YrcyFFy44Bo9sLaGuSuLp5Q6axbb/O+v/RA==}
     engines: {node: ^14.18.0 || >=16.0.0}
 
-  '@roarkanalytics/sdk@4.12.0':
-    resolution: {integrity: sha512-hi1ACj0DfmpxH43HT85/w8JMl0gDup8L7PZFSS429qJflOoWd5m+r18Y3C29pkwY5zkoqnZmWE+sy+n0G0Himw==}
+  '@roarkanalytics/sdk@4.15.0':
+    resolution: {integrity: sha512-H5bHFILsMVMUG7+6yi3gO4JrAvvoFPLn82zZp0tS1A6UugH/hzQgwuMFSkjbJCl29p9GcVjAFhLDaZa7845gmA==}
 
   '@sinclair/typebox@0.27.12':
     resolution: {integrity: sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==}
@@ -3194,7 +3194,7 @@ snapshots:
 
   '@pkgr/core@0.3.6': {}
 
-  '@roarkanalytics/sdk@4.12.0': {}
+  '@roarkanalytics/sdk@4.15.0': {}
 
   '@sinclair/typebox@0.27.12': {}
 
