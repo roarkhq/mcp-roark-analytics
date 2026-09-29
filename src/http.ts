@@ -16,6 +16,7 @@ import {
   protectedResourceMetadata,
   requireBearer,
   requireLiveBearer,
+  resolveApiBaseUrl,
   UnauthorizedError,
 } from './oauth';
 import { initMcpServer, newMcpServer } from './server';
@@ -54,14 +55,19 @@ const newServer = async ({
   let authOptions: Partial<ClientOptions>;
   if (mcpOptions.oauth) {
     const connector = connectorFrom(req);
-    authOptions = requireBearer(req, mcpOptions.oauth, connector);
+    const authorized = requireBearer(req, mcpOptions.oauth, connector);
     // Presence is not validity. Ask customer-api whether the token is still live, so a revoked or
     // expired one is answered with 401 + WWW-Authenticate here - the signal a client needs to
     // re-run the OAuth flow - rather than completing the handshake and failing later inside a
     // tool result, where nothing is listening for it.
-    await requireLiveBearer(authOptions.bearerToken!, mcpOptions.oauth, connector, {
-      baseURL: clientOptions.baseURL ?? 'https://api.roark.ai',
+    //
+    // The base URL is resolved the way the SDK resolves it, NOT defaulted to prod: this server is
+    // launched without `clientOptions`, so on any stage but prod a prod default would check the
+    // token against a server that never issued it and refuse every request.
+    await requireLiveBearer(authorized.bearerToken, mcpOptions.oauth, connector, {
+      baseURL: resolveApiBaseUrl(clientOptions),
     });
+    authOptions = authorized;
   } else {
     authOptions = parseClientAuthHeaders(req, false);
   }

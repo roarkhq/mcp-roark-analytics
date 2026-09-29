@@ -12,6 +12,7 @@
 import { createHash } from 'node:crypto';
 import { IncomingMessage } from 'node:http';
 import { ClientOptions } from '@roarkanalytics/sdk';
+import { readEnv } from './util';
 
 export type OAuthConfig = {
   /** Authorization server issuer, e.g. https://mcp-oauth.api.roark.ai */
@@ -122,7 +123,7 @@ export const requireBearer = (
   req: IncomingMessage,
   config: OAuthConfig,
   connector: Connector = ORIGIN_CONNECTOR,
-): Partial<ClientOptions> => {
+): Partial<ClientOptions> & { bearerToken: string } => {
   const token = extractBearer(req);
   if (!token) {
     throw new UnauthorizedError('Missing bearer token', bearerChallenge(config, connector));
@@ -130,7 +131,7 @@ export const requireBearer = (
   // Assigned rather than conditionally spread: a spread of `cond && { project }` is not checked
   // against `ClientOptions`, so on an SDK without the option the pin would compile and then
   // silently vanish. This way the dependency is enforced by the build.
-  const options: Partial<ClientOptions> = { bearerToken: token };
+  const options: Partial<ClientOptions> & { bearerToken: string } = { bearerToken: token };
   if (connector.kind === 'project') {
     options.project = connector.projectId;
   }
@@ -143,6 +144,23 @@ export const requireBearer = (
  */
 export type BearerVerdict = 'valid' | 'invalid' | 'unknown';
 
+/** The SDK's own default, for when neither an option nor the environment names one. */
+export const DEFAULT_API_BASE_URL = 'https://api.roark.ai';
+
+/**
+ * The base URL the SDK will actually call, resolved exactly the way the SDK resolves it:
+ * explicit option, then `ROARK_BASE_URL`, then the default.
+ *
+ * This has to agree with the SDK or the liveness check asks the wrong host. `launchStreamableHTTPServer`
+ * passes no `clientOptions` at all, so for the deployed server the answer always comes from the
+ * environment: a hardcoded prod default would send every check to prod while data calls went to
+ * whatever `ROARK_BASE_URL` names. On any stage but prod that turns a valid token into a 401 from
+ * a server it was never issued for, and this file would then refuse every request - a dead
+ * connector, which is strictly worse than the bug it is here to fix.
+ */
+export const resolveApiBaseUrl = (clientOptions: Pick<ClientOptions, 'baseURL'> = {}): string =>
+  clientOptions.baseURL ?? readEnv('ROARK_BASE_URL') ?? DEFAULT_API_BASE_URL;
+
 /**
  * How long a verdict is reused. `newServer` runs per POST, not per session, so an uncached check
  * would add a round trip to every single MCP request. The window is what a revoked token buys:
@@ -153,6 +171,14 @@ export type BearerVerdict = 'valid' | 'invalid' | 'unknown';
 const BEARER_CACHE_TTL_MS = 60_000;
 
 /**
+ * An unreachable customer-api is handled by the catch below, but a customer-api that accepts the
+ * connection and then never answers is not: without a deadline every MCP request would hang on
+ * it, which is worse than the failure this check exists to report. A hang becomes `unknown` like
+ * any other transport failure.
+ */
+const BEARER_CHECK_TIMEOUT_MS = 3_000;
+
+/**
  * Bounded so that spraying invented tokens cannot grow the process's memory. Keys are hashes,
  * not the tokens themselves: these are live credentials and there is no reason to keep a second
  * copy of them in a long-lived map.
@@ -161,17 +187,40 @@ const BEARER_CACHE_MAX = 1_000;
 
 const bearerVerdicts = new Map<string, { verdict: 'valid' | 'invalid'; expiresAt: number }>();
 
+/**
+ * Checks already in flight, so concurrent requests bearing the same uncached token make one call
+ * rather than one each. That is the common shape right after a verdict expires, and whenever a
+ * client opens several requests at once.
+ */
+const inFlightChecks = new Map<string, Promise<BearerVerdict>>();
+
 /** Test seam. */
-export const clearBearerVerdictCache = (): void => bearerVerdicts.clear();
+export const clearBearerVerdictCache = (): void => {
+  bearerVerdicts.clear();
+  inFlightChecks.clear();
+};
 
 const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
 
+const rememberVerdict = (key: string, verdict: 'valid' | 'invalid', expiresAt: number): void => {
+  // Evict the oldest entry rather than clearing the map. A `clear()` would let anyone spraying
+  // invented tokens flush every valid verdict too, making legitimate callers pay a round trip
+  // each and handing customer-api the extra work. Map iterates in insertion order, so the first
+  // key is the oldest.
+  if (bearerVerdicts.size >= BEARER_CACHE_MAX) {
+    const oldest = bearerVerdicts.keys().next();
+    if (!oldest.done) bearerVerdicts.delete(oldest.value);
+  }
+  bearerVerdicts.set(key, { verdict, expiresAt });
+};
+
 export interface VerifyBearerDeps {
-  /** customer-api base URL, i.e. the SDK's `baseURL`. */
+  /** customer-api base URL. Use {@link resolveApiBaseUrl} rather than passing a literal. */
   baseURL: string;
   fetchImpl?: typeof fetch;
   now?: () => number;
   ttlMs?: number;
+  timeoutMs?: number;
 }
 
 /**
@@ -183,34 +232,48 @@ export interface VerifyBearerDeps {
  * re-authorizing cannot help. Anything else - a 5xx, a timeout, a DNS failure - is `unknown`.
  */
 export const verifyBearer = async (token: string, deps: VerifyBearerDeps): Promise<BearerVerdict> => {
-  const { baseURL, fetchImpl = fetch, now = Date.now, ttlMs = BEARER_CACHE_TTL_MS } = deps;
+  const {
+    baseURL,
+    fetchImpl = fetch,
+    now = Date.now,
+    ttlMs = BEARER_CACHE_TTL_MS,
+    timeoutMs = BEARER_CHECK_TIMEOUT_MS,
+  } = deps;
   const key = hashToken(token);
 
   const cached = bearerVerdicts.get(key);
   if (cached && cached.expiresAt > now()) return cached.verdict;
 
-  let response: Response;
+  const alreadyRunning = inFlightChecks.get(key);
+  if (alreadyRunning) return alreadyRunning;
+
+  const check = (async (): Promise<BearerVerdict> => {
+    let response: Response;
+    try {
+      response = await fetchImpl(`${stripSlash(baseURL)}/v1/me`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch {
+      return 'unknown';
+    }
+
+    const verdict: BearerVerdict =
+      response.status === 401 ? 'invalid'
+      : response.ok ? 'valid'
+      : 'unknown';
+    // An `unknown` is never cached: a blip would otherwise pin the answer for the whole TTL.
+    if (verdict !== 'unknown') rememberVerdict(key, verdict, now() + ttlMs);
+    return verdict;
+  })();
+
+  inFlightChecks.set(key, check);
   try {
-    response = await fetchImpl(`${stripSlash(baseURL)}/v1/me`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  } catch {
-    return 'unknown';
+    return await check;
+  } finally {
+    inFlightChecks.delete(key);
   }
-
-  const verdict: BearerVerdict =
-    response.status === 401 ? 'invalid'
-    : response.ok ? 'valid'
-    : 'unknown';
-  if (verdict === 'unknown') return verdict;
-
-  // Cleared rather than evicted one-by-one: the map is a cache of short-lived verdicts, so the
-  // cost of a rare full miss is one extra round trip, and an LRU here would be machinery for
-  // nothing.
-  if (bearerVerdicts.size >= BEARER_CACHE_MAX) bearerVerdicts.clear();
-  bearerVerdicts.set(key, { verdict, expiresAt: now() + ttlMs });
-  return verdict;
 };
 
 /**

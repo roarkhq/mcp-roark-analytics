@@ -1,6 +1,8 @@
 import { IncomingMessage } from 'node:http';
 import {
   clearBearerVerdictCache,
+  DEFAULT_API_BASE_URL,
+  resolveApiBaseUrl,
   protectedResourceMetadata,
   protectedResourceMetadataUrl,
   requireBearer,
@@ -161,6 +163,43 @@ describe('verifyBearer', () => {
   });
 
   /* An unknown must not be cached: a blip would otherwise pin the answer for the whole TTL. */
+  /* customer-api can accept a connection and then never answer. Without a deadline every MCP
+     request would hang on this check, which is worse than the failure it exists to report. */
+  it('gives up on a hanging customer-api and reports unknown', async () => {
+    const fetchImpl = (_url: string, init: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+      });
+
+    expect(await verifyBearer('tok-hanging', { baseURL, fetchImpl: fetchImpl as any, timeoutMs: 20 })).toBe(
+      'unknown',
+    );
+  }, 5_000);
+
+  it('passes an abort signal so the request can actually be cut off', async () => {
+    const fetchImpl = jest.fn((_url: string, _init: RequestInit) =>
+      Promise.resolve(new Response(null, { status: 200 })),
+    );
+
+    await verifyBearer('tok-signal', { baseURL, fetchImpl: fetchImpl as any });
+
+    expect(fetchImpl.mock.calls[0]![1]).toMatchObject({ signal: expect.any(AbortSignal) });
+  });
+
+  /* Two requests arriving with the same uncached token should cost one round trip, not two.
+     That is the shape right after a verdict expires, and whenever a client fires in parallel. */
+  it('collapses concurrent checks of the same token into one call', async () => {
+    let release: (r: Response) => void = () => {};
+    const fetchImpl = jest.fn(() => new Promise<Response>((resolve) => (release = resolve)));
+    const deps = { baseURL, fetchImpl: fetchImpl as any };
+
+    const both = Promise.all([verifyBearer('tok-parallel', deps), verifyBearer('tok-parallel', deps)]);
+    release(new Response(null, { status: 200 }));
+
+    expect(await both).toEqual(['valid', 'valid']);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it('does not cache an unknown', async () => {
     const fetchImpl = jest.fn(respond(503));
     const deps = { baseURL, fetchImpl: fetchImpl as any };
@@ -170,6 +209,31 @@ describe('verifyBearer', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
+
+  /* The cap used to be enforced with `clear()`, which let anyone spraying invented tokens flush
+     every valid verdict as well: legitimate callers then pay a round trip each, and customer-api
+     picks up the work. Evicting only the oldest keeps recent verdicts alive under that pressure. */
+  it('evicts the oldest verdict at the cap instead of flushing the cache', async () => {
+    const fetchImpl = jest.fn(respond(200));
+    const deps = { baseURL, fetchImpl: fetchImpl as any };
+    const CAP = 1_000;
+
+    for (let i = 0; i < CAP; i++) await verifyBearer(`tok-${i}`, deps);
+    expect(fetchImpl).toHaveBeenCalledTimes(CAP);
+
+    // One past the cap: this evicts exactly one entry, the oldest.
+    await verifyBearer('tok-overflow', deps);
+    expect(fetchImpl).toHaveBeenCalledTimes(CAP + 1);
+
+    // The oldest is gone, so it costs a round trip. (Re-adding it evicts the next-oldest in
+    // turn, which is why the survivor checked below is a recent one rather than tok-1.)
+    await verifyBearer('tok-0', deps);
+    expect(fetchImpl).toHaveBeenCalledTimes(CAP + 2);
+
+    // A recent verdict survived the overflow, which a clear() would not have allowed.
+    await verifyBearer('tok-999', deps);
+    expect(fetchImpl).toHaveBeenCalledTimes(CAP + 2);
+  }, 20_000);
 
   it('keeps verdicts separate per token', async () => {
     const fetchImpl = jest.fn((url: string, init: RequestInit) =>
@@ -228,5 +292,39 @@ describe('requireLiveBearer', () => {
         fetchImpl: (() => Promise.reject(new Error('ECONNREFUSED'))) as any,
       }),
     ).resolves.toBeUndefined();
+  });
+});
+
+/* The deployed server is launched without `clientOptions` (see `launchStreamableHTTPServer`), so
+   this resolution is the only thing standing between the liveness check and the wrong host. A
+   hardcoded prod default would check tokens against prod while data calls went to whatever
+   ROARK_BASE_URL names, and every request on a non-prod stage would be refused. */
+describe('resolveApiBaseUrl', () => {
+  const original = process.env['ROARK_BASE_URL'];
+  afterEach(() => {
+    if (original === undefined) delete process.env['ROARK_BASE_URL'];
+    else process.env['ROARK_BASE_URL'] = original;
+  });
+
+  it('reads ROARK_BASE_URL when no option is given, which is the deployed case', () => {
+    process.env['ROARK_BASE_URL'] = 'https://api.beta.roark.ai';
+
+    expect(resolveApiBaseUrl({})).toBe('https://api.beta.roark.ai');
+    expect(resolveApiBaseUrl()).toBe('https://api.beta.roark.ai');
+  });
+
+  /* Same precedence as the SDK constructor: an explicit option beats the environment. */
+  it('prefers an explicit option over the environment', () => {
+    process.env['ROARK_BASE_URL'] = 'https://api.beta.roark.ai';
+
+    expect(resolveApiBaseUrl({ baseURL: 'https://api.self-hosted.example' })).toBe(
+      'https://api.self-hosted.example',
+    );
+  });
+
+  it('falls back to the default only when neither names one', () => {
+    delete process.env['ROARK_BASE_URL'];
+
+    expect(resolveApiBaseUrl({})).toBe(DEFAULT_API_BASE_URL);
   });
 });
