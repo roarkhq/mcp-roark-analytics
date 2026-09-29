@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { streamableHTTPApp } from '../src/http';
 import { configureLogger } from '../src/logger';
+import { clearBearerVerdictCache } from '../src/oauth';
 import { McpOptions } from '../src/options';
 
 // Exercises the Express wiring in `streamableHTTPApp` over a real socket, rather
@@ -26,6 +27,10 @@ const baseOptions: McpOptions = {
   docsSearchMode: 'local',
   customInstructionsPath: instructionsPath,
 };
+
+// The one bearer this file's stubbed customer-api recognises.
+const LIVE_TOKEN = 'roark_test_key';
+const REVOKED_TOKEN = 'roark_revoked_key';
 
 const INITIALIZE = {
   jsonrpc: '2.0',
@@ -56,13 +61,36 @@ const postJson = (body: unknown, headers: Record<string, string> = {}): RequestI
   body: JSON.stringify(body),
 });
 
+// The transport now asks customer-api whether the bearer is still live. Answer `/v1/me` here so
+// this file stays offline, and pass everything else - the tests' own loopback requests - straight
+// through to the real fetch.
+const realFetch = globalThis.fetch;
+
 beforeAll(() => {
   // 'fatal' keeps pino-http's per-request lines out of the test output.
   configureLogger({ level: 'fatal', pretty: false });
   fs.writeFileSync(instructionsPath, 'test instructions');
+
+  globalThis.fetch = ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    const url =
+      typeof input === 'string' ? input
+      : input instanceof URL ? input.href
+      : input.url;
+    if (url.endsWith('/v1/me')) {
+      const authorization = new Headers(init?.headers).get('authorization');
+      return Promise.resolve(
+        new Response(null, { status: authorization === `Bearer ${LIVE_TOKEN}` ? 200 : 401 }),
+      );
+    }
+    return realFetch(input, init);
+  }) as typeof fetch;
 });
 
+// Verdicts are cached per token for a minute, and every test here shares the process.
+beforeEach(() => clearBearerVerdictCache());
+
 afterAll(async () => {
+  globalThis.fetch = realFetch;
   await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
   fs.rmSync(instructionsPath, { force: true });
 });
@@ -95,16 +123,37 @@ describe('remote OAuth mode', () => {
     );
   });
 
-  it('serves the MCP request once a bearer is present', async () => {
+  it('serves the MCP request once a live bearer is present', async () => {
     const request = await serve(options);
     const res = await request(
       `/mcp/${PROJECT}`,
-      postJson(INITIALIZE, { authorization: 'Bearer roark_test_key' }),
+      postJson(INITIALIZE, { authorization: `Bearer ${LIVE_TOKEN}` }),
     );
 
     expect(res.status).toBe(200);
     expect(res.headers.get('www-authenticate')).toBeNull();
     expect(await res.text()).toContain('"serverInfo"');
+  });
+
+  /* Presence used to be the whole check, so a revoked, expired or invented token completed the
+     handshake and listed the tools. No data was reachable - every data path revalidates at
+     customer-api - but a client that never sees a 401 from the resource server has no reason to
+     re-run the OAuth flow, so a 24h token turned into a connector that looked connected and
+     silently could not work. */
+  it('rejects a bearer customer-api has disowned, with a challenge naming the reason', async () => {
+    const request = await serve(options);
+    const res = await request(
+      `/mcp/${PROJECT}`,
+      postJson(INITIALIZE, { authorization: `Bearer ${REVOKED_TOKEN}` }),
+    );
+
+    expect(res.status).toBe(401);
+    const challenge = res.headers.get('www-authenticate') ?? '';
+    expect(challenge).toContain(
+      `resource_metadata="https://mcp.api.test/.well-known/oauth-protected-resource/mcp/${PROJECT}"`,
+    );
+    expect(challenge).toContain('error="invalid_token"');
+    expect(await res.text()).not.toContain('"serverInfo"');
   });
 
   it('lets a browser client read the challenge and the session header cross-origin', async () => {

@@ -9,6 +9,7 @@
 // rotated by the client's refresh token), so it is forwarded to customer-api as
 // the SDK bearer unchanged: customer-api validates it on every call.
 
+import { createHash } from 'node:crypto';
 import { IncomingMessage } from 'node:http';
 import { ClientOptions } from '@roarkanalytics/sdk';
 
@@ -134,4 +135,109 @@ export const requireBearer = (
     options.project = connector.projectId;
   }
   return options;
+};
+
+/**
+ * What customer-api says about a bearer: `unknown` means it could not be asked, not that the
+ * token is fine.
+ */
+export type BearerVerdict = 'valid' | 'invalid' | 'unknown';
+
+/**
+ * How long a verdict is reused. `newServer` runs per POST, not per session, so an uncached check
+ * would add a round trip to every single MCP request. The window is what a revoked token buys:
+ * it can still complete a handshake and read the tool list for up to this long. It cannot read
+ * anything, because every data path carries the same token to customer-api and is refused there
+ * immediately.
+ */
+const BEARER_CACHE_TTL_MS = 60_000;
+
+/**
+ * Bounded so that spraying invented tokens cannot grow the process's memory. Keys are hashes,
+ * not the tokens themselves: these are live credentials and there is no reason to keep a second
+ * copy of them in a long-lived map.
+ */
+const BEARER_CACHE_MAX = 1_000;
+
+const bearerVerdicts = new Map<string, { verdict: 'valid' | 'invalid'; expiresAt: number }>();
+
+/** Test seam. */
+export const clearBearerVerdictCache = (): void => bearerVerdicts.clear();
+
+const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
+
+export interface VerifyBearerDeps {
+  /** customer-api base URL, i.e. the SDK's `baseURL`. */
+  baseURL: string;
+  fetchImpl?: typeof fetch;
+  now?: () => number;
+  ttlMs?: number;
+}
+
+/**
+ * Asks customer-api whether a bearer is still live, via the `/v1/me` endpoint it already exposes
+ * for exactly this ("who is this credential"), and caches the answer briefly.
+ *
+ * Only a 401 counts as invalid. A 403 means the token authenticated and then failed a permission
+ * check, which is a live token; treating it as invalid would tell a client to re-authorize when
+ * re-authorizing cannot help. Anything else - a 5xx, a timeout, a DNS failure - is `unknown`.
+ */
+export const verifyBearer = async (token: string, deps: VerifyBearerDeps): Promise<BearerVerdict> => {
+  const { baseURL, fetchImpl = fetch, now = Date.now, ttlMs = BEARER_CACHE_TTL_MS } = deps;
+  const key = hashToken(token);
+
+  const cached = bearerVerdicts.get(key);
+  if (cached && cached.expiresAt > now()) return cached.verdict;
+
+  let response: Response;
+  try {
+    response = await fetchImpl(`${stripSlash(baseURL)}/v1/me`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    return 'unknown';
+  }
+
+  const verdict: BearerVerdict =
+    response.status === 401 ? 'invalid'
+    : response.ok ? 'valid'
+    : 'unknown';
+  if (verdict === 'unknown') return verdict;
+
+  // Cleared rather than evicted one-by-one: the map is a cache of short-lived verdicts, so the
+  // cost of a rare full miss is one extra round trip, and an LRU here would be machinery for
+  // nothing.
+  if (bearerVerdicts.size >= BEARER_CACHE_MAX) bearerVerdicts.clear();
+  bearerVerdicts.set(key, { verdict, expiresAt: now() + ttlMs });
+  return verdict;
+};
+
+/**
+ * Rejects a bearer customer-api has already disowned, with the 401 + WWW-Authenticate that tells
+ * an MCP client to re-run the OAuth flow.
+ *
+ * Without this the resource server only checked that a token was PRESENT. A revoked, expired or
+ * entirely invented token completed `initialize` and `tools/list`, and the caller learned nothing
+ * until a tool call failed with an opaque 401 in its result text. No data was reachable - every
+ * data path revalidates at customer-api - but a client that never sees a 401 from the resource
+ * server has no reason to refresh, which for a 24h token means a connector that looks connected
+ * and silently cannot work.
+ *
+ * `unknown` is allowed through deliberately. Failing closed would turn a customer-api blip into a
+ * dead connector for everyone, and it would buy no confidentiality: the token still has to pass
+ * customer-api on the very next call that touches data.
+ */
+export const requireLiveBearer = async (
+  token: string,
+  config: OAuthConfig,
+  connector: Connector,
+  deps: VerifyBearerDeps,
+): Promise<void> => {
+  const verdict = await verifyBearer(token, deps);
+  if (verdict !== 'invalid') return;
+  throw new UnauthorizedError(
+    'The access token is expired or has been revoked',
+    bearerChallenge(config, connector, 'invalid_token', 'The access token is expired or has been revoked'),
+  );
 };

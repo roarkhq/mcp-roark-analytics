@@ -1,10 +1,13 @@
 import { IncomingMessage } from 'node:http';
 import {
+  clearBearerVerdictCache,
   protectedResourceMetadata,
   protectedResourceMetadataUrl,
   requireBearer,
+  requireLiveBearer,
   resourceIdentifier,
   UnauthorizedError,
+  verifyBearer,
 } from '../src/oauth';
 
 const config = { issuer: 'https://mcp-oauth.api.test/', resourceBaseUrl: 'https://mcp.api.test/' };
@@ -84,5 +87,146 @@ describe('requireBearer', () => {
         `Bearer resource_metadata="https://mcp.api.test/.well-known/oauth-protected-resource/mcp/${PROJECT}"`,
       );
     }
+  });
+});
+
+/* The resource server used to check only that a bearer was PRESENT. A revoked, expired or
+   entirely invented token completed `initialize` and `tools/list`; the caller learned nothing
+   until a tool call failed with an opaque 401 inside its result text. No data was reachable,
+   because every data path revalidates at customer-api, but a client that never sees a 401 from
+   the resource server has no reason to re-run the OAuth flow. */
+describe('verifyBearer', () => {
+  const baseURL = 'https://api.roark.ai';
+  const respond = (status: number) => () => Promise.resolve(new Response(null, { status }));
+
+  beforeEach(() => clearBearerVerdictCache());
+
+  it('asks /v1/me, carrying the bearer', async () => {
+    const fetchImpl = jest.fn(respond(200));
+
+    await verifyBearer('tok-live', { baseURL: 'https://api.roark.ai/', fetchImpl: fetchImpl as any });
+
+    // Trailing slash on the base URL must not produce `//v1/me`.
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://api.roark.ai/v1/me',
+      expect.objectContaining({ headers: { Authorization: 'Bearer tok-live' } }),
+    );
+  });
+
+  it('calls a 401 invalid', async () => {
+    expect(await verifyBearer('tok-revoked', { baseURL, fetchImpl: respond(401) as any })).toBe('invalid');
+  });
+
+  it('calls a 2xx valid', async () => {
+    expect(await verifyBearer('tok-live', { baseURL, fetchImpl: respond(200) as any })).toBe('valid');
+  });
+
+  /* A 403 means the token authenticated and then failed a permission check. That is a live
+     token, and telling the client to re-authorize cannot help it. */
+  it('does not call a 403 invalid', async () => {
+    expect(await verifyBearer('tok-forbidden', { baseURL, fetchImpl: respond(403) as any })).toBe('unknown');
+  });
+
+  it.each([500, 502, 503])('reports unknown on a %s rather than guessing', async (status) => {
+    expect(await verifyBearer(`tok-${status}`, { baseURL, fetchImpl: respond(status) as any })).toBe(
+      'unknown',
+    );
+  });
+
+  it('reports unknown when customer-api cannot be reached', async () => {
+    const fetchImpl = () => Promise.reject(new Error('ECONNREFUSED'));
+    expect(await verifyBearer('tok-offline', { baseURL, fetchImpl: fetchImpl as any })).toBe('unknown');
+  });
+
+  /* `newServer` runs per POST, not per session, so an uncached check would add a round trip to
+     every MCP request. */
+  it('reuses a verdict within the TTL instead of asking again', async () => {
+    const fetchImpl = jest.fn(respond(200));
+    const deps = { baseURL, fetchImpl: fetchImpl as any, now: () => 1_000, ttlMs: 60_000 };
+
+    await verifyBearer('tok-cached', deps);
+    await verifyBearer('tok-cached', deps);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks again once the verdict has expired', async () => {
+    const fetchImpl = jest.fn(respond(200));
+    const at = (t: number) => ({ baseURL, fetchImpl: fetchImpl as any, now: () => t, ttlMs: 60_000 });
+
+    await verifyBearer('tok-expiring', at(1_000));
+    await verifyBearer('tok-expiring', at(1_000 + 60_001));
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  /* An unknown must not be cached: a blip would otherwise pin the answer for the whole TTL. */
+  it('does not cache an unknown', async () => {
+    const fetchImpl = jest.fn(respond(503));
+    const deps = { baseURL, fetchImpl: fetchImpl as any };
+
+    await verifyBearer('tok-blip', deps);
+    await verifyBearer('tok-blip', deps);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps verdicts separate per token', async () => {
+    const fetchImpl = jest.fn((url: string, init: RequestInit) =>
+      Promise.resolve(
+        new Response(null, {
+          status: (init.headers as Record<string, string>)['Authorization'] === 'Bearer good' ? 200 : 401,
+        }),
+      ),
+    );
+    const deps = { baseURL, fetchImpl: fetchImpl as any };
+
+    expect(await verifyBearer('good', deps)).toBe('valid');
+    expect(await verifyBearer('bad', deps)).toBe('invalid');
+  });
+});
+
+describe('requireLiveBearer', () => {
+  const config = { issuer: 'https://mcp-oauth.api.roark.ai', resourceBaseUrl: 'https://mcp.api.roark.ai' };
+  const connector = { kind: 'project' as const, projectId: 'proj-1' };
+  const baseURL = 'https://api.roark.ai';
+  const respond = (status: number) => () => Promise.resolve(new Response(null, { status }));
+
+  beforeEach(() => clearBearerVerdictCache());
+
+  it('rejects a revoked token with a challenge a client can act on', async () => {
+    const attempt = requireLiveBearer('tok-revoked', config, connector, {
+      baseURL,
+      fetchImpl: respond(401) as any,
+    });
+
+    await expect(attempt).rejects.toThrow(UnauthorizedError);
+    await expect(attempt).rejects.toMatchObject({
+      status: 401,
+      // The client needs both: where to re-discover the authorization server, and why.
+      wwwAuthenticate: expect.stringContaining(
+        'resource_metadata="https://mcp.api.roark.ai/.well-known/oauth-protected-resource/mcp/proj-1"',
+      ),
+    });
+    await expect(attempt).rejects.toMatchObject({
+      wwwAuthenticate: expect.stringContaining('error="invalid_token"'),
+    });
+  });
+
+  it('lets a live token through', async () => {
+    await expect(
+      requireLiveBearer('tok-live', config, connector, { baseURL, fetchImpl: respond(200) as any }),
+    ).resolves.toBeUndefined();
+  });
+
+  /* Failing closed would turn a customer-api blip into a dead connector for everyone, and buy no
+     confidentiality: the token still has to pass customer-api on the next call that touches data. */
+  it('lets a token through when customer-api could not be asked', async () => {
+    await expect(
+      requireLiveBearer('tok-blip', config, connector, {
+        baseURL,
+        fetchImpl: (() => Promise.reject(new Error('ECONNREFUSED'))) as any,
+      }),
+    ).resolves.toBeUndefined();
   });
 });

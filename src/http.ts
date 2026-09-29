@@ -15,6 +15,7 @@ import {
   ORIGIN_CONNECTOR,
   protectedResourceMetadata,
   requireBearer,
+  requireLiveBearer,
   UnauthorizedError,
 } from './oauth';
 import { initMcpServer, newMcpServer } from './server';
@@ -52,7 +53,15 @@ const newServer = async ({
   // not be able to make us do that.
   let authOptions: Partial<ClientOptions>;
   if (mcpOptions.oauth) {
-    authOptions = requireBearer(req, mcpOptions.oauth, connectorFrom(req));
+    const connector = connectorFrom(req);
+    authOptions = requireBearer(req, mcpOptions.oauth, connector);
+    // Presence is not validity. Ask customer-api whether the token is still live, so a revoked or
+    // expired one is answered with 401 + WWW-Authenticate here - the signal a client needs to
+    // re-run the OAuth flow - rather than completing the handshake and failing later inside a
+    // tool result, where nothing is listening for it.
+    await requireLiveBearer(authOptions.bearerToken!, mcpOptions.oauth, connector, {
+      baseURL: clientOptions.baseURL ?? 'https://api.roark.ai',
+    });
   } else {
     authOptions = parseClientAuthHeaders(req, false);
   }
