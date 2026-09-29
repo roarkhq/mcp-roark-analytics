@@ -44,6 +44,16 @@ export type ToolCallResult = {
 
 export type McpRequestContext = {
   client: Roark;
+  /**
+   * The project a pinned `/mcp/<projectId>` connector fixed, carried so the code tool can pass it
+   * to its Deno worker. Taken from the client options rather than read back off the client:
+   * `client.project` is the `/v1/projects` resource accessor, not the option.
+   *
+   * Required rather than optional even though the value may be undefined: forgetting to carry it
+   * is exactly the regression that loses a pinned connector's project, and it would be silent.
+   * This way the compiler asks every construction site.
+   */
+  project: string | undefined;
   stainlessApiKey?: string | undefined;
   upstreamClientEnvs?: Record<string, string> | undefined;
   mcpSessionId?: string | undefined;
