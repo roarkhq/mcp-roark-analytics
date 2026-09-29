@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.12.0...v4.12.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **mcp:** every execute call failed, the Deno sandbox never started ([#130](https://github.com/roarkhq/mcp-roark-analytics/issues/130)) ([1918fad](https://github.com/roarkhq/mcp-roark-analytics/commit/1918fad06fdf331bfc66b0bb4f4a99c8489bfb18))
+
 ## [4.12.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.11.1...v4.12.0) (2026-09-29)
 
 
