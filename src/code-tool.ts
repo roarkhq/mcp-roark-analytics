@@ -205,14 +205,62 @@ const remoteStainlessHandler = async ({
 const DENO_WORKER_SOCKET_SUFFIX = '-deno-http.sock';
 
 /**
- * Adds the worker's Unix socket to the existing `--allow-net` allowlist.
+ * Whether this Deno wants the worker's Unix socket named in `--allow-net`.
  *
- * deno-http-worker generates the socket path itself and passes it to the Deno
- * process, so it can only be read off the spawn arguments. Throws rather than
- * falling back to an unrestricted `--allow-net`, so a change in how the socket is
- * passed fails closed instead of silently widening what the sandbox can reach.
+ * Deno changed its mind about this, and the two behaviors are mutually exclusive:
+ *
+ *   Deno 2.7 and earlier  a Unix socket is a file. Listening on it is covered by
+ *                         --allow-read/--allow-write on its path, and --allow-net
+ *                         parses every entry as `host[:port]`, so a `unix:` entry
+ *                         is a hard parse error: "invalid port in 'unix:/tmp/...'".
+ *   Deno 2.9 and later    listening additionally requires --allow-net=unix:<path>,
+ *                         and without it the worker dies with NotCapable.
+ *
+ * There is therefore no single flag string that works on both, and this package is
+ * published for users to run against whatever Deno they have. So ask the binary
+ * instead of guessing from a version string: run a no-op script with the flag and
+ * see whether it is accepted. The probe binds nothing (the script is `0`), and the
+ * result is cached per executable because the answer cannot change under us.
  */
-export const scopeAllowNetToWorkerSocket = (spawnArgs: string[]): string[] => {
+const unixAllowNetSupport = new Map<string, boolean>();
+
+export const denoAcceptsUnixAllowNet = (
+  denoPath: string,
+  probe: (command: string, args: string[]) => { status: number | null },
+): boolean => {
+  const cached = unixAllowNetSupport.get(denoPath);
+  if (cached !== undefined) return cached;
+
+  // A path that is never created: --allow-net is parsed before the script runs, which
+  // is the only thing being tested here.
+  const { status } = probe(denoPath, [
+    'run',
+    '--allow-net=unix:/nonexistent-roark-deno-capability-probe.sock',
+    'data:text/javascript,0',
+  ]);
+  const accepted = status === 0;
+  unixAllowNetSupport.set(denoPath, accepted);
+  return accepted;
+};
+
+/**
+ * Grants the Deno worker its own Unix socket, and nothing else.
+ *
+ * deno-http-worker generates the socket path while it builds the spawn arguments, so
+ * this is the first point at which it can be read at all. Two things happen here:
+ *
+ * - The socket is added to `--allow-net` only on the Deno versions that require it
+ *   (see denoAcceptsUnixAllowNet). Adding it unconditionally is what broke the
+ *   published image, whose Deno rejected the syntax and exited before serving
+ *   anything, surfacing only as the far vaguer "Deno exited before being ready".
+ * - The grant deno-http-worker makes itself, `--allow-read`/`--allow-write` on the
+ *   socket, is asserted rather than assumed, so a future version that stops making
+ *   it fails here instead of at runtime.
+ *
+ * Throws rather than falling back to an unrestricted `--allow-net`, so anything
+ * unexpected fails closed instead of silently widening what the sandbox can reach.
+ */
+export const scopeAllowNetToWorkerSocket = (spawnArgs: string[], addSocketToAllowNet: boolean): string[] => {
   // Skip flags: deno-http-worker also appends the socket to `--allow-read`/`--allow-write`,
   // so match only the bare path it passes through to the bootstrap script.
   const socketPath = spawnArgs.find((arg) => !arg.startsWith('-') && arg.endsWith(DENO_WORKER_SOCKET_SUFFIX));
@@ -221,6 +269,19 @@ export const scopeAllowNetToWorkerSocket = (spawnArgs: string[]): string[] => {
       'Could not find the Deno worker socket path in its spawn arguments, so network access could not be scoped to it.',
     );
   }
+
+  const grants = (flag: string) =>
+    spawnArgs.some((arg) => arg.startsWith(flag) && arg.slice(flag.length).split(',').includes(socketPath));
+
+  const missing = ['--allow-read=', '--allow-write='].filter((flag) => !grants(flag));
+  if (missing.length > 0) {
+    throw new Error(
+      `deno-http-worker did not grant the worker socket ${socketPath} on ${missing.join(' or ')}, ` +
+        'so the Deno sandbox would not be able to serve requests.',
+    );
+  }
+
+  if (!addSocketToAllowNet) return spawnArgs;
   return spawnArgs.map((arg) => (arg.startsWith('--allow-net=') ? `${arg},unix:${socketPath}` : arg));
 };
 
@@ -248,7 +309,7 @@ const localDenoHandler = async ({
   const packageNodeModulesPath = path.resolve(packageRoot, 'node_modules');
 
   // Check if deno is in PATH
-  const { execSync, spawn } = await import('node:child_process');
+  const { execSync, spawn, spawnSync } = await import('node:child_process');
   try {
     execSync('command -v deno', { stdio: 'ignore' });
     denoPath = 'deno';
@@ -286,24 +347,28 @@ const localDenoHandler = async ({
 
   const allowRead = allowReadPaths.join(',');
 
+  const addSocketToAllowNet = denoAcceptsUnixAllowNet(denoPath, (command, probeArgs) =>
+    spawnSync(command, probeArgs, { stdio: 'ignore' }),
+  );
+
   const worker = await newDenoHTTPWorker(url.pathToFileURL(workerPath), {
     denoExecutable: denoPath,
     runFlags: [
       `--node-modules-dir=manual`,
       `--allow-read=${allowRead}`,
       // Only the Roark API is reachable from the sandbox. The worker's Unix socket
-      // is added to this same allowlist by scopeAllowNetToWorkerSocket below.
+      // is added to this same allowlist by scopeAllowNetToWorkerSocket below, on the
+      // Deno versions that require it.
       `--allow-net=${baseURLHostname}`,
       // Allow environment variables because instantiating the client will try to read from them,
       // even though they are not set.
       '--allow-env',
     ],
     // deno-http-worker picks the worker's Unix socket path while it builds the spawn
-    // arguments, so it is not known when runFlags are constructed above. Deno gates
-    // listening on a Unix socket behind --allow-net, so intercept the spawn to grant
-    // that one socket rather than opening up network access to every host.
+    // arguments, so it is not known when runFlags are constructed above. Intercept the
+    // spawn to grant that one socket rather than opening up network access to every host.
     spawnFunc: (command, spawnArgs, spawnOptions) =>
-      spawn(command, scopeAllowNetToWorkerSocket(spawnArgs), spawnOptions),
+      spawn(command, scopeAllowNetToWorkerSocket(spawnArgs, addSocketToAllowNet), spawnOptions),
     printOutput: true,
     spawnOptions: {
       cwd: path.dirname(workerPath),
