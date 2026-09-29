@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.12.2](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.12.1...v4.12.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* **mcp:** the resource server accepted any bearer, valid or not ([#132](https://github.com/roarkhq/mcp-roark-analytics/issues/132)) ([eef8fbd](https://github.com/roarkhq/mcp-roark-analytics/commit/eef8fbdc837817a60dd45328eb72fa055a7ef99b))
+
 ## [4.12.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.12.0...v4.12.1) (2026-09-29)
 
 
