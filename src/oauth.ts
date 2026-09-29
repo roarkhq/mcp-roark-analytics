@@ -9,8 +9,10 @@
 // rotated by the client's refresh token), so it is forwarded to customer-api as
 // the SDK bearer unchanged: customer-api validates it on every call.
 
+import { createHash } from 'node:crypto';
 import { IncomingMessage } from 'node:http';
 import { ClientOptions } from '@roarkanalytics/sdk';
+import { readEnv } from './util';
 
 export type OAuthConfig = {
   /** Authorization server issuer, e.g. https://mcp-oauth.api.roark.ai */
@@ -121,7 +123,7 @@ export const requireBearer = (
   req: IncomingMessage,
   config: OAuthConfig,
   connector: Connector = ORIGIN_CONNECTOR,
-): Partial<ClientOptions> => {
+): Partial<ClientOptions> & { bearerToken: string } => {
   const token = extractBearer(req);
   if (!token) {
     throw new UnauthorizedError('Missing bearer token', bearerChallenge(config, connector));
@@ -129,9 +131,176 @@ export const requireBearer = (
   // Assigned rather than conditionally spread: a spread of `cond && { project }` is not checked
   // against `ClientOptions`, so on an SDK without the option the pin would compile and then
   // silently vanish. This way the dependency is enforced by the build.
-  const options: Partial<ClientOptions> = { bearerToken: token };
+  const options: Partial<ClientOptions> & { bearerToken: string } = { bearerToken: token };
   if (connector.kind === 'project') {
     options.project = connector.projectId;
   }
   return options;
+};
+
+/**
+ * What customer-api says about a bearer: `unknown` means it could not be asked, not that the
+ * token is fine.
+ */
+export type BearerVerdict = 'valid' | 'invalid' | 'unknown';
+
+/** The SDK's own default, for when neither an option nor the environment names one. */
+export const DEFAULT_API_BASE_URL = 'https://api.roark.ai';
+
+/**
+ * The base URL the SDK will actually call, resolved exactly the way the SDK resolves it:
+ * explicit option, then `ROARK_BASE_URL`, then the default.
+ *
+ * This has to agree with the SDK or the liveness check asks the wrong host. `launchStreamableHTTPServer`
+ * passes no `clientOptions` at all, so for the deployed server the answer always comes from the
+ * environment: a hardcoded prod default would send every check to prod while data calls went to
+ * whatever `ROARK_BASE_URL` names. On any stage but prod that turns a valid token into a 401 from
+ * a server it was never issued for, and this file would then refuse every request - a dead
+ * connector, which is strictly worse than the bug it is here to fix.
+ */
+export const resolveApiBaseUrl = (clientOptions: Pick<ClientOptions, 'baseURL'> = {}): string =>
+  clientOptions.baseURL ?? readEnv('ROARK_BASE_URL') ?? DEFAULT_API_BASE_URL;
+
+/**
+ * How long a verdict is reused. `newServer` runs per POST, not per session, so an uncached check
+ * would add a round trip to every single MCP request. The window is what a revoked token buys:
+ * it can still complete a handshake and read the tool list for up to this long. It cannot read
+ * anything, because every data path carries the same token to customer-api and is refused there
+ * immediately.
+ */
+const BEARER_CACHE_TTL_MS = 60_000;
+
+/**
+ * An unreachable customer-api is handled by the catch below, but a customer-api that accepts the
+ * connection and then never answers is not: without a deadline every MCP request would hang on
+ * it, which is worse than the failure this check exists to report. A hang becomes `unknown` like
+ * any other transport failure.
+ */
+const BEARER_CHECK_TIMEOUT_MS = 3_000;
+
+/**
+ * Bounded so that spraying invented tokens cannot grow the process's memory. Keys are hashes,
+ * not the tokens themselves: these are live credentials and there is no reason to keep a second
+ * copy of them in a long-lived map.
+ */
+const BEARER_CACHE_MAX = 1_000;
+
+const bearerVerdicts = new Map<string, { verdict: 'valid' | 'invalid'; expiresAt: number }>();
+
+/**
+ * Checks already in flight, so concurrent requests bearing the same uncached token make one call
+ * rather than one each. That is the common shape right after a verdict expires, and whenever a
+ * client opens several requests at once.
+ */
+const inFlightChecks = new Map<string, Promise<BearerVerdict>>();
+
+/** Test seam. */
+export const clearBearerVerdictCache = (): void => {
+  bearerVerdicts.clear();
+  inFlightChecks.clear();
+};
+
+const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
+
+const rememberVerdict = (key: string, verdict: 'valid' | 'invalid', expiresAt: number): void => {
+  // Evict the oldest entry rather than clearing the map. A `clear()` would let anyone spraying
+  // invented tokens flush every valid verdict too, making legitimate callers pay a round trip
+  // each and handing customer-api the extra work. Map iterates in insertion order, so the first
+  // key is the oldest.
+  if (bearerVerdicts.size >= BEARER_CACHE_MAX) {
+    const oldest = bearerVerdicts.keys().next();
+    if (!oldest.done) bearerVerdicts.delete(oldest.value);
+  }
+  bearerVerdicts.set(key, { verdict, expiresAt });
+};
+
+export interface VerifyBearerDeps {
+  /** customer-api base URL. Use {@link resolveApiBaseUrl} rather than passing a literal. */
+  baseURL: string;
+  fetchImpl?: typeof fetch;
+  now?: () => number;
+  ttlMs?: number;
+  timeoutMs?: number;
+}
+
+/**
+ * Asks customer-api whether a bearer is still live, via the `/v1/me` endpoint it already exposes
+ * for exactly this ("who is this credential"), and caches the answer briefly.
+ *
+ * Only a 401 counts as invalid. A 403 means the token authenticated and then failed a permission
+ * check, which is a live token; treating it as invalid would tell a client to re-authorize when
+ * re-authorizing cannot help. Anything else - a 5xx, a timeout, a DNS failure - is `unknown`.
+ */
+export const verifyBearer = async (token: string, deps: VerifyBearerDeps): Promise<BearerVerdict> => {
+  const {
+    baseURL,
+    fetchImpl = fetch,
+    now = Date.now,
+    ttlMs = BEARER_CACHE_TTL_MS,
+    timeoutMs = BEARER_CHECK_TIMEOUT_MS,
+  } = deps;
+  const key = hashToken(token);
+
+  const cached = bearerVerdicts.get(key);
+  if (cached && cached.expiresAt > now()) return cached.verdict;
+
+  const alreadyRunning = inFlightChecks.get(key);
+  if (alreadyRunning) return alreadyRunning;
+
+  const check = (async (): Promise<BearerVerdict> => {
+    let response: Response;
+    try {
+      response = await fetchImpl(`${stripSlash(baseURL)}/v1/me`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch {
+      return 'unknown';
+    }
+
+    const verdict: BearerVerdict =
+      response.status === 401 ? 'invalid'
+      : response.ok ? 'valid'
+      : 'unknown';
+    // An `unknown` is never cached: a blip would otherwise pin the answer for the whole TTL.
+    if (verdict !== 'unknown') rememberVerdict(key, verdict, now() + ttlMs);
+    return verdict;
+  })();
+
+  inFlightChecks.set(key, check);
+  try {
+    return await check;
+  } finally {
+    inFlightChecks.delete(key);
+  }
+};
+
+/**
+ * Rejects a bearer customer-api has already disowned, with the 401 + WWW-Authenticate that tells
+ * an MCP client to re-run the OAuth flow.
+ *
+ * Without this the resource server only checked that a token was PRESENT. A revoked, expired or
+ * entirely invented token completed `initialize` and `tools/list`, and the caller learned nothing
+ * until a tool call failed with an opaque 401 in its result text. No data was reachable - every
+ * data path revalidates at customer-api - but a client that never sees a 401 from the resource
+ * server has no reason to refresh, which for a 24h token means a connector that looks connected
+ * and silently cannot work.
+ *
+ * `unknown` is allowed through deliberately. Failing closed would turn a customer-api blip into a
+ * dead connector for everyone, and it would buy no confidentiality: the token still has to pass
+ * customer-api on the very next call that touches data.
+ */
+export const requireLiveBearer = async (
+  token: string,
+  config: OAuthConfig,
+  connector: Connector,
+  deps: VerifyBearerDeps,
+): Promise<void> => {
+  const verdict = await verifyBearer(token, deps);
+  if (verdict !== 'invalid') return;
+  throw new UnauthorizedError(
+    'The access token is expired or has been revoked',
+    bearerChallenge(config, connector, 'invalid_token', 'The access token is expired or has been revoked'),
+  );
 };
