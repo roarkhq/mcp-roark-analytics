@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.11.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.10.0...v4.11.0) (2026-09-29)
+
+
+### Features
+
+* **oauth:** remote OAuth resource-server mode for HTTP transport ([#74](https://github.com/roarkhq/mcp-roark-analytics/issues/74)) ([e9960d6](https://github.com/roarkhq/mcp-roark-analytics/commit/e9960d657b30e7d50977714b455b1e3ea700a999))
+
 ## [4.10.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.9.0...v4.10.0) (2026-09-29)
 
 
