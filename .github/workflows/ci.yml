@@ -77,6 +77,37 @@ jobs:
       - name: Check the bundle was produced
         run: test -f roarkanalytics_sdk_api.mcpb
 
+      # The `execute` tool is the whole product, and nothing above runs it. The
+      # unit tests cover the flags handed to Deno; they cannot cover whether Deno
+      # ACCEPTS them, and that is what shipped broken. `--allow-net=unix:<path>`
+      # is a well-formed string and made a reasonable-looking fixture, but Deno
+      # 2.7 parses every --allow-net entry as `host[:port]` and exited with
+      # "invalid port" before serving anything. Every `execute` call against the
+      # deployed server failed, for two releases, while CI was green throughout:
+      # it built, it booted, and `deno --version` ran.
+      #
+      # Run against BOTH permission models rather than whichever Deno the runner
+      # happens to have. 2.7 covers the socket a Unix socket is a file and
+      # --allow-net rejects a `unix:` entry; 2.9 covers the socket additionally
+      # needing --allow-net=unix:<path>. The code branches on exactly this
+      # (denoAcceptsUnixAllowNet), so testing one version tests half the fix, and
+      # a floating version would quietly test only the half of the day it matches.
+      # The versions are pinned for the same reason: an upgrade that changes the
+      # answer should change this file.
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.7.1
+
+      - name: The code tool's Deno sandbox boots and stays contained (Deno 2.7)
+        run: node scripts/check-deno-sandbox.mjs
+
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.5
+
+      - name: The code tool's Deno sandbox boots and stays contained (Deno 2.9)
+        run: node scripts/check-deno-sandbox.mjs
+
       # The header of this file says the point of the split is that this package
       # compiles against a *published* SDK. It does - but compiling is not the
       # question, because the method table addresses the SDK by string and tsc
