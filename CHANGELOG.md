@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.11.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.11.0...v4.11.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **oauth:** unbreak the build — take the pinned project off the request context ([#126](https://github.com/roarkhq/mcp-roark-analytics/issues/126)) ([af3cee5](https://github.com/roarkhq/mcp-roark-analytics/commit/af3cee5d811496458582b0192416614405a5d93c))
+
 ## [4.11.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.10.0...v4.11.0) (2026-09-29)
 
 
