@@ -105,6 +105,29 @@ describe('denoAcceptsUnixAllowNet', () => {
     expect(denoAcceptsUnixAllowNet('/missing/deno', () => ({ status: null }))).toBe(false);
   });
 
+  /* A null status is "the probe never ran" (spawn failure, timeout, signal), not "this
+     Deno rejects the flag" - that is an exit code. Caching it would pin the answer for
+     the life of the process, and on Deno 2.9+ one transient failure would then make
+     every later execute call die with NotCapable. */
+  it('does not cache a probe that never ran, so a transient failure is not permanent', () => {
+    const probe = jest.fn().mockReturnValueOnce({ status: null }).mockReturnValueOnce({ status: 0 });
+
+    expect(denoAcceptsUnixAllowNet('/flaky/deno', probe)).toBe(false);
+    expect(denoAcceptsUnixAllowNet('/flaky/deno', probe)).toBe(true);
+    expect(probe).toHaveBeenCalledTimes(2);
+  });
+
+  /* A Deno that ran and rejected the flag is a settled answer, so it must still be
+     cached - otherwise every execute call on 2.7 pays for another spawn. */
+  it('caches a rejection, which is an answer rather than a failure', () => {
+    const probe = jest.fn().mockReturnValue({ status: 1 });
+
+    denoAcceptsUnixAllowNet('/old-cached/deno', probe);
+    denoAcceptsUnixAllowNet('/old-cached/deno', probe);
+
+    expect(probe).toHaveBeenCalledTimes(1);
+  });
+
   /* The answer cannot change under a running process, and the code tool asks once per
      execute call, so the probe must not become a spawn per request. */
   it('probes each executable only once', () => {

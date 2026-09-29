@@ -238,6 +238,15 @@ export const denoAcceptsUnixAllowNet = (
     '--allow-net=unix:/nonexistent-roark-deno-capability-probe.sock',
     'data:text/javascript,0',
   ]);
+
+  // A null status means the probe never ran at all - the binary could not be spawned,
+  // or it was killed by the timeout or a signal - as opposed to running and rejecting
+  // the flag, which is an exit code. Answer conservatively for this call but do NOT
+  // cache it: a single transient failure would otherwise pin the answer to
+  // "unsupported" for the life of the process, and on Deno 2.9+ that means every
+  // later execute call dies with NotCapable.
+  if (status === null) return false;
+
   const accepted = status === 0;
   unixAllowNetSupport.set(denoPath, accepted);
   return accepted;
@@ -348,7 +357,15 @@ const localDenoHandler = async ({
   const allowRead = allowReadPaths.join(',');
 
   const addSocketToAllowNet = denoAcceptsUnixAllowNet(denoPath, (command, probeArgs) =>
-    spawnSync(command, probeArgs, { stdio: 'ignore' }),
+    spawnSync(command, probeArgs, {
+      stdio: 'ignore',
+      // spawnSync blocks, so an unbounded probe would hang the server rather than
+      // fail one call. Deno's first run can populate its cache directory, hence
+      // seconds rather than milliseconds, and DENO_NO_UPDATE_CHECK keeps a version
+      // check off that path.
+      timeout: 10_000,
+      env: { ...process.env, DENO_NO_UPDATE_CHECK: '1' },
+    }),
   );
 
   const worker = await newDenoHTTPWorker(url.pathToFileURL(workerPath), {

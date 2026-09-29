@@ -64,9 +64,10 @@ const egress = await runCode(`async function run(client) {
   try { await fetch('https://example.com'); return { escaped: true } }
   catch (e) { return { escaped: false, error: String(e) } }
 }`);
-assert.equal(
-  JSON.parse(textOf(egress)).escaped,
-  false,
-  `the sandbox reached a host outside the API allowlist: ${textOf(egress)}`,
-);
+const { escaped, error } = JSON.parse(textOf(egress));
+assert.equal(escaped, false, `the sandbox reached a host outside the API allowlist: ${textOf(egress)}`);
+// `escaped: false` on its own would also be satisfied by the fetch failing for an
+// unrelated reason (a typo in the test code, DNS being down), which would quietly
+// stop testing containment. Require the refusal to be the permission system's.
+assert.match(error, /NotCapable/, `the fetch failed, but not because the sandbox refused it: ${error}`);
 console.log('✓ the Deno sandbox cannot reach hosts outside the API allowlist');
