@@ -37,6 +37,28 @@ Iterations lengthen the queue; they do not raise peak load. Concurrency governs
 load, which is why a long soak test is a legitimate configuration rather than an
 accident.
 
+## Retrying when the agent doesn't respond
+
+`maxNoResponseRetries` (0-10, default 0) is opt-in. When the agent under
+test never responds (it answers a call and never says a word, or never replies in
+a chat), that conversation is invalidated as `AGENT_NEVER_SPOKE`; with retries on,
+its test case runs again, up to that
+many more times, after waiting `noResponseRetryBackoffSeconds` (30-600,
+default 90). The wait exists because silences come in bursts (a callee out of
+capacity), so redialling at once mostly lands in the same burst.
+
+- **Each retry is a new, billed call.** A plan retrying N times can place up to
+  N + 1 calls per test case, so the cap bounds the spend at 11x the planned calls.
+- **Silent attempts stay visible.** Every attempt is its own simulation job with
+  its own call; a retry links back to the attempt it replaced and carries its
+  attempt number. Nothing is overwritten.
+- **The run waits for its retries.** A retry waiting out its backoff is a
+  `RETRY_SCHEDULED` job, and the run does not settle until every test case has a final
+  attempt. A run with scheduled retries is waiting, not stuck.
+- **The never-spoke verdict is judged on each test case's last attempt.** A
+  silent call a retry later got through on does not count against the agent's
+  availability; the verdict still reports every silent attempt alongside.
+
 ## Variant selection, and why it is never defaulted
 
 Each flow attached to a plan says which of its variants should run: every
