@@ -109,6 +109,104 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'listApiKeys',
+    endpoint: '/v1/me/api-keys',
+    httpMethod: 'get',
+    summary: 'List your personal credentials',
+    description:
+      'Returns the credentials that act as you: the ones created in the dashboard, from `roark auth login`, and MCP connectors. Requires a personal credential; a project API key is refused. Defaults to ACTIVE, pass ?status=REVOKED to see revoked ones. The key value itself is never returned.',
+    stainlessPath: '(resource) me > (method) listApiKeys',
+    qualified: 'client.me.listAPIKeys',
+    params: ["status?: 'ACTIVE' | 'REVOKED';"],
+    response:
+      "{ data: { apiKeys: { id: string; createdAt: string; defaultProjectId: string; expiresAt: string; lastUsedAt: string; name: string; organizationId: string; permissions: string[]; scopes: string[]; status: 'ACTIVE' | 'REVOKED'; }[]; }; }",
+    markdown:
+      "## listApiKeys\n\n`client.me.listAPIKeys(status?: 'ACTIVE' | 'REVOKED'): { data: object; }`\n\n**get** `/v1/me/api-keys`\n\nReturns the credentials that act as you: the ones created in the dashboard, from `roark auth login`, and MCP connectors. Requires a personal credential; a project API key is refused. Defaults to ACTIVE, pass ?status=REVOKED to see revoked ones. The key value itself is never returned.\n\n### Parameters\n\n- `status?: 'ACTIVE' | 'REVOKED'`\n  Filter by status. Defaults to ACTIVE.\n\n### Returns\n\n- `{ data: { apiKeys: { id: string; createdAt: string; defaultProjectId: string; expiresAt: string; lastUsedAt: string; name: string; organizationId: string; permissions: string[]; scopes: string[]; status: 'ACTIVE' | 'REVOKED'; }[]; }; }`\n\n  - `data: { apiKeys: { id: string; createdAt: string; defaultProjectId: string; expiresAt: string; lastUsedAt: string; name: string; organizationId: string; permissions: string[]; scopes: string[]; status: 'ACTIVE' | 'REVOKED'; }[]; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.me.listAPIKeys();\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.me.listAPIKeys',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.me.listAPIKeys();\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'me.list_api_keys',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.me.list_api_keys()\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/me/api-keys \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'createApiKey',
+    endpoint: '/v1/me/api-keys',
+    httpMethod: 'post',
+    summary: 'Create a personal credential',
+    description:
+      'Mints a credential that acts as you, for a CLI or an automation. The key value is returned exactly once, in the `key` field: capture it now, it is unreadable afterwards. Requires a personal credential (a project API key is refused) and admin on the project the credential defaults to. The new credential can never exceed the one that created it: not in scope, not in permissions, and not in lifetime. Omit a field to copy it from the calling credential.',
+    stainlessPath: '(resource) me > (method) createApiKey',
+    qualified: 'client.me.createAPIKey',
+    params: [
+      'name: string;',
+      'expiresAt?: string;',
+      'permissions?: string[];',
+      'projectId?: string;',
+      "scopes?: 'READ' | 'WRITE'[];",
+    ],
+    response:
+      "{ data: { id: string; createdAt: string; defaultProjectId: string; expiresAt: string; key: string; lastUsedAt: string; name: string; organizationId: string; permissions: string[]; scopes: string[]; status: 'ACTIVE' | 'REVOKED'; }; }",
+    markdown:
+      "## createApiKey\n\n`client.me.createAPIKey(name: string, expiresAt?: string, permissions?: string[], projectId?: string, scopes?: 'READ' | 'WRITE'[]): { data: object; }`\n\n**post** `/v1/me/api-keys`\n\nMints a credential that acts as you, for a CLI or an automation. The key value is returned exactly once, in the `key` field: capture it now, it is unreadable afterwards. Requires a personal credential (a project API key is refused) and admin on the project the credential defaults to. The new credential can never exceed the one that created it: not in scope, not in permissions, and not in lifetime. Omit a field to copy it from the calling credential.\n\n### Parameters\n\n- `name: string`\n  A label you will recognise later. It is the only thing that tells two credentials apart in the list you revoke from.\n\n- `expiresAt?: string`\n  ISO 8601 expiry. Defaults to the calling credential's own expiry (no expiry, for a `roark auth login` credential) and may not outlive it, so a short-lived connector credential cannot mint a permanent one.\n\n- `permissions?: string[]`\n  Granular 'resource:action' permissions. Defaults to the calling credential's own set, and can never exceed it. A ceiling, not an entitlement: the holder still only reaches what their project membership allows.\n\n- `projectId?: string`\n  Project the credential assumes when a request sends no X-Roark-Project-Id header. Defaults to the calling credential's own default project. You must be an admin of whichever project is used.\n\n- `scopes?: 'READ' | 'WRITE'[]`\n  Coarse tier. Defaults to the calling credential's own tier, and can never exceed it: a READ credential cannot mint a WRITE one.\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; defaultProjectId: string; expiresAt: string; key: string; lastUsedAt: string; name: string; organizationId: string; permissions: string[]; scopes: string[]; status: 'ACTIVE' | 'REVOKED'; }; }`\n\n  - `data: { id: string; createdAt: string; defaultProjectId: string; expiresAt: string; key: string; lastUsedAt: string; name: string; organizationId: string; permissions: string[]; scopes: string[]; status: 'ACTIVE' | 'REVOKED'; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.me.createAPIKey({ name: 'CI deploy gate' });\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.me.createAPIKey',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.me.createAPIKey({ name: 'CI deploy gate' });\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'me.create_api_key',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.me.create_api_key(\n    name="CI deploy gate",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/me/api-keys \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "name": "CI deploy gate",\n          "expiresAt": "2026-12-31T23:59:59.000Z",\n          "permissions": [\n            "call:read",\n            "metric:read"\n          ],\n          "scopes": [\n            "READ"\n          ]\n        }\'',
+      },
+    },
+  },
+  {
+    name: 'revokeApiKey',
+    endpoint: '/v1/me/api-keys/{id}',
+    httpMethod: 'delete',
+    summary: 'Revoke one of your personal credentials',
+    description:
+      'Revokes a credential that acts as you. It stops working immediately. A credential may revoke itself, which is what `roark auth logout` does. Repeating the call is safe; an unknown id, or one belonging to someone else, answers 404.',
+    stainlessPath: '(resource) me > (method) revokeApiKey',
+    qualified: 'client.me.revokeAPIKey',
+    params: ['id: string;'],
+    response: '{ data: { id: string; deleted: true; }; }',
+    markdown:
+      "## revokeApiKey\n\n`client.me.revokeAPIKey(id: string): { data: object; }`\n\n**delete** `/v1/me/api-keys/{id}`\n\nRevokes a credential that acts as you. It stops working immediately. A credential may revoke itself, which is what `roark auth logout` does. Repeating the call is safe; an unknown id, or one belonging to someone else, answers 404.\n\n### Parameters\n\n- `id: string`\n\n### Returns\n\n- `{ data: { id: string; deleted: true; }; }`\n\n  - `data: { id: string; deleted: true; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.me.revokeAPIKey('id');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.me.revokeAPIKey',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.me.revokeAPIKey('id');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'me.revoke_api_key',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.me.revoke_api_key(\n    "id",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/me/api-keys/$ID \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'list',
     endpoint: '/v1/projects',
     httpMethod: 'get',
