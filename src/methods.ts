@@ -17,10 +17,28 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/health',
   },
   {
+    clientCallName: 'client.me.createAPIKey',
+    fullyQualifiedName: 'me.createAPIKey',
+    httpMethod: 'post',
+    httpPath: '/v1/me/api-keys',
+  },
+  {
     clientCallName: 'client.me.get',
     fullyQualifiedName: 'me.get',
     httpMethod: 'get',
     httpPath: '/v1/me',
+  },
+  {
+    clientCallName: 'client.me.listAPIKeys',
+    fullyQualifiedName: 'me.listAPIKeys',
+    httpMethod: 'get',
+    httpPath: '/v1/me/api-keys',
+  },
+  {
+    clientCallName: 'client.me.revokeAPIKey',
+    fullyQualifiedName: 'me.revokeAPIKey',
+    httpMethod: 'delete',
+    httpPath: '/v1/me/api-keys/{id}',
   },
   {
     clientCallName: 'client.project.list',
