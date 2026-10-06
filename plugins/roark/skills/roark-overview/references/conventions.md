@@ -38,6 +38,12 @@ classes of mistakes.
   a permissions problem, not a missing recording.
 - Ingesting a call or chat **with agent attribution** additionally needs
   `agent:create`, or the whole request is rejected (403).
+- **Minting a credential is not how you fix a 403.** `client.me.createAPIKey`
+  creates a credential that acts as the caller, for a CLI or a CI job. It needs
+  this session to be running on a personal credential already (a project key gets
+  a 403), and it can never exceed the credential that minted it in scope,
+  permissions or lifetime, so it cannot grant a permission you are missing. The
+  key value comes back exactly once, in `key`: never print it. See `gate-ci`.
 
 ## Identity and idempotency
 

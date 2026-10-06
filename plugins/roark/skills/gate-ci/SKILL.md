@@ -19,6 +19,47 @@ thresholds are computed from values that already exist and reach no model. A
 pipeline wired to a plan with no checks attached goes green forever without ever
 having tested the bar.
 
+## The credential CI runs as
+
+CI needs its own credential, not a developer's. Default to having the **user**
+create it: the New credential dialog in the dashboard, or
+`roark credential create --name "CI deploy gate"` in their own terminal. They
+paste the value into the CI secret store. That is one human step, and it keeps a
+live key out of this conversation.
+
+If you do mint it programmatically, `client.me.createAPIKey` returns the key
+**exactly once**, in `key`:
+
+```ts
+const cred = await client.me.createAPIKey({
+  name: 'CI deploy gate',
+  scopes: ['WRITE'], // the gate starts a run; READ alone cannot
+  permissions: ['simulation:run', 'simulation:read', 'call:read', 'metric:read'],
+  expiresAt: '2026-12-31T23:59:59.000Z',
+})
+console.log(cred.id, cred.name) // never cred.key
+```
+
+The rules matter more than the call:
+
+- **Never echo the key.** This MCP runs your snippet and its output lands in the
+  transcript. Print `cred.id` and `cred.name`, never `cred.key`. Send the value
+  straight to the secret store (`gh secret set ROARK_API_BEARER_TOKEN`), and never
+  into a file in the repo - the workflow references the secret, it does not
+  contain it.
+- **It needs a personal credential.** A project API key gets a 403 whose message
+  says exactly that. If `ROARK_API_BEARER_TOKEN` came from the dashboard's project
+  keys, this call cannot work: tell the user, do not retry and do not go hunting
+  for another route.
+- **Narrow it.** Every omitted field copies the calling credential's value, so an
+  unnarrowed mint is a clone of your own token. Ask for the smallest `scopes` and
+  `permissions` the gate needs, and set an `expiresAt`. None of the three can ever
+  exceed the credential that minted it, so narrowing is the only direction
+  available.
+- **One credential per pipeline**, named for it, so revoking is surgical.
+  `client.me.listAPIKeys()` lists them with `lastUsedAt`, and
+  `client.me.revokeAPIKey(id)` kills one.
+
 ## 1. Start the run
 
 Use `build-run-plan` to configure and start. In CI you usually run a saved plan
