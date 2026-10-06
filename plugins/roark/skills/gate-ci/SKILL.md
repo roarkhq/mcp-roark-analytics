@@ -28,14 +28,16 @@ paste the value into the CI secret store. That is one human step, and it keeps a
 live key out of this conversation.
 
 If you do mint it programmatically, `client.me.createAPIKey` returns the key
-**exactly once**, in `key`:
+**exactly once**, inside the `data` envelope every response has:
 
 ```ts
-const cred = await client.me.createAPIKey({
+const ninetyDays = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+const { data: cred } = await client.me.createAPIKey({
   name: 'CI deploy gate',
+  projectId, // name it explicitly; you must be an ADMIN of whichever project is used
   scopes: ['WRITE'], // the gate starts a run; READ alone cannot
-  permissions: ['simulation:run', 'simulation:read', 'call:read', 'metric:read'],
-  expiresAt: '2026-12-31T23:59:59.000Z',
+  permissions: ['simulation:run', 'simulation:read', 'metric:read'],
+  expiresAt: ninetyDays, // capped by the minting credential's own expiry
 })
 console.log(cred.id, cred.name) // never cred.key
 ```
@@ -43,19 +45,27 @@ console.log(cred.id, cred.name) // never cred.key
 The rules matter more than the call:
 
 - **Never echo the key.** This MCP runs your snippet and its output lands in the
-  transcript. Print `cred.id` and `cred.name`, never `cred.key`. Send the value
-  straight to the secret store (`gh secret set ROARK_API_BEARER_TOKEN`), and never
-  into a file in the repo - the workflow references the secret, it does not
-  contain it.
-- **It needs a personal credential.** A project API key gets a 403 whose message
-  says exactly that. If `ROARK_API_BEARER_TOKEN` came from the dashboard's project
-  keys, this call cannot work: tell the user, do not retry and do not go hunting
-  for another route.
+  transcript. Destructure `data` as above and print `cred.id` / `cred.name`,
+  never `cred.key` and never the whole response. The generated docs-search entry
+  for this method ends with `console.log(response)`, which dumps the envelope
+  including the key - do not copy that line. Send the value straight to the
+  secret store (`gh secret set ROARK_API_BEARER_TOKEN`) and never into a file in
+  the repo: the workflow references the secret, it does not contain it.
+- **Two preconditions, two different refusals.** It needs a **personal**
+  credential: a project API key is a 403 saying "these endpoints describe a
+  person". And it needs you to be an **ADMIN of the project** the credential
+  defaults to: a non-admin is a different 403, "only project admins can create a
+  personal credential for this project". Read which one you got before
+  explaining it, and do not retry either. (If the calling credential has no
+  default project, omitting `projectId` is a 400 asking for it - which is why CI
+  should pass it explicitly rather than inherit.)
 - **Narrow it.** Every omitted field copies the calling credential's value, so an
   unnarrowed mint is a clone of your own token. Ask for the smallest `scopes` and
-  `permissions` the gate needs, and set an `expiresAt`. None of the three can ever
-  exceed the credential that minted it, so narrowing is the only direction
-  available.
+  `permissions` the gate needs (those three are what this skill's three steps
+  call; the full catalog is the table in
+  `../roark-overview/references/conventions.md`) and set an `expiresAt`. None of
+  the three can ever exceed the credential that minted it, so narrowing is the
+  only direction available.
 - **One credential per pipeline**, named for it, so revoking is surgical.
   `client.me.listAPIKeys()` lists them with `lastUsedAt`, and
   `client.me.revokeAPIKey(id)` kills one.
@@ -66,7 +76,8 @@ Use `build-run-plan` to configure and start. In CI you usually run a saved plan
 by id so the test suite is version-controlled and stable:
 
 ```ts
-const started = await client.simulation.run({ planId }) // or { plan: {...} }
+// Every response is wrapped in `data`; destructure it or every field reads undefined.
+const { data: started } = await client.simulation.run({ planId }) // or { plan: {...} }
 const jobId = started.simulationRunPlanJobId
 // started.simulationJobCount = calls this will place (log it; it bills)
 ```
@@ -84,10 +95,11 @@ between polls and cap total wait so CI cannot hang forever.
 ```ts
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const TERMINAL = new Set(['COMPLETED', 'FAILED', 'TIMED_OUT', 'CANCELLED'])
-let run = await client.simulationRunPlanJob.getByID(jobId)
+const fetchRun = async () => (await client.simulationRunPlanJob.getByID(jobId)).data
+let run = await fetchRun()
 while (!TERMINAL.has(run.status)) {
   await sleep(15_000) // poll interval
-  run = await client.simulationRunPlanJob.getByID(jobId)
+  run = await fetchRun()
 }
 if (run.status !== 'COMPLETED') {
   // the run itself failed to execute — fail the gate and report run.status.
@@ -112,7 +124,7 @@ let checksSeen = 0
 for (const job of run.simulationJobs) {
   if (!job.callId) continue
   // flatten: 'true' is REQUIRED — the default response nests values[] per metric.
-  const rows = await client.call.listMetrics(job.callId, { flatten: 'true' })
+  const { data: rows } = await client.call.listMetrics(job.callId, { flatten: 'true' })
   for (const r of rows) {
     if (!r.slug.endsWith('_check')) continue
     checksSeen++
