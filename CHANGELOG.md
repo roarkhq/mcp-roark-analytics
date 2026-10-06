@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.18.2](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.18.1...v4.18.2) (2026-10-06)
+
+
+### Documentation
+
+* **skills:** teach the skills where a CI credential comes from ([#150](https://github.com/roarkhq/mcp-roark-analytics/issues/150)) ([91c5615](https://github.com/roarkhq/mcp-roark-analytics/commit/91c56159d2c40915bdff25690a39c855f7535d41))
+
 ## [4.18.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.18.0...v4.18.1) (2026-10-06)
 
 
