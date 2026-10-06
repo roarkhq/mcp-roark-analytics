@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.18.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.18.0...v4.18.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **deps:** raise the @roarkanalytics/sdk floor to the release the credential tools need ([#148](https://github.com/roarkhq/mcp-roark-analytics/issues/148)) ([44f0db3](https://github.com/roarkhq/mcp-roark-analytics/commit/44f0db3dc19117a9da28822d64049fee57123143))
+
 ## [4.18.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.17.0...v4.18.0) (2026-10-05)
 
 
