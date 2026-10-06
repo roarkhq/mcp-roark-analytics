@@ -38,6 +38,30 @@ classes of mistakes.
   a permissions problem, not a missing recording.
 - Ingesting a call or chat **with agent attribution** additionally needs
   `agent:create`, or the whole request is rejected (403).
+- **Minting a credential is not how you fix a 403.** `client.me.createAPIKey`
+  creates a credential that acts as the caller, for a CLI or a CI job. It can
+  never exceed the credential that minted it in scope, permissions or lifetime,
+  so it cannot grant a permission you are missing. It also has two preconditions
+  of its own, each with its own 403: this session must already be running on a
+  personal credential (not a project key), and you must be an ADMIN of the
+  project the new credential defaults to. The key value comes back exactly once,
+  in `data.key`: never print it. See `gate-ci`.
+
+## Response shape: everything is wrapped in `data`
+
+Every method returns an envelope, not the object itself. Destructure it, or
+every field reads `undefined`:
+
+```ts
+const { data: agent } = await client.agent.create({ name: 'Support Bot' })
+agent.id // not response.id
+```
+
+List methods wrap an array and add `pagination` alongside it (see below). When
+a response carries a secret - `me.createAPIKey` returns the key once, in
+`data.key` - log the named fields you need, never the whole response. The
+generated examples in docs search end with `console.log(response)`, which is
+fine for a public object and wrong for that one.
 
 ## Identity and idempotency
 
