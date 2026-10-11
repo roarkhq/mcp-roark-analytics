@@ -281,10 +281,22 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/plan/job/{jobId}/cancel',
   },
   {
+    clientCallName: 'client.simulationRunPlanJob.createDebrief',
+    fullyQualifiedName: 'simulationRunPlanJob.createDebrief',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/plan/job/{jobId}/debrief',
+  },
+  {
     clientCallName: 'client.simulationRunPlanJob.getByID',
     fullyQualifiedName: 'simulationRunPlanJob.getByID',
     httpMethod: 'get',
     httpPath: '/v1/simulation/plan/job/{jobId}',
+  },
+  {
+    clientCallName: 'client.simulationRunPlanJob.getResults',
+    fullyQualifiedName: 'simulationRunPlanJob.getResults',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/plan/job/{jobId}/results',
   },
   {
     clientCallName: 'client.simulationRunPlanJob.start',
