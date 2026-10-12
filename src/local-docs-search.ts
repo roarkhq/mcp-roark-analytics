@@ -1313,6 +1313,159 @@ const EMBEDDED_METHODS: MethodEntry[] = [
   },
   {
     name: 'list',
+    endpoint: '/v1/simulation/run-group',
+    httpMethod: 'get',
+    summary: 'List run groups',
+    description:
+      'Returns the run groups in the project, newest first, with their runs and where each group report stands. Read a report document from GET /v1/simulation/run-group/{groupId}.',
+    stainlessPath: '(resource) simulationRunGroup > (method) list',
+    qualified: 'client.simulationRunGroup.list',
+    params: ['limit?: number;', 'offset?: number;'],
+    response:
+      "{ data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }[]; pagination: { hasMore: boolean; limit: number; offset: number; total: number; }; }",
+    markdown:
+      "## list\n\n`client.simulationRunGroup.list(limit?: number, offset?: number): { data: object[]; pagination: object; }`\n\n**get** `/v1/simulation/run-group`\n\nReturns the run groups in the project, newest first, with their runs and where each group report stands. Read a report document from GET /v1/simulation/run-group/{groupId}.\n\n### Parameters\n\n- `limit?: number`\n  Maximum number of run groups to return (default: 20, max: 100)\n\n- `offset?: number`\n  Pagination offset\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }[]; pagination: { hasMore: boolean; limit: number; offset: number; total: number; }; }`\n\n  - `data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }[]`\n  - `pagination: { hasMore: boolean; limit: number; offset: number; total: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationRunGroups = await client.simulationRunGroup.list();\n\nconsole.log(simulationRunGroups);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunGroup.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationRunGroups = await client.simulationRunGroup.list();\n\nconsole.log(simulationRunGroups.data);",
+      },
+      python: {
+        method: 'simulation_run_group.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_run_groups = client.simulation_run_group.list()\nprint(simulation_run_groups.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/run-group \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getById',
+    endpoint: '/v1/simulation/run-group/{groupId}',
+    httpMethod: 'get',
+    summary: 'Get a run group',
+    description:
+      'Returns a run group with its runs in group order and its latest group report, including the report document once READY.',
+    stainlessPath: '(resource) simulationRunGroup > (method) getById',
+    qualified: 'client.simulationRunGroup.getByID',
+    params: ['groupId: string;'],
+    response:
+      "{ data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; document: object; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }; }",
+    markdown:
+      "## getById\n\n`client.simulationRunGroup.getByID(groupId: string): { data: object; }`\n\n**get** `/v1/simulation/run-group/{groupId}`\n\nReturns a run group with its runs in group order and its latest group report, including the report document once READY.\n\n### Parameters\n\n- `groupId: string`\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; document: object; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }; }`\n\n  - `data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; document: { aggregates: object[]; executiveSummary: object[]; generatedAtIso: string; headline: object; issues: object[]; methodology: string; model: string; recommendations: object[]; runs: object[]; scorecard: object[]; simulationRunGroupId: string; smallerItems: object[]; version: 1; wentWell: object[]; }; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulationRunGroup.getByID('5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunGroup.getByID',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.simulationRunGroup.getByID('5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'simulation_run_group.get_by_id',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.simulation_run_group.get_by_id(\n    "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/run-group/$GROUP_ID \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'create',
+    endpoint: '/v1/simulation/run-group',
+    httpMethod: 'post',
+    summary: 'Create a run group',
+    description:
+      'Groups several simulation runs so they read as one, and starts generating the group report:\none document across every run, with a scorecard summed across them and the issues found,\neach merged from the per-run debriefs.\n\nSend `simulationRunPlanJobIds` to group runs that already exist (runs still in progress are\nfine: the report waits for them). Send `simulationRunPlanIds` to start one run of each plan\nand group those; this places real calls, exactly as starting each plan would.\n\nPoll GET /v1/simulation/run-group/{groupId} until `latestReport.status` is READY.',
+    stainlessPath: '(resource) simulationRunGroup > (method) create',
+    qualified: 'client.simulationRunGroup.create',
+    params: ['name?: string;', 'simulationRunPlanIds?: string[];', 'simulationRunPlanJobIds?: string[];'],
+    response:
+      "{ data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; document: object; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }; }",
+    markdown:
+      "## create\n\n`client.simulationRunGroup.create(name?: string, simulationRunPlanIds?: string[], simulationRunPlanJobIds?: string[]): { data: object; }`\n\n**post** `/v1/simulation/run-group`\n\nGroups several simulation runs so they read as one, and starts generating the group report:\none document across every run, with a scorecard summed across them and the issues found,\neach merged from the per-run debriefs.\n\nSend `simulationRunPlanJobIds` to group runs that already exist (runs still in progress are\nfine: the report waits for them). Send `simulationRunPlanIds` to start one run of each plan\nand group those; this places real calls, exactly as starting each plan would.\n\nPoll GET /v1/simulation/run-group/{groupId} until `latestReport.status` is READY.\n\n### Parameters\n\n- `name?: string`\n  What to call the group. Defaults to the plans' names when starting plans, and to the runs' plan names when grouping existing runs.\n\n- `simulationRunPlanIds?: string[]`\n  Plans to run once each, in display order (2 to 20). Each plan starts a run, exactly as POST /v1/simulation/plan/{planId}/job would. Send this or `simulationRunPlanJobIds`, not both.\n\n- `simulationRunPlanJobIds?: string[]`\n  Runs that already exist, in display order (2 to 20). Runs still in progress are fine: the group report waits for them. Send this or `simulationRunPlanIds`, not both.\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; document: object; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }; }`\n\n  - `data: { id: string; createdAt: string; latestReport: { id: string; completedAt: string; createdAt: string; document: { aggregates: object[]; executiveSummary: object[]; generatedAtIso: string; headline: object; issues: object[]; methodology: string; model: string; recommendations: object[]; runs: object[]; scorecard: object[]; simulationRunGroupId: string; smallerItems: object[]; version: 1; wentWell: object[]; }; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; name: string; runCount: number; runs: { createdAt: string; endedAt: string; planName: string; runNumber: number; simulationRunPlanId: string; simulationRunPlanJobId: string; startedAt: string; status: string; }[]; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationRunGroup = await client.simulationRunGroup.create();\n\nconsole.log(simulationRunGroup);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunGroup.create',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationRunGroup = await client.simulationRunGroup.create();\n\nconsole.log(simulationRunGroup.data);",
+      },
+      python: {
+        method: 'simulation_run_group.create',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_run_group = client.simulation_run_group.create()\nprint(simulation_run_group.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/run-group \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'delete',
+    endpoint: '/v1/simulation/run-group/{groupId}',
+    httpMethod: 'delete',
+    summary: 'Delete a run group',
+    description: 'Deletes a run group. Its runs, and their results, are untouched.',
+    stainlessPath: '(resource) simulationRunGroup > (method) delete',
+    qualified: 'client.simulationRunGroup.delete',
+    params: ['groupId: string;'],
+    response: '{ data: { deleted: boolean; }; }',
+    markdown:
+      "## delete\n\n`client.simulationRunGroup.delete(groupId: string): { data: object; }`\n\n**delete** `/v1/simulation/run-group/{groupId}`\n\nDeletes a run group. Its runs, and their results, are untouched.\n\n### Parameters\n\n- `groupId: string`\n\n### Returns\n\n- `{ data: { deleted: boolean; }; }`\n\n  - `data: { deleted: boolean; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationRunGroup = await client.simulationRunGroup.delete(\n  '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e',\n);\n\nconsole.log(simulationRunGroup);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunGroup.delete',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationRunGroup = await client.simulationRunGroup.delete(\n  '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e',\n);\n\nconsole.log(simulationRunGroup.data);",
+      },
+      python: {
+        method: 'simulation_run_group.delete',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_run_group = client.simulation_run_group.delete(\n    "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",\n)\nprint(simulation_run_group.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/run-group/$GROUP_ID \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'regenerateReport',
+    endpoint: '/v1/simulation/run-group/{groupId}/report',
+    httpMethod: 'post',
+    summary: 'Regenerate a run group report',
+    description:
+      'Generates the group report again over the latest state of its runs. Returns the report generation; if one is already in flight it is returned instead of starting another. Poll GET /v1/simulation/run-group/{groupId} until `latestReport.status` is READY.',
+    stainlessPath: '(resource) simulationRunGroup > (method) regenerateReport',
+    qualified: 'client.simulationRunGroup.regenerateReport',
+    params: ['groupId: string;'],
+    response:
+      "{ data: { id: string; completedAt: string; createdAt: string; document: { aggregates: object[]; executiveSummary: object[]; generatedAtIso: string; headline: object; issues: object[]; methodology: string; model: string; recommendations: object[]; runs: object[]; scorecard: object[]; simulationRunGroupId: string; smallerItems: object[]; version: 1; wentWell: object[]; }; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; }",
+    markdown:
+      "## regenerateReport\n\n`client.simulationRunGroup.regenerateReport(groupId: string): { data: object; }`\n\n**post** `/v1/simulation/run-group/{groupId}/report`\n\nGenerates the group report again over the latest state of its runs. Returns the report generation; if one is already in flight it is returned instead of starting another. Poll GET /v1/simulation/run-group/{groupId} until `latestReport.status` is READY.\n\n### Parameters\n\n- `groupId: string`\n\n### Returns\n\n- `{ data: { id: string; completedAt: string; createdAt: string; document: { aggregates: object[]; executiveSummary: object[]; generatedAtIso: string; headline: object; issues: object[]; methodology: string; model: string; recommendations: object[]; runs: object[]; scorecard: object[]; simulationRunGroupId: string; smallerItems: object[]; version: 1; wentWell: object[]; }; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }; }`\n\n  - `data: { id: string; completedAt: string; createdAt: string; document: { aggregates: { averageLabel: string; evaluatedCount: number; medianLabel: string; metricName: string; p95Label: string; }[]; executiveSummary: { body: string; heading: string; }[]; generatedAtIso: string; headline: { callCount: number; completedAtIso: string; groupName: string; passedRunCount: number; reportedRunCount: number; runCount: number; statTiles: object[]; verdict: 'PASSED' | 'THRESHOLD_FAILED'; verdictProse: string; }; issues: { affectedCallCount: number; body: string; calls: object[]; checkNames: string[]; evidence: object[]; order: number; rootCauseChannel: 'PROMPT' | 'VOICE_CONFIG' | 'STT' | 'SPEECH_MODEL' | 'LLM_MODEL' | 'INFRA' | 'EXTERNAL'; runLabels: string[]; severity: 'HIGH' | 'MEDIUM' | 'LOW'; sourceThemes: object[]; title: string; }[]; methodology: string; model: string; recommendations: { body: string; channel: 'PROMPT' | 'VOICE_CONFIG' | 'STT' | 'SPEECH_MODEL' | 'LLM_MODEL' | 'INFRA' | 'EXTERNAL'; issueOrders: number[]; order: number; title: string; }[]; runs: { callCount: number; checksPassed: number; checksTotal: number; completedAtIso: string; runLabel: string; runNumber: number; simulationRunPlanJobId: string; status: string; summary: string; themeCount: number; verdict: 'PASSED' | 'THRESHOLD_FAILED'; }[]; scorecard: { checkName: string; evaluatedCount: number; failedCount: number; failedRunCount: number; passRatePct: number; runCount: number; }[]; simulationRunGroupId: string; smallerItems: { affectedCallCount: number; body: string; calls: object[]; checkNames: string[]; evidence: object[]; order: number; rootCauseChannel: 'PROMPT' | 'VOICE_CONFIG' | 'STT' | 'SPEECH_MODEL' | 'LLM_MODEL' | 'INFRA' | 'EXTERNAL'; runLabels: string[]; severity: 'HIGH' | 'MEDIUM' | 'LOW'; sourceThemes: object[]; title: string; }[]; version: 1; wentWell: { body: string; evidence: object[]; title: string; }[]; }; errorMessage: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulationRunGroup.regenerateReport(\n  '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e',\n);\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunGroup.regenerateReport',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.simulationRunGroup.regenerateReport(\n  '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e',\n);\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'simulation_run_group.regenerate_report',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.simulation_run_group.regenerate_report(\n    "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/run-group/$GROUP_ID/report \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'list',
     endpoint: '/v1/simulation/plan',
     httpMethod: 'get',
     summary: 'List run plans',
