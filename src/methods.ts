@@ -239,6 +239,42 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/tool-fixture/{fixtureId}',
   },
   {
+    clientCallName: 'client.simulationGroup.create',
+    fullyQualifiedName: 'simulationGroup.create',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/group',
+  },
+  {
+    clientCallName: 'client.simulationGroup.update',
+    fullyQualifiedName: 'simulationGroup.update',
+    httpMethod: 'put',
+    httpPath: '/v1/simulation/group/{groupId}',
+  },
+  {
+    clientCallName: 'client.simulationGroup.list',
+    fullyQualifiedName: 'simulationGroup.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/group',
+  },
+  {
+    clientCallName: 'client.simulationGroup.delete',
+    fullyQualifiedName: 'simulationGroup.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/simulation/group/{groupId}',
+  },
+  {
+    clientCallName: 'client.simulationGroup.getByID',
+    fullyQualifiedName: 'simulationGroup.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/group/{groupId}',
+  },
+  {
+    clientCallName: 'client.simulationGroup.run',
+    fullyQualifiedName: 'simulationGroup.run',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/group/{groupId}/run',
+  },
+  {
     clientCallName: 'client.simulationRunGroup.create',
     fullyQualifiedName: 'simulationRunGroup.create',
     httpMethod: 'post',
