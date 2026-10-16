@@ -89,6 +89,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/call/{callId}/sentiment-run',
   },
   {
+    clientCallName: 'client.call.updateProperties',
+    fullyQualifiedName: 'call.updateProperties',
+    httpMethod: 'patch',
+    httpPath: '/v1/call/{callId}/properties',
+  },
+  {
     clientCallName: 'client.metric.createDefinition',
     fullyQualifiedName: 'metric.createDefinition',
     httpMethod: 'post',

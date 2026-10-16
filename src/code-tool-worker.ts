@@ -121,6 +121,7 @@ const fuse = new Fuse(
     'client.call.list',
     'client.call.listMetrics',
     'client.call.listSentimentRuns',
+    'client.call.updateProperties',
     'client.metric.createDefinition',
     'client.metric.listDefinitions',
     'client.metric.updateDefinition',
