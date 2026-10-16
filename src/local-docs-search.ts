@@ -487,6 +487,37 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'updateProperties',
+    endpoint: '/v1/call/{callId}/properties',
+    httpMethod: 'patch',
+    summary: 'Update the properties of a call',
+    description:
+      'Add, overwrite or remove custom properties on an already-existing call. Use this for data that becomes available after the call was created, e.g. an outcome your system validates a few minutes later. Merge semantics: a value adds or overwrites the property, null removes it, and properties left out are untouched. The patch is applied whole or not at all: a property Roark sets itself, or a value whose type differs from the type the project already stores that property as, rejects the request with a 400 and nothing is written. A 409 means another request created one of the properties with a different value type at the same moment; nothing was written. Optionally pass `metrics` to (re)score metrics over the updated properties, which triggers a billed metric collection job and requires the `metric:create` permission.',
+    stainlessPath: '(resource) call > (method) updateProperties',
+    qualified: 'client.call.updateProperties',
+    params: ['callId: string;', 'properties: object;', 'metrics?: { id: string; }[];'],
+    response:
+      "{ data: { callId: string; metricCollectionError: string; metricCollectionJob: { id: string; completedAt: string; completedItems: number; createdAt: string; errorMessage: string; failedItems: number; policyIds: string[]; startedAt: string; status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED'; totalItems: number; triggeredBy: 'USER_MANUAL' | 'USER_API' | 'METRIC_POLICY' | 'SIMULATION'; updatedAt: string; }; properties: object; removed: string[]; updated: string[]; }; }",
+    markdown:
+      "## updateProperties\n\n`client.call.updateProperties(callId: string, properties: object, metrics?: { id: string; }[]): { data: object; }`\n\n**patch** `/v1/call/{callId}/properties`\n\nAdd, overwrite or remove custom properties on an already-existing call. Use this for data that becomes available after the call was created, e.g. an outcome your system validates a few minutes later. Merge semantics: a value adds or overwrites the property, null removes it, and properties left out are untouched. The patch is applied whole or not at all: a property Roark sets itself, or a value whose type differs from the type the project already stores that property as, rejects the request with a 400 and nothing is written. A 409 means another request created one of the properties with a different value type at the same moment; nothing was written. Optionally pass `metrics` to (re)score metrics over the updated properties, which triggers a billed metric collection job and requires the `metric:create` permission.\n\n### Parameters\n\n- `callId: string`\n\n- `properties: object`\n  Properties to change on the call. A string, number or boolean value adds the property or overwrites it; null removes it. Properties left out are untouched. Keys are stored in snake_case, as on POST /v1/call. A property keeps the value type it was first stored with in the project, so a value of another type is rejected. Properties Roark sets itself (direction, duration_seconds, agent_id, ...) can't be changed. Max 100 per request.\n\n- `metrics?: { id: string; }[]`\n  Optional. Metric definitions to (re)score on this call once the properties are written, e.g. metrics that read the call's properties. Triggers a metric collection job (billed, credit-gated) and requires the 'metric:create' permission. Omit to update properties without scoring. Max 20.\n\n### Returns\n\n- `{ data: { callId: string; metricCollectionError: string; metricCollectionJob: { id: string; completedAt: string; completedItems: number; createdAt: string; errorMessage: string; failedItems: number; policyIds: string[]; startedAt: string; status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED'; totalItems: number; triggeredBy: 'USER_MANUAL' | 'USER_API' | 'METRIC_POLICY' | 'SIMULATION'; updatedAt: string; }; properties: object; removed: string[]; updated: string[]; }; }`\n\n  - `data: { callId: string; metricCollectionError: string; metricCollectionJob: { id: string; completedAt: string; completedItems: number; createdAt: string; errorMessage: string; failedItems: number; policyIds: string[]; startedAt: string; status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED'; totalItems: number; triggeredBy: 'USER_MANUAL' | 'USER_API' | 'METRIC_POLICY' | 'SIMULATION'; updatedAt: string; }; properties: object; removed: string[]; updated: string[]; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.call.updateProperties('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {\n  properties: { partner_outcome: 'apr_returned', delivered_apr: '21.99' },\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.call.updateProperties',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.call.updateProperties('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {\n  properties: { partner_outcome: 'apr_returned', delivered_apr: '21.99' },\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'call.update_properties',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.call.update_properties(\n    call_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n    properties={\n        "delivered_apr": "21.99",\n        "partner_outcome": "apr_returned",\n    },\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/call/$CALL_ID/properties \\\n    -X PATCH \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "properties": {\n            "partner_outcome": "apr_returned",\n            "delivered_apr": "21.99"\n          }\n        }\'',
+      },
+    },
+  },
+  {
     name: 'listDefinitions',
     endpoint: '/v1/metric/definitions',
     httpMethod: 'get',
