@@ -215,8 +215,14 @@ A flow problem found after the full run costs the whole run.
     time, on distinct dates, and in dependency order.
 - **Monitor the first calls of every run.** Did they connect, and is the agent
   speaking? Then let it finish.
-- **Group the runs** into one run group (`simulationRunGroup.create`) so the
-  assessment is one object. Note each run's id and what it covers.
+- **Group the runs.** Note each run's id and what it covers. When the
+  assessment has 2 to 20 runs, put them in one run group:
+  - Call `simulationRunGroup.create` with `simulationRunPlanJobIds`, the runs
+    that already exist. Never pass `simulationRunPlanIds`: that starts a new
+    run of every plan and places real calls.
+  - One run needs no group.
+  - Above 20 runs, group the runs that count in the report (the latest valid
+    run per scenario). Leave superseded runs out.
 
 ## 6. Triage
 
