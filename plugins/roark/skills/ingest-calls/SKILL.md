@@ -22,7 +22,7 @@ skill covers importing a recording for analysis and reading calls back. (To
 non-test, then analyzes it):
 
 ```ts
-const call = await client.call.create({
+const { data: call } = await client.call.create({
   recordingUrl: 'https://.../call.mp3', // required; WAV/MP3/MP4/OGG, signed URL ok
   startedAt: '2026-09-01T15:04:00Z',    // required, ISO 8601
   interfaceType: 'PHONE',               // 'PHONE' | 'WEB'
@@ -72,12 +72,12 @@ const { data, pagination } = await client.call.list({
   simulationRunPlanJobId,    // optional: only calls from a given run
 })
 
-const call = await client.call.getByID(callId)
+const { data: call } = await client.call.getByID(callId)
 // title, summary (auto-generated), status, durationMs, endedStatus,
 // recordingUrl (pre-signed, ~1h), recordingUrlAccess, properties, policyIds, agents, customers
 
-const transcript = await client.call.getTranscript(callId)
-const metrics = await client.call.listMetrics(callId, { flatten: 'true' }) // branch on captureStatus - see read-results
+const { data: transcript } = await client.call.getTranscript(callId)
+const { data: metrics } = await client.call.listMetrics(callId, { flatten: 'true' }) // branch on captureStatus - see read-results
 ```
 
 `recordingUrlAccess` can be `AVAILABLE` | `NOT_AVAILABLE` | `RESTRICTED`;
@@ -86,7 +86,7 @@ const metrics = await client.call.listMetrics(callId, { flatten: 'true' }) // br
 ## Sentiment
 
 ```ts
-const runs = await client.call.listSentimentRuns(callId)
+const { data: runs } = await client.call.listSentimentRuns(callId)
 // each: status, averageSentiment (0-1), averageCategoricalSentiment
 //       (POSITIVE | NEUTRAL | NEGATIVE), commonEmotion
 ```

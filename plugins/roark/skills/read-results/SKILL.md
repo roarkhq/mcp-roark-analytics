@@ -19,7 +19,7 @@ agent met the bar, and a run with no checks attached has nothing to fail. See
 ## 1. Poll the run
 
 ```ts
-const run = await client.simulationRunPlanJob.getByID(jobId)
+const { data: run } = await client.simulationRunPlanJob.getByID(jobId)
 // run.simulationRunPlanJobId, run.simulationRunPlanId, run.status,
 // run.createdAt, run.startedAt, run.endedAt, run.simulationJobs[]
 ```
@@ -72,7 +72,7 @@ const { data, pagination } = await client.simulationRunPlanJob.list({
 per value, and `status: 'all'` to see non-SUCCESS rows at all:
 
 ```ts
-const rows = await client.call.listMetrics(callId, { flatten: 'true', status: 'all' })
+const { data: rows } = await client.call.listMetrics(callId, { flatten: 'true', status: 'all' })
 ```
 
 Grouped (the default) looks like:
@@ -107,7 +107,7 @@ Only values from the latest collection job per metric are returned.
 `value === true` passes.
 
 ```ts
-const rows = await client.call.listMetrics(callId, { flatten: 'true' })
+const { data: rows } = await client.call.listMetrics(callId, { flatten: 'true' })
 for (const r of rows) {
   if (r.captureStatus !== 'SUCCESS') continue
   if (r.slug.endsWith('_check') && r.value === false) {
@@ -123,7 +123,7 @@ check metric is present before claiming the run passed.
 ## 3. Read a transcript
 
 ```ts
-const transcript = await client.call.getTranscript(callId)
+const { data: transcript } = await client.call.getTranscript(callId)
 // transcript.participants[]: { type: AGENT | CUSTOMER | SIMULATED_CUSTOMER | BACKGROUND_SPEAKER, id, ... }
 // transcript.entries[]: { participantId, role, text, startOffsetMs, endOffsetMs }
 ```
@@ -135,7 +135,7 @@ metadata is available via `client.call.getByID(callId)`, and
 ## 4. Find a call by the number Roark dialed from
 
 ```ts
-const job = await client.simulationJob.lookup({
+const { data: job } = await client.simulationJob.lookup({
   roarkPhoneNumber: '+15551234567', // required, E.164
   callReceivedAt: '2026-09-04T10:00:00Z', // optional; DEFAULTS TO NOW
 })

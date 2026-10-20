@@ -48,13 +48,13 @@ A plan references endpoints, flows, and metrics by id or slug. Discover them:
 
 ```ts
 // Agent endpoints (Roark dials/connects to these).
-const endpoints = await client.agentEndpoint.list({ agentId })
+const { data: endpoints } = await client.agentEndpoint.list({ agentId })
 // Customer flows already authored in the project.
 const { data: flows } = await client.customerFlow.list()
 // One flow's edge cases, when you want to name specific ones.
-const flow = await client.customerFlow.getByID(flowId)
+const { data: flow } = await client.customerFlow.getByID(flowId)
 // Metrics available to attach (returns id, slug, name, type, calculationType).
-const metrics = await client.metric.listDefinitions()
+const { data: metrics } = await client.metric.listDefinitions()
 ```
 
 If the user has no flows yet, author one with `client.customerFlow.create(...)`
@@ -119,7 +119,7 @@ safe pattern is create-then-start: creating a plan does not run it, and the
 response carries `testCaseCount`.
 
 ```ts
-const created = await client.simulationRunPlan.create({
+const { data: created } = await client.simulationRunPlan.create({
   name: 'Billing regression',
   direction: 'OUTBOUND',
   maxSimulationDurationSeconds: 300,
@@ -129,7 +129,7 @@ const created = await client.simulationRunPlan.create({
   iterationCount: 1,
 })
 
-// NOTE the nesting: create returns { runPlan, runPlanJob }, not the plan itself.
+// NOTE the nesting: create returns { data: { runPlan, runPlanJob } }, not the plan itself.
 const plan = created.runPlan
 
 // Tell the user: "This will place <testCaseCount> calls." Wait for go-ahead
@@ -138,7 +138,7 @@ console.log(`This run will place ${plan.testCaseCount} calls.`)
 
 // Then start it. Prefer simulation.run({ planId }) - simulationRunPlanJob.start
 // is the deprecated twin and returns a smaller payload (no simulationJobCount).
-const started = await client.simulation.run({ planId: plan.id })
+const { data: started } = await client.simulation.run({ planId: plan.id })
 ```
 
 For a quick one-off where the user has already accepted the cost, you can
@@ -146,7 +146,7 @@ configure and start in a single call. The response's `simulationJobCount` is the
 number of calls placed:
 
 ```ts
-const run = await client.simulation.run({
+const { data: run } = await client.simulation.run({
   plan: {
     name: 'Smoke test',
     direction: 'INBOUND',

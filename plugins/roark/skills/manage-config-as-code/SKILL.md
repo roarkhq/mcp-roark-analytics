@@ -53,12 +53,12 @@ const bundle = {
   prune: true,
 }
 
-const diff = await client.config.diff(bundle)
+const { data: diff } = await client.config.diff(bundle)
 // diff.summary => { create, update, delete, noop }
 // diff.changes => [{ configKey, kind, name, op }]   op is lowercase
 // Surface this to the user. If delete > 0, confirm it is intended.
 
-const applied = await client.config.apply(bundle)
+const { data: applied } = await client.config.apply(bundle)
 // applied.changes => [{ ..., status: 'applied'|'failed', id?, error? }]
 // applied.summary => diff summary + `failed`
 ```
@@ -105,8 +105,8 @@ boundaries:
   references (agents, personas, flows, metrics); *triggering runs* stays
   imperative via `build-run-plan` (`simulation.run`). Keep the two separate:
   reconcile config, then start runs.
-- **Environments are not a config kind either**, and cannot be created at all
-  (they are read-only everywhere in the API). A flow referencing an environment
+- **Environments are not a config kind either.** Create them imperatively first
+  (`client.simulationEnvironment.create`). A flow referencing an environment
   name that does not already exist fails the apply.
 - **Agent endpoints are declared inside the `agent` resource** (`endpoints: [...]`),
   which is the only way config creates the phone endpoints a run plan targets.

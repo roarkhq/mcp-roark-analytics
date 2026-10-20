@@ -27,13 +27,13 @@ Roark ships a large library of audio-native and conversational metrics. Before
 authoring anything, list what exists and match it to the goal:
 
 ```ts
-const metrics = await client.metric.listDefinitions()
+const { data: metrics } = await client.metric.listDefinitions()
 // each: { id, slug, metricId, variantId, versionId, name, description,
 //         type (output type), calculationType, scope, supportedContexts, unit? }
 ```
 
-`listDefinitions` takes **no arguments**: no search, no filter, no pagination. It
-returns every metric visible to the project (system + org + project) in one array,
+`listDefinitions` takes **no arguments**: no search, no filter, no paging. Its
+`data` holds every metric visible to the project (system + org + project) in one array,
 so filter client-side.
 
 The [templates recipe](../build-run-plan/references/templates.md) maps common
@@ -74,8 +74,19 @@ In preference order:
 1. **A threshold on any existing metric** - the first-class mechanism:
    `POST /v1/metric/definitions/{idOrSlug}/thresholds` with
    `{ operator, value }` (plus optional `aggregationMode`, `countThreshold`).
-   **This route is not in the SDK client**, so it needs a raw HTTP call with the
-   same bearer token; tell the user that rather than pretending a method exists.
+   There is no client method for it, so call the route through the same
+   client, which carries your credentials. For example, a median response
+   time of at most 5 s:
+
+   ```ts
+   await client.post('/v1/metric/definitions/response_time/thresholds', {
+     body: { operator: 'LESS_THAN_OR_EQUALS', value: 5000, aggregationMode: 'MEDIAN' },
+   })
+   ```
+
+   Operators: `GREATER_THAN`, `GREATER_THAN_OR_EQUALS`, `LESS_THAN`,
+   `LESS_THAN_OR_EQUALS`, `EQUALS`, `NOT_EQUALS`. Aggregation modes include
+   `EACH`, `COUNT`, `AVERAGE`, `MIN`, `MAX`, `MEDIAN`, `P95` and `P99`.
 2. **`LLM_JUDGE` with `outputType: 'BOOLEAN'`** - fully supported by
    `client.metric.createDefinition` (below). This is the practical choice from the
    MCP.
@@ -100,7 +111,7 @@ selected by `calculationType`:
 Minimal LLM judge:
 
 ```ts
-const m = await client.metric.createDefinition({
+const { data: m } = await client.metric.createDefinition({
   calculationType: 'LLM_JUDGE',
   name: 'Confirmed appointment date',
   outputType: 'BOOLEAN',
@@ -115,15 +126,19 @@ Output types, per-type required fields, per-participant scoping, and full
 
 ## Rules that will bite you
 
-- **Create is the only write in the SDK.** `client.metric.createDefinition` and
-  `client.metric.listDefinitions` are the *only* two metric methods. Update,
-  delete, get-one, and thresholds exist as HTTP routes but **not** in the client -
-  do not write `client.metric.update(...)`, it does not exist.
+- **The metric methods are `createDefinition`, `updateDefinition` and
+  `listDefinitions`.** `client.metric.updateDefinition(idOrSlug, { ... })` edits
+  a custom metric and creates a new version. Delete, get-one and thresholds are
+  routes only: call them with `client.delete`, `client.get`, `client.post`.
+  There is no `client.metric.update` or `client.metric.delete`.
 - **Many fields are immutable**, and an update naming one returns 400: `slug`,
   `metricId`, `outputType`, `scope`, `participantRole`, `calculationType`,
   `source`, `analysisPackageId`, `organizationId`, `projectId`,
   `supportsMultipleVariants`. Pick the slug and output type deliberately.
-- **System metrics cannot be modified at all** (403). To vary one, create your own.
+- **System metrics cannot be updated** (403). To vary one, create a variant
+  (`client.metricVariant.create`, then `update`). Editing one of Roark's own
+  variants forks it for your organization and leaves everyone else's alone.
+  Or create your own metric.
 - **`llmPrompt` is capped at 2000 characters**; `name` at 100, `slug` at 50. Keep
   judge prompts tight and single-purpose. One metric = one question.
 - **Match `outputType` to the question.** BOOLEAN for pass/fail, SCALE for a
