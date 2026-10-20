@@ -71,7 +71,7 @@ always point to our setup, not the agent.
     take over calls.
 - **Phrasing that the caller parrots or that blocks the path is a bug in the
   brief.** For example:
-  - "You do not have a valid tracking number" made a caller announce exactly
+  - "You do not have a valid account number" made a caller announce exactly
     that.
   - "Never press keys" made a caller refuse a keypad prompt.
   - Telling callers to decline offers meant a case was almost never opened.

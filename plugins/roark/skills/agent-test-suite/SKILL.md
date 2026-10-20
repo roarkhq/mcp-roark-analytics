@@ -63,7 +63,7 @@ budget, a way past any gate, and a concurrency limit.
 | --- | --- |
 | How to reach the agent: each line or endpoint and what it is for, plus any gate (access code, IVR path, test menu) | Every flow has to pass the gate the same way. A gate nobody mentioned wastes the first discovery call |
 | Testing document, failure-mode list, or meeting notes | Becomes the test matrix. Without one, discovery replaces it |
-| Test data: accounts, order or tracking numbers, and the state each one is in. Is it shared, and does it change over time? | Most early "agent bugs" are test data surprises or collisions between concurrent calls |
+| Test data: accounts, order or reference numbers, and the state each one is in. Is it shared, and does it change over time? | Most early "agent bugs" are test data surprises or collisions between concurrent calls |
 | What counts as a failure for this agent (for example, escalation, transfers, data-specific mistakes) | Customers differ: one treats any escalation as a failure, another does not care about data-specific failures |
 | Who calls this agent: languages, accents, ages | Sweep values should match the real caller mix, not the template default |
 | Concurrency limit, business hours, whether calls can reach real people | Avoids flooding their line, calls hitting "we're closed", and a simulated caller talking to real staff |
@@ -121,8 +121,8 @@ and then report the agent for missing them.
    - Timeouts, how the agent ends calls, where it transfers, and when transfers
      reach real people.
    - Anything in the instructions you cannot reach.
-4. **Sanity-check against public domain rules** (for example, a carrier's
-   published pickup windows). What the agent actually does takes priority. The
+4. **Sanity-check against public domain rules** (for example, published
+   opening hours or service cut-offs). What the agent actually does takes priority. The
    check only stops you writing an expectation that encodes a wrong fact: a
    wrongly expected refusal is itself a false positive.
 5. **Check before you build.** If the project has call history, check how the

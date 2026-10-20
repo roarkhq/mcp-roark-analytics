@@ -40,19 +40,19 @@ beside it.
 ## One issue
 
 ```
-3. The agent asks the proof of delivery question again after the caller answers
+3. The agent asks for the date of birth again after the caller gives it
 
-Prevalence: Medium, 3 of 24 calls where the agent asked "Did you receive this
-package, or do you need proof of delivery?" (12%).
-Line: Primary.
-Brief: Part 2, delivered shipment.
+Prevalence: Medium, 3 of 24 calls where the agent asked "Can I have your date
+of birth to confirm your identity?" (12%).
+Line: Main.
+Brief: Part 2, rescheduling an appointment.
 
 <What the instructions expect, citing the part. What the agent did, in its exact
 words. Why it matters to the caller. How often it got this right.>
 
-- The caller said they had everything they needed. The agent said "Sorry. I
+- The caller gave their date of birth in full. The agent said "Sorry. I
   didn't catch that" and asked again.
-  - Roark link: 1:42 (call 1a2b3c4d, Primary line)
+  - Roark link: 1:42 (call 1a2b3c4d, Main line)
   - Full audio: full call (turn at 1:42)
   - Flagged audio: clip
 ```

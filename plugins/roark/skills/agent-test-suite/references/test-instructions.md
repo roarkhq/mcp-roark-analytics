@@ -14,8 +14,8 @@ it.
 ## Every sub-item is its own case
 
 - Split each bullet and sub-bullet into a separate row of the matrix.
-- An "or" in an action ("pause halfway through a 9-digit account number or a
-  12-digit tracking number") means test both, not pick one. Missing a sub-item
+- An "or" in an action ("pause halfway through
+  a card number or an order number") means test both, not pick one. Missing a sub-item
   the customer asked for is the first thing they notice.
 - Keep a coverage table per part, and check it before every report.
 - Name runs and sections in the customer's own words. Group results under their
@@ -53,11 +53,11 @@ brief a fallback for when the account does not have what the premise needs.
 | what to pull out | where it usually is | what you do with it |
 | --- | --- | --- |
 | Lines and what each is for | a "testing lines" table | One agent endpoint per line; record which parts use which line, and any backup line |
-| Gates | notes like "connects directly" or "enter the app code" | A scripted opening shared by every flow on that line, or none |
+| Gates | notes on routing or an access code to enter first | A scripted opening shared by every flow on that line, or none |
 | Parts, missions, steps, with their numbering | headings and tables | One row per step in the test matrix; keep the customer's numbering for citations |
 | Expected behaviour | "Verify the agent...", "Agent should...", "must NOT" | Agent expectations, quoted as closely as possible |
-| Caller actions | arrows, "Say ...", "Push back by asking..." | The flow's steps or the improv brief |
-| Test data and its state | data columns (account, order or tracking number, ZIP, address) | The flow's variables; note which record backs which step |
+| Caller actions | step lists and lines for the tester to say | The flow's steps or the improv brief |
+| Test data and its state | data columns (account or order number, ZIP, address) | The flow's variables; note which record backs which step |
 | Branches to test | "test both Yes and No", "A / B / C" | Separate scenarios, each with its own count |
 | Priority | "High priority", "Quick-start" | Larger sample sizes for high-priority parts |
 | Cross-cutting qualities | voice, pacing, latency, noise, interruptions | Report pillars and sweep scenarios, not single flows |
@@ -81,7 +81,7 @@ Instructions written for people need translating before they become simulations:
 - **"Set your outbound caller ID to X"**: we can only present numbers we own or
   have verified, never arbitrary ones. Ask the customer to map our numbers to
   their test profiles, or to confirm the feature builds history from live calls.
-- **Negative tests** ("intercept must NOT trigger") need a positive control in
+- **Negative tests** ("must NOT transfer") need a positive control in
   the same setup, or a pass proves nothing.
 - **Deliberately wrong premises** (the caller insists on a figure the account
   does not show) may be intended as a test of how the agent handles a wrong
@@ -99,11 +99,11 @@ message to the customer contact before the full run, not in the report:
 - Steps that need capabilities the platform lacks (arbitrary caller IDs,
   SMS receipt, a human transfer target, calls spaced over days).
 - Test data that looks inconsistent (one address given for two records, a
-  number format that does not match the rest, data marked "mock" on one line
-  only).
+  number format that does not match the rest, data that only works on one of
+  the lines).
 - Ambiguous expectations ("verify routing": routed where?).
 - Anything that depends on state the customer controls (pre-loaded history,
-  existing cases or holds, time windows like "within 48 hours").
+  existing cases or holds, time windows like "within two days").
 
 Items still open after the answers go to the report's "Unable to test fully"
 section, phrased as questions.
