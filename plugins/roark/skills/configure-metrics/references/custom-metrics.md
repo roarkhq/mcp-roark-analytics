@@ -116,14 +116,15 @@ Each definition resolves to a `variantId` (the config in effect) and a `versionI
 another, pass `sourceVariantId` to pin the exact config. If the source has more than
 one visible variant and you omit it, the call fails with "specify sourceVariantId".
 
-## Updating and deleting: not in the SDK
+## Updating and deleting
 
-**There is no `client.metric.update` and no `client.metric.delete`.** The SDK has
-only `createDefinition` and `listDefinitions`. The HTTP routes
-(`PUT` / `DELETE /v1/metric/definitions/{idOrSlug}`) exist, so an update needs a
-raw HTTP call - say so rather than calling a client method that does not exist.
+Update with `client.metric.updateDefinition(idOrSlug, { ... })`. There is no
+delete method; call the route (`DELETE /v1/metric/definitions/{idOrSlug}`) with
+`client.delete(...)`. To change one of Roark's own metrics, edit a variant
+instead (`client.metricVariant.create` / `update`), which forks it for your
+organization.
 
-For reference, over HTTP: editable fields are `name`, `llmPrompt`,
+Editable fields are `name`, `llmPrompt`,
 `scaleMin`/`scaleMax`/`scaleLabels`, boolean labels, `classificationOptions`,
 `maxClassifications`, `toolDefinitionIds`, `supportedContexts`, `formula` +
 `sources`, and `changeReason`. A new version is created only if a versionable field

@@ -36,11 +36,12 @@ webhook ── events (run finished, analysis done, issue opened)
 | agent | `agent` | create, update (name/description only), list, get |
 | agent endpoint | `agentEndpoint` | create **PHONE only**, narrow update, list, get |
 | persona | `simulationPersona` | create, update, list, get (**no delete**) |
-| environment | `simulationEnvironment` | **list, get only** - never create |
+| environment | `simulationEnvironment` | create, update, delete, list, get |
 | customer flow | `customerFlow` | create, update, delete, list, get, `replaceGraph`, `updateHappyPath` |
 | flow edge case | `customerFlowEdgeCase` | add, update, promote, remove (**improv flows only**) |
-| metric definition | `metric` | `createDefinition`, `listDefinitions` **only** |
-| threshold (a check) | - | **not in the SDK** (HTTP route only) |
+| metric definition | `metric` | `createDefinition`, `updateDefinition`, `listDefinitions` (**no delete**) |
+| metric variant | `metricVariant` | create, update, delete, list, get (editing a Roark variant forks it for your organization) |
+| threshold (a check) | - | no client method: `client.post` to the thresholds route (see `configure-metrics`) |
 | run plan | `simulationRunPlan` | create, update, list, delete, get |
 | run (batch) | `simulation.run`, `simulationRunPlanJob` | run, list, get, `start` (deprecated) |
 | one call's job | `simulationJob` | get, `lookup` (by Roark phone number) |
@@ -51,17 +52,20 @@ webhook ── events (run finished, analysis done, issue opened)
 | webhook | `webhook` | create, list, delete, get |
 | config bundle | `config` | `diff`, `apply` |
 
-**Not in the SDK at all** - do not invent client methods for these:
+**No client methods** - do not invent them. Where a documented route exists,
+call it through the same client (`client.get`, `client.post`, `client.put`,
+`client.delete`), which carries your credentials:
 
-- **chat** - chats exist and can be graded, but only via the raw
-  `POST /v1/chat` REST endpoint. There is no `client.chat.*`.
+- **chat ingestion** - real chats are brought in and graded through
+  `client.post('/v1/chat', { body })`. There is no `client.chat.*`. Chat agents
+  can still be simulated: see `register-agent`.
 - **knowledge base** - grounding documents are attached to metrics in the product.
 - **datasets** - curating calls into regression datasets is **in-product only**.
 - **issues** - auto-detected problem clusters, surfaced on the Issues page.
 - **provider imports** (Vapi, Retell, LiveKit, Pipecat) - Roark *receives* their
   webhooks; to bring a call in from code, use `call.create`.
-- **metric update/delete, get-one-metric, thresholds** - HTTP routes exist, no
-  client methods.
+- **metric delete, get-one-metric, thresholds** - documented routes with no
+  client methods. Call them with `client.delete`, `client.get`, `client.post`.
 - **persona folders**, **flow labels** - real product concepts, not filterable or
   settable through the API.
 - **the legacy `scenario` resource** - deprecated and replaced by customer flows.

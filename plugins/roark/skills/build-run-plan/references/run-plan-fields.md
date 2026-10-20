@@ -53,9 +53,9 @@ the installed SDK with the MCP docs search tool if a call is rejected.
   false gives a one-off backed by a hidden plan.
 - **`client.simulation.run({ planId, variables? })`** - run an existing plan.
 - **`client.simulationRunPlan.create({...})`** - create without running. Returns
-  **`{ runPlan, runPlanJob }`**, so the plan (with its `id` and the
-  **`testCaseCount`** call-count preview) is at `result.runPlan`, not the top
-  level. `runPlanJob` is null unless the deprecated `autoRun` was set.
+  **`{ data: { runPlan, runPlanJob } }`**, so the plan (with its `id` and the
+  **`testCaseCount`** call-count preview) is at `result.data.runPlan`, not the
+  top level. `runPlanJob` is null unless the deprecated `autoRun` was set.
 - **`client.simulationRunPlanJob.start(planId)`** - deprecated way to start a run.
   Returns only `{ simulationRunPlanId, simulationRunPlanJobId, status, createdAt }`
   with **no `simulationJobCount`**, so prefer `simulation.run({ planId })`.

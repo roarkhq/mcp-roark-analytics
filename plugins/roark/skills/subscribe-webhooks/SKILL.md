@@ -18,7 +18,7 @@ poll loop - subscribe to a webhook and let Roark call you when it finishes.
 ## Register a subscription
 
 ```ts
-const sub = await client.webhook.create({
+const { data: sub } = await client.webhook.create({
   url: 'https://your-app.example.com/hooks/roark', // required
   events: ['SIMULATION_RUN_PLAN_JOB_COMPLETED', 'SIMULATION_RUN_PLAN_JOB_FAILED'], // >= 1
   description: 'Notify CI when a run finishes',
@@ -59,8 +59,8 @@ docs search; do not skip verification on a public endpoint.
 
 ```ts
 const { data } = await client.webhook.list({ limit: 50 }) // no signingSecret on reads
-const one = await client.webhook.getByID(sub.id)
-await client.webhook.delete(sub.id) // -> { success: true }
+const { data: one } = await client.webhook.getByID(sub.id)
+await client.webhook.delete(sub.id) // -> { data: { success: true } }
 ```
 
 Reads never return the signing secret. If you lose it, delete the subscription

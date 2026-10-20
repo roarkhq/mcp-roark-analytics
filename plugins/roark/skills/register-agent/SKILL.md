@@ -20,8 +20,8 @@ the agent is new.
 The API does **no** deduplication: every `create` inserts. Look first:
 
 ```ts
-const existing = await client.agent.list({ searchText: 'Support Bot' })
-const found = existing.data.find((a) => a.name === 'Support Bot')
+const { data: existing } = await client.agent.list({ searchText: 'Support Bot' })
+const found = existing.find((a) => a.name === 'Support Bot')
 
 const agent =
   found ??
@@ -29,7 +29,7 @@ const agent =
     name: 'Support Bot',
     description: 'Inbound customer support line', // optional
     customId: 'support-bot-prod', // optional: your own stable id
-  }))
+  })).data
 ```
 
 Those three fields are the **entire** input. There is no `prompt`, `voice`,
@@ -53,7 +53,7 @@ Read one back with `client.agent.getByID(id)`. List filters: `limit` (1-50, defa
 ## 2. Add a phone endpoint
 
 ```ts
-const endpoint = await client.agentEndpoint.create({
+const { data: endpoint } = await client.agentEndpoint.create({
   agentId: agent.id,
   value: '+15555551234', // E.164; rejected otherwise
   direction: 'INCOMING', // REQUIRED: INCOMING | OUTGOING | INCOMING_AND_OUTGOING

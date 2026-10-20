@@ -24,11 +24,8 @@ slugs and are stable, but a given project may not collect all of them.
 - **`PATTERN`** - a trigger followed by an outcome in a window. Creatable.
 - **`THRESHOLD`** - compares one metric against a line, emits BOOLEAN. This is what
   a `*_check` is. Created via `POST /v1/metric/definitions/{idOrSlug}/thresholds`,
-  which is **not in the SDK client**.
+  which has no client method: call it with `client.post`.
 - **`PROVIDER`** - computed by Roark's own pipeline. Never authorable.
-
-Internally `LLM_JUDGE` is stored as `LLM_PROMPT` and `PATTERN` as `TEMPORAL`; those
-names never appear on the wire.
 
 ## Scope and context
 

@@ -60,9 +60,26 @@ against `@roarkanalytics/sdk`, and `search_docs`. Workflows with no named
 tool need it: scripted flow graphs, metric policies, webhooks, config as
 code, and importing a recording.
 
-On that local server, one snippet can chain several calls. If a snippet
-fails schema validation, the error names the offending field. Fix that field
-and run it again.
+On that local server, one snippet can chain several calls. Every method
+answers with the payload under `data`:
+
+```ts
+const { data: personas } = await client.simulationPersona.list({ limit: 50 })
+const { data: agents } = await client.agent.list()
+const { data: run } = await client.simulation.run({ plan: { /* ... */ } })
+```
+
+If a snippet fails schema validation, the error names the offending field.
+Fix that field and run it again. Do not fall back to a raw request for
+anything a client method covers.
+
+A handful of documented routes have no client method (they are listed in
+[references/primitives.md](references/primitives.md)). They are reached with
+`client.get` / `client.post` on the same client, which carries the server's
+credentials. A raw request names a route rather than a method, so the code
+tool cannot check it against `--code-allowed-methods` / `--code-blocked-methods`
+and **rejects every raw request on a server started with those flags**. On
+such a server, do those operations outside the MCP.
 
 ## Auth
 
@@ -160,12 +177,13 @@ idempotency, cost, error handling) are in
 
 **Not driven through this SDK.** Several Roark surfaces are configured in-product,
 over raw HTTP, or via provider integrations, so do not invent client methods for
-them: **chat** (real chats can be ingested and graded, but only via
-`POST /v1/chat`; there is no `client.chat.*`, and **chat cannot be simulated at
-all**), **knowledge-base grounding**, **datasets** (regression curation is
+them: **chat ingestion** (real chats come in through `client.post('/v1/chat')`;
+there is no `client.chat.*`, though chat agents can be simulated, see
+`register-agent`), **knowledge-base grounding**, **datasets** (regression curation is
 in-product only), **issues**, **provider call imports**
 (Vapi/Retell/LiveKit/Pipecat send webhooks to Roark; to bring a call in via code use
-`ingest-calls`' `call.create`), and **metric update/delete/thresholds**. The
+`ingest-calls`' `call.create`), and **metric delete and thresholds** (documented routes, called with
+`client.delete` / `client.post`). The
 complete list is in [references/primitives.md](references/primitives.md). If unsure
 whether a method exists, use docs search rather than guessing a name.
 
