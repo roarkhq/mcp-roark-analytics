@@ -28,6 +28,7 @@ how to select flow variants without accidentally placing hundreds of calls.
 | `subscribe-webhooks`  | Get event notifications (run done, issue opened) instead of polling. |
 | `manage-config-as-code`| Manage agents/personas/flows/metrics/collectors declaratively.  |
 | `gate-ci`             | Gate a deploy/CI pipeline on a run (start, wait, assert).        |
+| `assess-agent`        | Run a full assessment of an agent and write the findings report. |
 | `roark-concepts`      | What each domain object *is*. The shared definitions the others reference. |
 
 `roark-concepts` is generated, not hand-written: it is synced from

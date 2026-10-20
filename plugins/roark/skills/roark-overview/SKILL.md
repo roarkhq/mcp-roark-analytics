@@ -125,6 +125,11 @@ reconstructing it from a skill: the nine of them sit alongside
   create/update. Reach for this when the user wants Roark config in git.
 - **`gate-ci`** - gate a deploy or CI pipeline on a run (start -> wait -> assert
   the pass/fail metrics -> exit code).
+- **`assess-agent`** - run a full assessment of an agent end to end (read the
+  customer's testing document or run discovery, build and pilot flows, run at
+  a defensible sample size, verify every finding, re-run thin scenarios) and
+  write the findings report. Use for "test this agent end to end" or "onboard
+  this agent"; it orchestrates the skills above.
 
 Cross-cutting rules every skill relies on (auth, project scoping, pagination,
 idempotency, cost, error handling) are in
