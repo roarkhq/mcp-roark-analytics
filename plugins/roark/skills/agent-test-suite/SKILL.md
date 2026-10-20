@@ -1,15 +1,17 @@
 ---
-name: setup-agent-suite
+name: agent-test-suite
 description: >-
   Use to set up and run a full test suite for a voice agent and deliver a
-  findings report: onboard a new or existing agent, read the customer's testing document (or
-  run discovery without one), turn it into flows, pilot and fix those flows,
-  run the suite at sample sizes that survive scrutiny, verify every finding
-  against the transcript and recording, re-run thin scenarios, and write a
-  report of what the agent did well and what it did not, with latency and
-  voice sections. Use whenever someone asks to "test this agent end to end",
-  "onboard an agent", "set up a test suite", "run the full suite", "produce a
-  test report", or hands over a testing document or failure-mode list to run.
+  findings report: onboard a new or existing agent, read the customer's
+  testing document (or run discovery without one), turn it into flows, pilot
+  and fix those flows, run the suite at sample sizes that survive scrutiny,
+  verify every finding against the transcript and recording, re-run thin
+  scenarios, and write a report of what the agent did well and what it did
+  not, with latency and voice sections. Use whenever someone asks to "test
+  this agent end to end", "onboard an agent", "set up a test suite", "run the
+  full suite", "produce a test report", or hands over a testing document or
+  failure-mode list to run. For a single run with no report, use
+  build-run-plan instead.
 ---
 
 # Set up and run a test suite for a voice agent
