@@ -87,7 +87,7 @@ which reads this repository directly:
 npx skills add roarkhq/mcp-roark-analytics
 ```
 
-That installs all 15 skills. Pass `-a` to choose targets, repeating the flag per
+That installs all 16 skills. Pass `-a` to choose targets, repeating the flag per
 agent (a comma-separated list is parsed as one name and rejected):
 
 ```sh
