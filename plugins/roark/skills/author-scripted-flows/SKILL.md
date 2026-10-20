@@ -32,7 +32,7 @@ branching mode is a cost decision. This skill is the payloads and the errors.
 ## The shape in one look
 
 ```ts
-const flow = await client.customerFlow.create({
+const { data: flow } = await client.customerFlow.create({
   type: 'SCRIPTED',
   title: 'Billing IVR - pay by phone',
   description: 'Caller navigates the phone tree and pays a bill by keypad',
@@ -110,9 +110,9 @@ alternation returns `ROLE_ALTERNATION`.
 `replaceGraph` replaces the whole graph (a step you omit is removed):
 
 ```ts
-const full = await client.customerFlow.getByID(flowId) // read current graph
+const { data: full } = await client.customerFlow.getByID(flowId) // read current graph
 // ...edit full.graph, preserving nodeId on steps you keep...
-const res = await client.customerFlow.replaceGraph(flowId, { graph: edited })
+const { data: res } = await client.customerFlow.replaceGraph(flowId, { graph: edited })
 // res.variantsReshaped === true means the path set changed and variant ids were re-seeded
 ```
 

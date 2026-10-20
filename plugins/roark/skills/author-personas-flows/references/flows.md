@@ -28,14 +28,14 @@ The concept describes variants; these are the handles you use on them.
 
 ```ts
 // Create a flow (shape depends on mode; confirm with docs search).
-const flow = await client.customerFlow.create({
+const { data: flow } = await client.customerFlow.create({
   title: 'Reschedule appointment',
   description: 'Caller wants to move an existing booking',
   // agents, mode, happy path / brief, expectations, ...
 })
 
 // Read it back to see happy path + edge cases + expectations.
-const full = await client.customerFlow.getByID(flow.id)
+const { data: full } = await client.customerFlow.getByID(flow.id)
 
 // Edit flow-LEVEL fields (not the variants, not the graph). All optional;
 // omitted fields are left unchanged.
@@ -48,7 +48,7 @@ await client.customerFlow.update(flow.id, {
 })
 
 // Soft-delete a flow.
-await client.customerFlow.delete(flow.id) // -> { deleted: true }
+await client.customerFlow.delete(flow.id) // -> { data: { deleted: true } }
 
 // Replace a scripted flow's conversation graph wholesale.
 await client.customerFlow.replaceGraph(flow.id, { /* step tree */ })
@@ -57,7 +57,7 @@ await client.customerFlow.replaceGraph(flow.id, { /* step tree */ })
 await client.customerFlow.updateHappyPath(flow.id, { /* ... */ })
 
 // Edge cases.
-const edge = await client.customerFlowEdgeCase.add(flow.id, { /* variant */ })
+const { data: edge } = await client.customerFlowEdgeCase.add(flow.id, { /* variant */ })
 await client.customerFlowEdgeCase.update(flow.id, edge.id, { /* ... */ })
 await client.customerFlowEdgeCase.remove(flow.id, edge.id)
 // Promote an edge case to be the new happy path (the old one becomes an edge case).

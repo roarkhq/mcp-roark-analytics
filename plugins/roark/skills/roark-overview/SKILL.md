@@ -36,12 +36,15 @@ Everything the client can do maps to `resource.method`, for example:
 
 ```ts
 const { data: personas } = await client.simulationPersona.list({ limit: 50 })
-const agents = await client.agent.list()
-const run = await client.simulation.run({ plan: { /* ... */ } })
+const { data: agents } = await client.agent.list()
+const { data: run } = await client.simulation.run({ plan: { /* ... */ } })
 ```
 
 If a snippet fails schema validation, the error names the offending field. Read
-it, fix that one field, and re-run. Do not fall back to raw HTTP.
+it, fix that one field, and re-run. Do not fall back to raw HTTP for anything a
+client method covers. The few documented routes with no client method (listed
+in references/primitives.md) are called through the same client with
+`client.get` / `client.post`, which carries your credentials.
 
 ## Auth
 
@@ -132,12 +135,13 @@ idempotency, cost, error handling) are in
 
 **Not driven through this SDK.** Several Roark surfaces are configured in-product,
 over raw HTTP, or via provider integrations, so do not invent client methods for
-them: **chat** (real chats can be ingested and graded, but only via
-`POST /v1/chat`; there is no `client.chat.*`, and **chat cannot be simulated at
-all**), **knowledge-base grounding**, **datasets** (regression curation is
+them: **chat ingestion** (real chats come in through `client.post('/v1/chat')`;
+there is no `client.chat.*`, though chat agents can be simulated, see
+`register-agent`), **knowledge-base grounding**, **datasets** (regression curation is
 in-product only), **issues**, **provider call imports**
 (Vapi/Retell/LiveKit/Pipecat send webhooks to Roark; to bring a call in via code use
-`ingest-calls`' `call.create`), and **metric update/delete/thresholds**. The
+`ingest-calls`' `call.create`), and **metric delete and thresholds** (documented routes, called with
+`client.delete` / `client.post`). The
 complete list is in [references/primitives.md](references/primitives.md). If unsure
 whether a method exists, use docs search rather than guessing a name.
 

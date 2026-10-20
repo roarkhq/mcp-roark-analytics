@@ -23,7 +23,7 @@ one.
 ## Define the outbound-dial request
 
 ```ts
-const def = await client.httpRequestDefinition.create({
+const { data: def } = await client.httpRequestDefinition.create({
   scope: 'AGENT_OUTBOUND_DIAL',        // required; the only accepted scope here
   url: 'https://your-telephony.example.com/calls',
   method: 'POST',                      // POST (default) | PUT | PATCH | GET
@@ -47,7 +47,7 @@ const def = await client.httpRequestDefinition.create({
 
 ```ts
 const { data } = await client.httpRequestDefinition.list({ limit: 50 })
-const one = await client.httpRequestDefinition.getByID(def.id)
+const { data: one } = await client.httpRequestDefinition.getByID(def.id)
 await client.httpRequestDefinition.update(def.id, { headers: { Authorization: 'Bearer new' } })
 // update takes any subset of url / description / method / body / headers (not scope).
 ```

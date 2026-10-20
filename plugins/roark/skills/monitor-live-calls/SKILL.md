@@ -40,7 +40,7 @@ Policies and jobs take `metrics: [{ id }]` (definition **uuids**), so look them
 up:
 
 ```ts
-const defs = await client.metric.listDefinitions()
+const { data: defs } = await client.metric.listDefinitions()
 const ids = defs
   .filter((d) => ['call_outcome', 'sentiment_score'].includes(d.slug))
   .map((d) => ({ id: d.id }))
@@ -49,7 +49,7 @@ const ids = defs
 ## Metric policy: continuous grading of production traffic
 
 ```ts
-const policy = await client.metricPolicy.create({
+const { data: policy } = await client.metricPolicy.create({
   name: 'Evaluate all inbound support calls',
   modality: 'call', // 'call' | 'chat' - REQUIRED and immutable (see below)
   status: 'ACTIVE', // 'ACTIVE' | 'INACTIVE'; default ACTIVE
@@ -90,7 +90,7 @@ Update / list / delete:
 await client.metricPolicy.update(policy.id, { status: 'INACTIVE' })
 // conditions: omit = keep existing; [] = clear all conditions (match everything)
 const { data } = await client.metricPolicy.list() // includes SYSTEM policies
-await client.metricPolicy.delete(policy.id) // soft delete -> { deleted }
+await client.metricPolicy.delete(policy.id) // soft delete -> { data: { deleted } }
 ```
 
 `type: 'SYSTEM'` policies are Roark-managed and **cannot be updated or deleted**
@@ -101,7 +101,7 @@ await client.metricPolicy.delete(policy.id) // soft delete -> { deleted }
 Names the conversations explicitly by id (there is no date-range selector):
 
 ```ts
-const job = await client.metricCollectionJob.create({
+const { data: job } = await client.metricCollectionJob.create({
   callIds: [callIdA, callIdB], // OR chatIds - exactly one of the two, never both
   metrics: ids, // [{ id }], 1-20
 })
@@ -119,10 +119,10 @@ of credits). Poll it to completion:
 
 ```ts
 const TERMINAL = new Set(['COMPLETED', 'FAILED', 'CANCELED'])
-let j = await client.metricCollectionJob.getByID(job.id)
+let { data: j } = await client.metricCollectionJob.getByID(job.id)
 while (!TERMINAL.has(j.status)) {        // PENDING | PROCESSING | COMPLETED | FAILED | CANCELED
   await sleep(10_000)
-  j = await client.metricCollectionJob.getByID(job.id)
+  j = (await client.metricCollectionJob.getByID(job.id)).data
 }
 // j.totalItems / completedItems / failedItems are call-metric pairs
 ```
@@ -140,7 +140,8 @@ default (grouped) response nests those fields under `values[]` per metric.
 - "Grade a specific handful of calls right now" -> **collection job**.
 - "Test the agent before launch" -> not this skill; use `build-run-plan`.
 
-> The customer API also exposes `POST /metric/collection-jobs/{id}/retry` and a
-> per-job `metric-values` endpoint, but these are not in the SDK client - poll
-> `getByID` and read per-call metrics as above. Confirm any additional surface
+> The API also has `POST /v1/metric/collection-jobs/{id}/retry` and a per-job
+> `metric-values` route with no client methods. Call them with `client.post` /
+> `client.get` if you need them; otherwise poll `getByID` and read per-call
+> metrics as above. Confirm any additional surface
 > with the MCP docs search tool.
