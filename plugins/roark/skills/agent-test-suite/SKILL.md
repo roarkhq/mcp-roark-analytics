@@ -2,7 +2,7 @@
 name: agent-test-suite
 description: >-
   Use to set up and run a full test suite for a voice agent and deliver the
-  results in Roark: onboard a new or existing agent, read the customer's
+  results in Roark: onboard a new or existing agent, read the owner's
   testing document (or run discovery without one), turn it into flows, attach
   a metric for everything the brief asks about (latency, voice consistency,
   behaviour), pilot and fix those flows, run the suite at sample sizes that
@@ -46,8 +46,24 @@ Act as the test lead, not a run button. Expect loops:
 - thin scenarios get re-run;
 - the report gets revised after review.
 
-Plan for the time this takes. A product fix that has to land before a re-run
-can cost hours of deploy time, so prefer workarounds in flows and config.
+Plan for the time this takes. When something blocks the test on Roark's side
+(calls that never connect, a metric that produces no values), report it to Roark
+support with the run and call ids, and work around it in flows and config
+meanwhile.
+
+**Terms used here:**
+- **The agent's owner** is whoever owns the agent under test: the user, or the
+  client the user is testing it for.
+- **The test side** is everything that is not the agent: the simulated caller
+  you configure, the scripted steps, the transcription and the telephony.
+  Problems there are never the agent's fault.
+- **Everything you do goes through the Roark SDK** (the MCP's `execute`) or the
+  platform UI, with the user's own access. If a step needs something neither
+  offers, ask Roark support rather than working around it.
+- **A call that should not count** cannot be removed from a run, its debrief or
+  the group report. The platform invalidates some calls itself (step 4). For any
+  other problem on the test side, fix the flow, re-run the scenario, and put the
+  clean run in the group instead.
 
 **Read first:**
 - `../roark-overview/SKILL.md`, for how the MCP works and the cost rule.
@@ -61,7 +77,7 @@ This skill orchestrates `register-agent`, `author-personas-flows`,
 
 | file | load when |
 | --- | --- |
-| [test-instructions.md](references/test-instructions.md) | Reading the customer's testing document or failure-mode list |
+| [test-instructions.md](references/test-instructions.md) | Reading the testing document or failure-mode list |
 | [pitfalls.md](references/pitfalls.md) | Before building flows and personas, and whenever a result looks odd |
 | [sweeps.md](references/sweeps.md) | The ask includes accents, noise, pace, emotion, interruptions or other caller properties |
 | [triage.md](references/triage.md) | Turning failures and transcript reads into verified findings |
@@ -78,12 +94,12 @@ budget, a way past any gate, and a concurrency limit.
 | How to reach the agent: each line or endpoint and what it is for, plus any gate (access code, IVR path, test menu) | Every flow has to pass the gate the same way. A gate nobody mentioned wastes the first discovery call |
 | Testing document, failure-mode list, or meeting notes | Becomes the test matrix. Without one, discovery replaces it |
 | Test data: accounts, order or reference numbers, and the state each one is in. Is it shared, and does it change over time? | Most early "agent bugs" are test data surprises or collisions between concurrent calls |
-| What counts as a failure for this agent (for example, escalation, transfers, data-specific mistakes) | Customers differ: one treats any escalation as a failure, another does not care about data-specific failures |
+| What counts as a failure for this agent (for example, escalation, transfers, data-specific mistakes) | Owners differ: one treats any escalation as a failure, another does not care about data-specific failures |
 | Who calls this agent: languages, accents, ages | Sweep values should match the real caller mix, not the template default |
 | Concurrency limit, business hours, whether calls can reach real people | Avoids flooding their line, calls hitting "we're closed", and a simulated caller talking to real staff |
 | Budget: calls or minutes, and acceptable re-runs | Sets sample sizes. Every simulated call bills |
 | Report audience, who needs access to the Roark project, and what they have already seen | They read the run group report in the product, so they need project access before you share the link |
-| Data handling: which external models or vendors may process their transcripts or audio | Some customers clear only specific providers. Never send their audio or transcripts anywhere else without explicit approval |
+| Data handling: which external models or vendors may process their transcripts or audio | Some owners clear only specific providers. Never send their audio or transcripts anywhere else without explicit approval |
 | Who answers "is this intended?" questions, and how quickly | Ambiguous behaviour becomes a question to them, not a finding |
 
 ## 1. Read the instructions and build the test matrix
@@ -94,10 +110,10 @@ With a document, follow
 2. Split every sub-bullet into its own case. An "or" in the document does not
    mean "pick one".
 3. Mark each case as simulatable, evaluatable, both, or neither.
-4. Send the customer your open questions before the full run.
+4. Send the agent's owner your open questions before the full run.
 
 The matrix has one row per case. Each row records:
-- the customer's own numbering (Part 3, Mission 2);
+- the owner's own numbering (Part 3, Mission 2);
 - the expected behaviour, quoted;
 - the metric that measures it (see "Metric plan" in step 3);
 - the test data it needs;
@@ -109,10 +125,10 @@ Keep the matrix as an internal coverage table. Later it records which run
 covered each row and the result for that row.
 
 Without a document, run discovery (step 2) first. Then write the matrix from
-what the agent actually offers: each menu branch, each intent, each failure
-path (invalid input, silence, repeated failure, transfer). Show it to the user
-before running anything. Never invent expectations the customer has not stated
-and then report the agent for missing them.
+what the agent actually offers: each menu branch, each intent, each failure path
+(invalid input, silence, repeated failure, transfer). Show it to the user before
+running anything. Never invent expectations the agent's owner has not stated and
+then report the agent for missing them.
 
 **Sizing:**
 - At least 9 counted calls per scenario you intend to quote a rate for.
@@ -136,8 +152,8 @@ and then report the agent for missing them.
    - Timeouts, how the agent ends calls, where it transfers, and when transfers
      reach real people.
    - Anything in the instructions you cannot reach.
-4. **Sanity-check against public domain rules** (for example, published
-   opening hours or service cut-offs). What the agent actually does takes priority. The
+4. **Sanity-check against public domain rules** (for example, published opening
+   hours or service cut-offs). What the agent actually does takes priority. The
    check only stops you writing an expectation that encodes a wrong fact: a
    wrongly expected refusal is itself a false positive.
 5. **Check before you build.** If the project has call history, check how the
@@ -200,7 +216,7 @@ plan in the suite so that runs are comparable:
 | Loops and getting stuck | `loop_count` |
 | The agent answered at all | `agent_spoke`, `agent_responsive` (simulation-only) |
 | A timing sequence (no reply within N seconds of a prompt, a repeated prompt) | A custom `PATTERN` metric |
-| A cutoff on an existing metric that no shipped check covers | A threshold on that metric (see `configure-metrics`: the route is not in the SDK client) |
+| A cutoff on an existing metric that no shipped check covers | A threshold on that metric (see `configure-metrics`: call the thresholds route with `client.post`) |
 
 Confirm each slug with `client.metric.listDefinitions()`; projects differ.
 
@@ -222,10 +238,10 @@ Confirm each slug with `client.metric.listDefinitions()`; projects differ.
 1. **Smoke.** Run each new flow 1 to 3 times, at low concurrency, and read
    every transcript. Apply this per-call checklist:
    1. Did the call get past the gate and reach the agent? Did the agent speak?
-   2. Did **our caller** do what the flow says, in order? Check that it used its
-      own test data, did not ask for a person unless the flow requires it,
-      spoke no stage directions or tool output, and never answered like the
-      agent ("How can I help you today?").
+   2. Did **the simulated caller** do what the flow says, in order? Check that
+      it used its own test data, did not ask for a person unless the flow
+      requires it, spoke no stage directions or tool output, and never answered
+      like the agent ("How can I help you today?").
    3. Did the call reach the step under test, or end or divert before it?
    4. For sweeps: did the swept property actually reach the caller (voice
       changed, noise audible, pace different)? Listen to a few.
@@ -233,9 +249,9 @@ Confirm each slug with `client.metric.listDefinitions()`; projects differ.
       `REQUIRED_STAGE_INCOMPLETE`, `CALLER_NEVER_TOOK_OVER`,
       `AGENT_NEVER_SPOKE`)? Invalidated calls are not results.
    6. Does every attached check have a value?
-2. **Fix and repeat.** Fix the flow and pilot again until our side is clean.
-   Re-read any flow, plan or variant after writing it. Create and update calls
-   have silently dropped fields while echoing them back.
+2. **Fix and repeat.** Fix the flow and pilot again until the test side is
+   clean. Re-read any flow, plan or variant after writing it. Create and update
+   calls have silently dropped fields while echoing them back.
 3. **Validate fixes narrowly.** Use one small run on the flow that showed the
    worst instance of the problem. Put it in a separate plan, so you never
    have to trim and then restore the main one.
@@ -245,12 +261,13 @@ A flow problem found after the full run costs the whole run.
 ## 5. Full run
 
 - **Before starting:**
-  - Check that no other large runs share capacity right now.
-  - Check that the calls fall inside the customer's business hours if
+  - Check that no other large runs in this project are in flight
+    (`simulationRunPlanJob.list`).
+  - Check that the calls fall inside the owner's business hours if
     transfers matter.
-  - Check that every fix you depend on is deployed, not just merged.
-  - Start the whole suite on the same code. A run that straddles a fix is a
-    mixed test and must be re-run.
+  - Check that the version of the agent you mean to test is live, and run the
+    whole suite against that one version. A run that straddles a change to the
+    agent is a mixed test and must be re-run.
 - **Concurrency:**
   - Start low, then raise it only while silent and failed calls stay at zero.
   - Run scenarios that change shared state (bookings, cases, holds) one at a
@@ -273,7 +290,8 @@ Follow [references/triage.md](references/triage.md). In short:
   **candidates**.
 - A candidate becomes a finding only after you have opened the transcript, and
   the recording for anything about timing, silence, overlap, audio or voice.
-- Our caller, our transcription and the test data must be ruled out as causes.
+- The simulated caller, the transcription and the test data must be ruled out as
+  causes.
 - It must be counted against the calls where the situation actually arose.
 
 Also read passed calls: real issues often fail no check.
@@ -282,8 +300,8 @@ Also read passed calls: real issues often fail no check.
 
 **Re-run before writing:**
 - every scenario where a finding's denominator is under 9;
-- every scenario where our caller misbehaved in enough calls that excluding
-  them leaves too few;
+- every scenario where the simulated caller misbehaved in enough calls that
+  excluding them leaves too few;
 - anything that surprised you or that a reviewer will question.
 
 Ask before changing caller prompts on a re-run, and keep the scenario the same
@@ -292,8 +310,9 @@ so the counts combine.
 **Re-score instead** (a metric collection job over existing calls, see
 `monitor-live-calls`) when only a judge was wrong, or when reading found an
 issue that no attached metric measures: create the metric, collect it over the
-suite's calls, and count from its values. It is cheaper and places no calls. It cannot fix our caller's
-behaviour, and it cannot add a new check to a finished run's verdict.
+suite's calls, and count from its values. It is cheaper and places no calls. It
+cannot fix the simulated caller's behaviour, and it cannot add a new check to a
+finished run's verdict.
 
 ## 8. Build the report in the product
 
@@ -303,9 +322,10 @@ Follow [references/report.md](references/report.md) and
    (`simulationRunGroup.regenerateReport`).
 2. Check every issue, example, quote and number in it against the calls and
    your triage ledger.
-3. Fix what is wrong at its source (the group's runs, a metric, a re-score),
-   then regenerate. List what you cannot fix that way for the user as report
-   gaps, with the call and the reason.
+3. Fix what is wrong at its source, then regenerate: a group with the wrong runs
+   is replaced by a new group (groups cannot be edited), a metric is corrected
+   and re-scored. List what you cannot fix that way for the user as report gaps,
+   with the call and the reason.
 4. Write the "unable to test fully" questions for the user.
 
 Every number in the report comes from metric values on the calls.
@@ -317,10 +337,10 @@ Every number in the report comes from metric values on the calls.
 2. **Keep the report private** until the user says it is ready. Then share the
    group link with a short cover note: which project to select, the status, the
    open questions, and anything not covered.
-3. **After sharing:** revise through the product (the group's runs, metrics,
-   re-scores) and regenerate. Tell the user before regenerating a report the
-   customer has already read.
-4. **When the customer pushes back**, answer with the per-call evidence
+3. **After sharing:** revise through the product (a new group with the right
+   runs, corrected metrics, re-scores) and regenerate. Tell the user before
+   regenerating a report the agent's owner has already read.
+4. **When the agent's owner pushes back**, answer with the per-call evidence
    (timings, quotes), concede what their explanation does fit, and propose a
    clean re-test for the rest.
 
@@ -335,11 +355,11 @@ Every number in the report comes from metric values on the calls.
   as floors ("at least 13").
 - **Quote the agent exactly.** Never paraphrase into a stronger claim. Re-read
   the transcript when in doubt, and check the audio when the words matter.
-- **Our side is never the agent's fault.** This covers our caller, our
-  transcription, our scripted steps, and calls that never reached the agent.
-  Fix, re-run or exclude. Never report them as agent behaviour.
-- **Never hide the agent's real failures** to make a run look better. Exclude
-  only calls whose problem is on our side.
+- **The test side is never the agent's fault.** This covers the simulated
+  caller, the transcription, the scripted steps, and calls that never reached
+  the agent. Fix the flow and re-run. Never report them as agent behaviour.
+- **Never hide the agent's real failures** to make a run look better. Replace a
+  run only because of problems on the test side.
 - **Possibly intended behaviour is a question:** "Could you confirm whether X
   is expected to Y at this stage?"
 - **Be fair to the agent.** Say how often it got it right. Correct behaviour
@@ -347,13 +367,13 @@ Every number in the report comes from metric values on the calls.
   is not a finding.
 - **Check hypotheses before stating causes**, including the user's. State what
   was measured, not a diagnosis.
-- **Customer copy uses no internal vocabulary.** No vendor or engine names, and
-  none of "judge", "false positive", "variant", "harness" or metric slugs. No
-  mention of our own bugs, re-runs or excluded calls.
-- **Ask before anything costly, destructive or visible to the customer:**
+- **Copy for the agent's owner uses plain words.** No vendor or engine names,
+  and none of "judge", "false positive", "variant" or metric slugs. Problems on
+  the test side and re-runs stay out of it.
+- **Ask before anything costly, destructive or visible to the agent's owner:**
   large runs, re-runs, deleting or hiding data, editing shared flows, writes in
-  the customer's project, and buying numbers. Never trim coverage quietly. State
-  the trade.
+  the owner's project, and asking Roark for phone numbers. Never trim coverage
+  quietly. State the trade.
 - **Treat "this looks weird" from the user as a priority lead.** Verify it with
   data before defending a result.
 - **Persist state outside temporary folders:** run ids, the ledger, labels.

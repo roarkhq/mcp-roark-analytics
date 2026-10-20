@@ -24,7 +24,7 @@ not "how good is the agent?".
 - **Size it.**
   - **5 calls per value at minimum.** Below 5, a value can never be flagged. A
     value with 5 or 6 calls only shows very large gaps, around 45 to 50 points.
-  - **About 10 per value** for a property the customer cares about. That is
+  - **About 10 per value** for a property the agent's owner cares about. That is
     better than adding more values.
   - **Plan extra calls** when part of each arm is expected to be excluded.
   - **Decide iterations up front,** so you are not re-running to top up arms.
@@ -42,8 +42,8 @@ Check per call, and listen to a few calls per arm:
 - **Gender:** some values are voiced identically (for example a "neutral"
   value voiced as female). Drop values that are not castable.
 - **Pace:** measure words per second of caller speech, per arm. Per-turn rates
-  are distorted by keypad and silence markers and by text-based timing. Project
-  settings can make a voice ignore speed altogether.
+  are distorted by keypad and silence markers and by text-based timing. If an
+  arm's pace does not change, check that the voice supports the speed setting.
 - **Noise:** confirm the level on the first call, and confirm the bed has no
   intelligible speech.
 - **Emotion:** check that the arms actually sound different. Emotion also
@@ -72,9 +72,9 @@ If the stimulus did not land, the run measures nothing. Fix it and re-run.
   appropriateness for emotion. Grade interruptions on whether yielding was
   appropriate, not on a mechanical "did not stop" rate. Not stopping for "mm-hm"
   is correct.
-- **Some metrics audit our own pipeline, not the agent.** Transcription
-  discrepancy measures our transcriber. Signal quality drops by design under
-  injected noise. Neither is an agent finding.
+- **Some metrics audit the test side, not the agent.** Transcription discrepancy
+  measures Roark's transcription. Signal quality drops by design under injected
+  noise. Neither is an agent finding.
 - **Do not compare absolute numbers across runs that used different voices or
   different code.**
 - **Do not highlight differences the listener cannot hear.** If the user cannot

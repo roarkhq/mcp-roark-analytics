@@ -35,7 +35,7 @@ Read the generated report against this standard:
   - prevalence: the count over the calls where the situation arose, with that
     denominator defined, then the percentage;
   - which line or entry point, when the agent has more than one;
-  - which part, mission or step of the customer's brief it falls under, or that
+  - which part, mission or step of the owner's brief it falls under, or that
     it was not a stated check;
   - examples, one call each, most severe first, each linking to the failing
     moment in the call. Every linked example shows the failure.
@@ -52,14 +52,15 @@ undermines the whole report. For each issue and example:
   before the moment;
 - the quoted words match the transcript at that time;
 - every number matches what the call page shows;
-- the issue survives triage (triage.md): not our caller, not our transcription,
-  not the test data, not correct behaviour.
+- the issue survives triage (triage.md): not the simulated caller, not the
+  transcription, not the test data, not correct behaviour.
 
 Then compare the report with your triage ledger, in both directions:
 
 - **An issue the report states that triage rejected.** Fix the cause where it
-  lives: remove the run that should not be in the group, re-score with a
-  corrected metric, or drop a misfiring check from the plan. Then regenerate.
+  lives: create a new group without the run that should not be in it (groups
+  cannot be edited; delete the old one), re-score with a corrected metric, or
+  drop a misfiring check from the plan. Then regenerate.
 - **A verified finding the report misses.** Make sure a metric measures it
   (create one if needed), collect it over the suite's calls, and regenerate.
 - **What you cannot fix that way** (wording, ordering, a claim the report gets
@@ -68,7 +69,7 @@ Then compare the report with your triage ledger, in both directions:
   These are gaps in the product report, and the user decides how to handle
   them.
 
-## Questions for the customer
+## Questions for the agent's owner
 
 Keep the "unable to test fully" items as a short list in your message to the
 user, not in a file:
@@ -83,20 +84,20 @@ user, not in a file:
 
 ## Wording rules
 
-These apply to everything you write for the customer, including the cover note
-and the questions:
+These apply to everything you write for the agent's owner, including the cover
+note and the questions:
 
 - **Write plainly.** Use short sentences and no em dashes.
 - **Quote exactly** what the agent said. Never paraphrase it into a stronger
   claim.
 - **Measure what you report.** Say what was measured, not a diagnosis. Reconcile
-  with the customer's own description rather than contradicting it.
+  with the owner's own description rather than contradicting it.
 - **Be fair.** Say when the agent got it right, and how often.
 - **Use no internal vocabulary.** Leave out vendor or engine names, and the
   words "judge", "false positive", "variant", "harness" and metric slugs. Do not
   speculate about the agent's implementation.
-- **Don't expose our process.** Never mention our own bugs, fixes, re-runs or
-  excluded calls. Updated runs are simply the runs.
+- **Leave out the test process.** Problems on the test side, fixes to flows and
+  re-runs stay out of everything you write. Updated runs are simply the runs.
 - **Refer to the agent by its owner,** for example "Acme's agent".
 
 ## Delivery and revisions
@@ -107,8 +108,9 @@ and the questions:
   one-line status, the open questions, and anything still running or not
   covered, so the reader does not assume it is coming. If you used different
   identifiers or numbers than were agreed, name them and say why.
-- **After sharing,** revise through the product: change the group's runs or
-  metrics and regenerate. Tell the user before regenerating a report the
-  customer has already read, since its wording will change.
+- **After sharing,** revise through the product: a new group with the right
+  runs, corrected metrics or re-scores, then regenerate. Tell the user before
+  regenerating a report the agent's owner has already read, since its wording
+  will change.
 - **Keep the ledger in sync.** When a finding is dropped, record why, so the
   next revision does not bring it back.

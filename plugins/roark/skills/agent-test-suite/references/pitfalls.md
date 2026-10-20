@@ -4,7 +4,7 @@ Each of these has produced a wrong finding, a contaminated run, or a wasted
 batch in a real test suite. Read this list before building flows, and come back
 to it whenever a result looks surprising. Uniform results across a run (the
 same duration, the same end reason, or the same failure on every call) almost
-always point to our setup, not the agent.
+always point to the test setup, not the agent.
 
 ## Flows and scripted openings
 
@@ -48,9 +48,9 @@ always point to our setup, not the agent.
   improv caller presses only the key just requested, and that it is allowed to.
 - **Keep scripted agent turns empty.** Putting the line's prompt text into an
   agent turn turns it into something the agent is graded on.
-- **When the customer changes their IVR, update the scripted flow's expected
-  prompts.** Otherwise keypad steps stop firing and the caller speaks the digits
-  instead.
+- **When the agent's owner changes their IVR, update the scripted flow's
+  expected prompts.** Otherwise keypad steps stop firing and the caller speaks
+  the digits instead.
 - **Audio tags are flow-type specific.** Improv callers may drop bracketed
   audio tags such as a cough, while a scripted verbatim line keeps them.
   Check what the voice supports before declaring a test impossible, and confirm
@@ -88,13 +88,14 @@ always point to our setup, not the agent.
   "Perfect, thanks" in the middle of a task make some agents close the call.
 - **Watch for role flips and narration.** A caller that answers like the agent,
   speaks a stage direction ("I stayed silent as requested") or reads tool output
-  aloud makes every later turn untrustworthy. Exclude those calls.
-- **Our caller interrupts.** An agent that goes silent or stops mid-sentence
-  right after our caller spoke over it may be reacting to us. Check in the
-  recording who spoke first.
-- **Our caller overloads turns.** Many agents miss part of a reply that packs
-  several answers together. It can still be a fair finding, but say so, and
-  check the hypothesis across all calls before naming it as the cause.
+  aloud makes every later turn untrustworthy. Fix the brief and re-run the
+  scenario.
+- **The simulated caller interrupts.** An agent that goes silent or stops
+  mid-sentence right after the simulated caller spoke over it may be reacting to
+  the caller. Check in the recording who spoke first.
+- **The simulated caller overloads turns.** Many agents miss part of a reply
+  that packs several answers together. It can still be a fair finding, but say
+  so, and check the hypothesis across all calls before naming it as the cause.
 - **Personas share a voice when gender, age and accent match.** Give each
   persona in a pool a distinct combination.
 - **Pools dedupe.** Ten repeats of a scenario over a nine-persona pool produced
@@ -118,9 +119,10 @@ always point to our setup, not the agent.
   If you lose the id, find the plan by name. Duplicate plan names make this
   ambiguous, so keep names unique.
 - **A trigger that times out client-side may still have started.** List the runs
-  before retrying, or you end up with duplicate runs competing for the same line.
-- **Never repair experimentally on the plan the customer sees.** Reproduce on a
-  throwaway plan, and delete probes you create.
+  before retrying, or you end up with duplicate runs competing for the same
+  line.
+- **Never repair experimentally on the plan the agent's owner sees.** Reproduce
+  on a throwaway plan, and delete probes you create.
 - **Treat writes to shared preamble flows as high risk.** Every variant links to
   them. Back up the flow before editing it, then read it back.
 - **Saved plans do not follow later template changes.** Before re-running a
@@ -132,21 +134,22 @@ always point to our setup, not the agent.
 
 - **Shared-pool numbers carry history.** Features keyed on the caller's number
   depend on that number's history on the agent's side: repeat-caller greetings,
-  escalation after N calls, known-customer lookups and mock profiles. Shared-pool
-  numbers have unknown or long histories. One reused number already had about a
-  thousand earlier calls to the customer's line.
-- **We can only present numbers we own or have verified,** never an arbitrary
-  caller ID. Ask the customer to map our numbers to their test profiles, or to
-  confirm that history builds from live calls.
-- **A persona can carry a fixed caller number** (`persona.phoneNumber`). It is
-  read-only over the API. Ask Roark for numbers with no history, then confirm
-  after the run that the calls really used them.
-- **Pinned numbers limit concurrency** to the number of distinct pins. A pinned
-  number must never fall back to another number, or the profile silently
-  changes.
+  escalation after N calls, known-customer lookups and mock profiles.
+  Shared-pool numbers have unknown or long histories. One reused number already
+  had about a thousand earlier calls to the owner's line.
+- **Simulated calls come from Roark's numbers,** never an arbitrary caller ID.
+  Ask the agent's owner to map the numbers you call from to their test profiles,
+  or to confirm that history builds from live calls.
+- **A persona can carry a fixed caller number** (`persona.phoneNumber`). Only
+  Roark can set it: it is read-only over the API. Ask Roark support for fixed
+  numbers with no call history, then confirm after the run that the calls really
+  came from them.
+- **Fixed numbers limit concurrency** to the number of distinct numbers. Check
+  every call came from its persona's number: a call from another number silently
+  changes the profile.
 - **A control must really be outside the set.** A test meant to show "an
   unregistered number behaves differently" is invalid if the control numbers
-  were on the customer's list.
+  were on the owner's list.
 - **A negative result is still a result.** Report clean evidence (which numbers,
   how many calls, at what gaps), then ask how history is built before calling
   the feature broken.
@@ -155,24 +158,25 @@ always point to our setup, not the agent.
 
 - **Silent lines happen.** When the agent never speaks, decide whose side it is
   before reporting it:
-  - Carrier evidence: the callee hangs up within seconds, or media flows but
-    every sample is silent.
-  - Whether the same number answered normally minutes earlier.
-  - Whether other projects saw it at the same time.
+  - The job's `failureOwner` (`ROARK` or `AGENT`) and invalidation reason
+    (`simulationJob.getByID`).
+  - The recording: did the agent's channel carry any speech?
+  - Whether the same line answered normally minutes earlier.
 
-  The customer's silent line is a real finding: report the count, and never
-  mask it with automatic re-dials. Our own dial failures are not findings.
-- **Never attribute a non-connection to the customer without tracing the
-  session.** Our setup failing under a burst has looked exactly like their line
-  failing.
-- **Shared load matters.** Another tenant's large run can drain capacity, and
-  high concurrency can push the customer's agent into errors. Raise
-  concurrency in steps.
+  A silent line on the agent's side is a real finding: report the count, and
+  never mask it with automatic re-dials. Failures owned by Roark are not
+  findings: report them to Roark support, and re-run if they leave the scenario
+  short.
+- **Never attribute a non-connection to the agent without checking
+  `failureOwner` and the recording.** The test side failing under a burst has
+  looked exactly like the agent's line failing.
+- **Load matters.** High concurrency can push the agent into errors, and
+  simulation capacity is shared. Raise concurrency in steps.
 - **Business hours change outcomes.** Transfers outside opening hours hit "we
   are closed", which can look like a result about the caller property you were
   testing.
-- **Merged is not deployed.** Before a run that depends on a fix, check that the
-  fix is live.
+- **Changed is not live.** Before a run that depends on a change to the agent,
+  confirm with its owner that the change is live.
 
 ## Test data and environment
 
@@ -186,15 +190,15 @@ always point to our setup, not the agent.
   agent still reads the expected figures.
 - **Concurrent calls collide on a shared account.** Run state-changing scenarios
   one at a time, on distinct dates. Cancel your own bookings, and list any you
-  leave behind for the customer.
-- **When the same claim repeats on every call with the same test input**
-  (N of N), it comes from the backend or the data, not the agent. Report it as
-  a test data note or a question, and only re-run once the customer fixes the
+  leave behind for the agent's owner.
+- **When the same claim repeats on every call with the same test input** (N of
+  N), it comes from the backend or the data, not the agent. Report it as a test
+  data note or a question, and only re-run once the agent's owner fixes the
   data.
 - **Check data notes only on calls that actually used that record.** A caller
   that drifted onto another record makes a note look wrong.
-- **We do not know the account's ground truth.** Claim inconsistency you can
+- **You do not know the account's ground truth.** Claim inconsistency you can
   prove ("$10 here, $12 three turns later"), not wrongness you cannot.
-- **Some customer-authored scenarios are dead ends** (they always transfer).
+- **Some scenarios the owner wrote are dead ends** (they always transfer).
   Pick scenarios the agent can complete on its own, unless the transfer is the
   point of the test.

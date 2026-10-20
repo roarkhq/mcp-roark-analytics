@@ -13,23 +13,28 @@ person listening to confirm them.
 - `latency_spike_count`: replies slower than 3 s, per call.
 - `longest_pause`: the longest gap in the call.
 - A threshold on `response_time` at the reader's bar (for example, agent
-  median at most 5 s). Projects rarely have one at the customer's number, so
+  median at most 5 s). Projects rarely have one at the owner's number, so
   create it.
 
 Every figure in the section is computed from these values, so a number a reader
 clicks on matches the call page. Never switch to your own measurement, and
 never mix methods: a change of method once looked like a regression.
 
-**Exclude from the percentiles, and say so in one neutral line.** Filter the
-metric's turn values; do not re-measure the gaps:
+**Keep these out of the figures by setting up the run, not by filtering
+afterwards:**
 - **Zero-length overlaps.** The caller backchannels just as the agent starts.
 - **Routing waits.** On gated or test lines, the first wait is the line routing
-  the call, not the agent.
+  the call, not the agent. Put the gate in a stage window that is not analysed
+  (pitfalls.md).
 - **Caller interjections inside an agent turn.** These are timed from the
   interjection, not from the end of the caller's turn.
-- **Waits after our own scripted pauses, and keypad entry timeouts.** Measure
-  keypad waits separately if the brief asks about them.
-- **Ambiguous gaps.** If either channel is active during the gap, leave it out.
+- **Waits after the flow's own scripted pauses, and keypad entry timeouts.**
+  Keep scripted pauses and keypad entry inside that unanalysed window where you
+  can. If the brief asks about keypad waits, test them in their own scenario.
+- **Ambiguous gaps,** where either channel is active during the gap.
+
+If the group report's latency still includes waits like these, list them for
+the user as report gaps, with the call and the turn.
 
 **Never quote a run-level or pooled median without checking whose turns it
 includes.** One run summary quoted a 1.8 s "agent" median that pooled the
@@ -56,13 +61,14 @@ Compare runs only at the same concurrency and on the same metric version.
   different speaker, breaks it).
 - `same_speaker`, `vocal_loudness_variation` and `vocal_pitch_variation`: the
   components, per line, to see what kind of break it was and to set your own
-  cutoffs if the customer describes the problem differently.
+  cutoffs if the agent's owner describes the problem differently.
 - `voice_naturalness`, `voice_human_likeness` and `speech_quality_overall` when
   the brief asks about voice quality in general.
 
-If the customer describes a defect none of these captures (for example, lines
-dropping into a lower register), build a metric for it, such as a `PATTERN`
-over `vocal_pitch_variation` turn values, rather than measuring it offline.
+If the agent's owner describes a defect none of these captures (for example,
+lines dropping into a lower register), build a metric for it, such as a
+`PATTERN` over `vocal_pitch_variation` turn values, rather than measuring it
+offline.
 
 Voice metric flags are candidates, not findings. On short phone-audio lines,
 every automated voice measure tried so far, including these, flagged lines a
@@ -109,9 +115,9 @@ flagged line before it is reported.
    stay internal.
 6. **Leave out sounds that are not the agent's voice.** Recorded prompts,
    test-line announcers, transfer messages and compliance notices are not the
-   agent. Leave them out of voice findings, or confirm with the customer that
-   they are intentional. Do not exempt them automatically: a line that is wrong
-   the same way every time is still a defect.
+   agent. Leave them out of voice findings, or confirm with the agent's owner
+   that they are intentional. Do not exempt them automatically: a line that is
+   wrong the same way every time is still a defect.
 
 Comparisons between agents need the same treatment for both: blind, random,
 equal care. Metric-picked or non-blind listening once produced a large gap

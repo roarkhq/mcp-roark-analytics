@@ -2,9 +2,9 @@
 
 Automated checks, expectation verdicts, run debriefs and group reports are
 **candidates**. In real test suites they have both raised false failures and
-missed real ones. A generated summary once headlined a high-severity
-"fabricated billing details" theme that came entirely from our own
-transcription. The report rests on what you verify.
+missed real ones. A generated summary once headlined a high-severity "fabricated
+billing details" theme that came entirely from a transcription error. The report
+rests on what you verify.
 
 ## Where candidates come from
 
@@ -13,8 +13,8 @@ transcription. The report rests on what you verify.
 2. The run debrief (`simulationRunPlanJob.createDebrief`) and the group report
    (`simulationRunGroup.regenerateReport`). Use them to cluster, never as
    evidence. Compare every theme against your own findings before trusting it.
-   A debrief written before you excluded calls still cites them, so regenerate
-   it afterwards.
+   Both cover every call in their runs, so a run with problems on the test side
+   has to be replaced by a clean run before the group report is regenerated.
 3. **Your own reading.** Read at least 3 transcripts per scenario in full,
    including calls that passed. The biggest real findings often fail no check:
    - figures that do not add up within a call;
@@ -27,8 +27,8 @@ transcription. The report rests on what you verify.
    for it and collect it over the suite's calls (a collection job), so its
    count comes from the platform, not from your notes.
 4. Latency and voice metric values, as in latency-and-voice.md.
-5. Anything the user or customer flags. A "this looks weird" from them is a
-   priority lead.
+5. Anything the user or the agent's owner flags. A "this looks weird" from them
+   is a priority lead.
 
 For large runs, split the reading across parallel reviewers, one per run or per
 part, each writing structured verdicts. Then re-check the biggest claims
@@ -45,8 +45,8 @@ yourself.
      "$740.02") and names.
    - A failure cannot rest on text that the recording or a second
      transcription disagrees with.
-3. **Our side.** Rule out each of these:
-   - Did our caller follow the flow and use its own data?
+3. **The test side.** Rule out each of these:
+   - Did the simulated caller follow the flow and use its own data?
    - Did it interrupt, overload the turn, go off brief, or make something up?
    - Did the call even reach the step under test?
 4. **Test data.** Would a fresh state or another record change the outcome? Does
@@ -67,8 +67,8 @@ yourself.
   - grade a transfer as "closing over the request";
   - give different verdicts on identical input across repeats.
 - **Comprehension-style judges:**
-  - "didn't catch that" after our caller's silence or cut-off;
-  - our caller's own confusion;
+  - "didn't catch that" after the simulated caller's silence or cut-off;
+  - the simulated caller's own confusion;
   - name transcription variants;
   - pleasantry exchanges;
   - correct clarifying questions;
@@ -88,14 +88,15 @@ yourself.
   - Duplicate expectation snapshots can grade one expectation several times.
 - **Polarity:** a boolean where true means "clean" read as "event happened".
   Check stored values against the judge's reasoning.
-- **Display:** an evidence label that contradicts the reasoning ("Failed"
-  above "no evidence of mishearing"). Check the label logic before calling it a
-  judge error.
-- **Our pipeline:**
+- **Display:** an evidence label that contradicts the reasoning ("Failed" above
+  "no evidence of mishearing"). Trust the reasoning, and report the label to
+  Roark support.
+- **The recording pipeline** (report it to Roark support with the call id, and
+  re-run the scenario if it changes the counts):
   - transcript lines that were never spoken (interrupted turns stored whole);
   - stale timestamps on held or interrupted turns;
   - keypad and silence markers counted as speech;
-  - recorded harness prompts on the agent's channel.
+  - test-line or IVR recordings on the agent's channel.
 
 When one judge misfires repeatedly on this agent, drop its check from the
 verdict and keep the metric as information. Do not patch its prompt in the
@@ -107,7 +108,7 @@ middle of a suite.
 | --- | --- |
 | Agent issue | Issues found, or Smaller items if minor or one-off |
 | Possibly intended | Unable to test fully, as a "Could you confirm whether..." question |
-| Our side (caller, transcription, scripted steps, telephony on our end) | Nowhere. Fix the flow and re-run, or exclude the call from counts |
+| The test side (simulated caller, transcription, scripted steps, telephony) | Nowhere. Fix the flow, re-run, and group the clean run instead |
 | Test data | A test data note inside Unable to test fully |
 | Correct behaviour | Dropped. A strict-but-correct rule can be one awareness line if it surprises callers |
 | Not an issue | Dropped. Keep the reason in the ledger |
@@ -117,6 +118,10 @@ response would be wrong even if the situation were real. An example is
 confirming a booking before checking whether it is allowed.
 
 ## Count honestly
+
+Use these rules to check the figures in the group report. Where its figure
+differs from yours, find out why; a difference you cannot fix through runs or
+metrics goes to the user as a report gap.
 
 - **Numerator:** calls where the issue happened. **Denominator:** calls where
   the situation arose (the agent asked the question, the caller gave an invalid
@@ -130,7 +135,8 @@ confirming a booking before checking whether it is allowed.
   rate. A single occurrence is written as "in one call".
 - **Late recoveries:** when the agent eventually gets it right late in a call,
   say so in the example ("said nothing for the first two attempts, then said the
-  number was not valid"). The report should never look like we missed it.
+  number was not valid"). The report should never look like the late recovery
+  was missed.
 - **Severity:** give each example a severity (how much it hurts the caller), so
   that examples can be ordered most severe first.
 - **Rate samples:** a rate needs a random or complete sample. Calls picked by a
@@ -151,5 +157,5 @@ Store the ledger somewhere durable.
   reading (yours or a strong model's) only on the candidates: a few dozen per
   report, not every call.
 - Re-score stored calls instead of placing new ones when only a judge was wrong.
-- Send transcripts or audio only to providers the customer has cleared, through
-  metered clients. Keep listening pages local.
+- Send transcripts or audio only to providers the agent's owner has cleared.
+  Keep listening pages local.
