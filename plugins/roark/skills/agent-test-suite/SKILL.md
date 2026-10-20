@@ -1,30 +1,44 @@
 ---
 name: agent-test-suite
 description: >-
-  Use to set up and run a full test suite for a voice agent and deliver a
-  findings report: onboard a new or existing agent, read the customer's
-  testing document (or run discovery without one), turn it into flows, pilot
-  and fix those flows, run the suite at sample sizes that survive scrutiny,
-  verify every finding against the transcript and recording, re-run thin
-  scenarios, and write a report of what the agent did well and what it did
-  not, with latency and voice sections. Use whenever someone asks to "test
-  this agent end to end", "onboard an agent", "set up a test suite", "run the
-  full suite", "produce a test report", or hands over a testing document or
+  Use to set up and run a full test suite for a voice agent and deliver the
+  results in Roark: onboard a new or existing agent, read the customer's
+  testing document (or run discovery without one), turn it into flows, attach
+  a metric for everything the brief asks about (latency, voice consistency,
+  behaviour), pilot and fix those flows, run the suite at sample sizes that
+  survive scrutiny, verify every finding against the transcript and recording,
+  re-run thin scenarios, and build the run group report that shows what the
+  agent did well and what it did not. Use whenever someone asks to "test this
+  agent end to end", "onboard an agent", "set up a test suite", "run the full
+  suite", "produce a test report", or hands over a testing document or
   failure-mode list to run. For a single run with no report, use
   build-run-plan instead.
 ---
 
 # Set up and run a test suite for a voice agent
 
-The deliverable is a **report someone can act on**: each issue stated plainly
-with how often it happened, where, and the calls that prove it; what the agent
-did well; latency and voice; and what could not be tested and why. Simulations
-are only the means.
+The deliverable is a **report someone can act on**, and it lives in the
+product: the run group that holds the suite's runs, and the report Roark writes
+for it. It states each issue plainly with how often it happened, where, and the
+calls that prove it; what the agent did well; and latency and voice. Link the
+reader to it. Never write a separate document, spreadsheet or deck, never
+upload recordings elsewhere, and never offer an export: the group page has
+**Download PDF** for anyone who needs a file. Simulations are only the means.
 
 Most of the work is making the test trustworthy before anything is counted,
 then making every claim in the report hold up for a sceptical reader who
 will click every link. One false finding costs more trust than ten missed
 ones. If you have even a small doubt that a finding is real, leave it out.
+
+**Everything is measured by metrics on the platform.** Each case in the test
+matrix and each report section (latency, voice, comprehension, transfers) has
+a metric attached to the run that measures it. If you want to measure latency,
+attach the response time metric; if you want to measure voice consistency,
+attach the voice consistency metric. When nothing fits, create one before the
+run. Never produce a reported number from your own script, spreadsheet or
+offline analysis: the reader must be able to open the call and see the same
+value. Reading transcripts and listening verify what a metric flagged. They do
+not replace the metric.
 
 Act as the test lead, not a run button. Expect loops:
 - flows get fixed after the pilot;
@@ -52,7 +66,7 @@ This skill orchestrates `register-agent`, `author-personas-flows`,
 | [sweeps.md](references/sweeps.md) | The ask includes accents, noise, pace, emotion, interruptions or other caller properties |
 | [triage.md](references/triage.md) | Turning failures and transcript reads into verified findings |
 | [latency-and-voice.md](references/latency-and-voice.md) | Measuring response time, and any voice quality section |
-| [report.md](references/report.md) | Writing, verifying, delivering and revising the report |
+| [report.md](references/report.md) | Building, checking, delivering and revising the run group report |
 
 ## 0. Collect the inputs (once, up front)
 
@@ -68,7 +82,7 @@ budget, a way past any gate, and a concurrency limit.
 | Who calls this agent: languages, accents, ages | Sweep values should match the real caller mix, not the template default |
 | Concurrency limit, business hours, whether calls can reach real people | Avoids flooding their line, calls hitting "we're closed", and a simulated caller talking to real staff |
 | Budget: calls or minutes, and acceptable re-runs | Sets sample sizes. Every simulated call bills |
-| Report audience, format, delivery location, and what they have already seen | Decides the report's shape before you write it. Someone else's results template is a requirement, not a suggestion |
+| Report audience, who needs access to the Roark project, and what they have already seen | They read the run group report in the product, so they need project access before you share the link |
 | Data handling: which external models or vendors may process their transcripts or audio | Some customers clear only specific providers. Never send their audio or transcripts anywhere else without explicit approval |
 | Who answers "is this intended?" questions, and how quickly | Ambiguous behaviour becomes a question to them, not a finding |
 
@@ -85,6 +99,7 @@ With a document, follow
 The matrix has one row per case. Each row records:
 - the customer's own numbering (Part 3, Mission 2);
 - the expected behaviour, quoted;
+- the metric that measures it (see "Metric plan" in step 3);
 - the test data it needs;
 - the flow type: improv, scripted, or a scripted opening followed by improv;
 - the target number of calls;
@@ -168,14 +183,39 @@ and stuck calls run to the time cap. Cover:
   or reports a system error);
 - the line repeats the same automated prompt three times.
 
-**Metrics:**
-- Before attaching a judge, check that it is producing values.
-- Validate a new judge on a few contrasting calls first.
-- Leave off checks that structurally misfire for this agent. For example, a
-  premature-ending check on scenarios that end at a transfer. Keep them as
-  information instead.
-- Decide every check before launch. Checks are snapshotted when a run starts,
-  and adding one later does not change that run's verdict.
+**Metric plan.** Use `configure-metrics`. Map every matrix row and every
+report section to a metric before the pilot, and attach all of them to every
+plan in the suite so that runs are comparable:
+
+| what the brief asks about | metrics to attach |
+| --- | --- |
+| A stated behaviour ("Verify the agent...", "must NOT...") | The flow's expectations, graded by `agent_expectations` (with `agent_expectations_check` to gate) |
+| A behaviour that applies across flows (confirms before acting, never reads an internal ID) | A custom `LLM_JUDGE` metric, one question each |
+| Response time | `response_time` (per turn, agent), `latency_spike_count`, `longest_pause`; a threshold on `response_time` at the reader's bar (for example, agent median at most 5 s) |
+| Voice consistency | `voice_consistency` and `voice_consistency_check`, plus `same_speaker`, `vocal_loudness_variation` and `vocal_pitch_variation` to see which kind of break it was |
+| Voice and audio quality in general | `voice_naturalness`, `voice_human_likeness`, `speech_quality_overall` |
+| Understanding the caller | `comprehension_failure` (per caller turn), `comprehension_failure_count`, `redundant_question_count` |
+| Interruptions and talking over the caller | `agent_cutoff_count`, `incorrect_agent_interruption_count`, `interruption_appropriateness` |
+| Transfers and escalation | `transfer_requested`, `transfer_outcome`, `transfer_failure_count`, `human_transfer_reason` |
+| Loops and getting stuck | `loop_count` |
+| The agent answered at all | `agent_spoke`, `agent_responsive` (simulation-only) |
+| A timing sequence (no reply within N seconds of a prompt, a repeated prompt) | A custom `PATTERN` metric |
+| A cutoff on an existing metric that no shipped check covers | A threshold on that metric (see `configure-metrics`: the route is not in the SDK client) |
+
+Confirm each slug with `client.metric.listDefinitions()`; projects differ.
+
+- **No metric fits:** create one with `configure-metrics` and validate it on a
+  few contrasting calls before the full run.
+- **The platform cannot measure it at all:** tell the user before the run,
+  with what the metric would need. Do not fill the gap with an offline
+  measurement in the report.
+- **Check every metric produces values** on the pilot calls (step 4).
+- **Leave off checks that structurally misfire** for this agent, for example a
+  premature-ending check on scenarios that end at a transfer. Keep the metric
+  attached as information instead.
+- **Decide every check before launch.** Checks are snapshotted when a run
+  starts, and adding one later does not change that run's verdict. Metric
+  values can still be added to finished calls with a collection job (step 7).
 
 ## 4. Smoke, pilot and fix (do not skip)
 
@@ -249,40 +289,47 @@ Also read passed calls: real issues often fail no check.
 Ask before changing caller prompts on a re-run, and keep the scenario the same
 so the counts combine.
 
-**Re-score instead** (a metric collection job over existing calls) when only a
-judge was wrong. It is cheaper and places no calls. It cannot fix our caller's
+**Re-score instead** (a metric collection job over existing calls, see
+`monitor-live-calls`) when only a judge was wrong, or when reading found an
+issue that no attached metric measures: create the metric, collect it over the
+suite's calls, and count from its values. It is cheaper and places no calls. It cannot fix our caller's
 behaviour, and it cannot add a new check to a finished run's verdict.
 
-## 8. Write the report
+## 8. Build the report in the product
 
 Follow [references/report.md](references/report.md) and
 [references/latency-and-voice.md](references/latency-and-voice.md):
-- What went well.
-- Issues, ordered by how often they happened, each with prevalence, line,
-  brief, a plain description, and examples ordered most severe first.
-- Smaller items.
-- Latency.
-- Voice (listener-confirmed only).
-- Unable to test fully, written as questions.
+1. Group the runs that count and generate the group report
+   (`simulationRunGroup.regenerateReport`).
+2. Check every issue, example, quote and number in it against the calls and
+   your triage ledger.
+3. Fix what is wrong at its source (the group's runs, a metric, a re-score),
+   then regenerate. List what you cannot fix that way for the user as report
+   gaps, with the call and the reason.
+4. Write the "unable to test fully" questions for the user.
 
-Before anything is shared, verify every link, quote, timestamp and number
-against the platform.
+Every number in the report comes from metric values on the calls.
 
 ## 9. Review, deliver, revise
 
 1. **The user reviews first.** Their judgement on what is fair to the agent
-   wins. Keep their wording edits verbatim. Diff the live document against
-   your source before regenerating anything.
-2. **Keep the report private** until the user says it is ready. Then deliver
-   it where the customer works, with a short cover note.
-3. **After sharing:** read the customer's comments first. Edit in place. Never
-   re-paste or regenerate a document they can see.
+   wins.
+2. **Keep the report private** until the user says it is ready. Then share the
+   group link with a short cover note: which project to select, the status, the
+   open questions, and anything not covered.
+3. **After sharing:** revise through the product (the group's runs, metrics,
+   re-scores) and regenerate. Tell the user before regenerating a report the
+   customer has already read.
 4. **When the customer pushes back**, answer with the per-call evidence
    (timings, quotes), concede what their explanation does fit, and propose a
    clean re-test for the rest.
 
 ## Rules that apply throughout
 
+- **Metrics measure, people verify.** Every reported figure traces to a metric
+  value a reader can open on the call page. Your reading and listening confirm
+  or reject what the metrics flag, and feed new metrics when they find
+  something no metric caught.
 - **Every number has a denominator.** It is the calls where the situation arose
   ("3 of 24 calls where the agent asked X"), not all calls. Floors are written
   as floors ("at least 13").

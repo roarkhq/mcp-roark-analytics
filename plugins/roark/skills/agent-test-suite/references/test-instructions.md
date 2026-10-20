@@ -105,8 +105,8 @@ message to the customer contact before the full run, not in the report:
 - Anything that depends on state the customer controls (pre-loaded history,
   existing cases or holds, time windows like "within two days").
 
-Items still open after the answers go to the report's "Unable to test fully"
-section, phrased as questions.
+Items still open after the answers become the "unable to test fully"
+questions in the cover note (report.md).
 
 ## Without a document
 

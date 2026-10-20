@@ -128,7 +128,7 @@ reconstructing it from a skill: the nine of them sit alongside
 - **`agent-test-suite`** - set up and run a full test suite for an agent (read the
   customer's testing document or run discovery, build and pilot flows, run at
   a defensible sample size, verify every finding, re-run thin scenarios) and
-  write the findings report. Use for "test this agent end to end" or "onboard
+  build the run group report, with a metric behind every figure. Use for "test this agent end to end" or "onboard
   this agent"; it orchestrates the skills above.
 
 Cross-cutting rules every skill relies on (auth, project scoping, pagination,

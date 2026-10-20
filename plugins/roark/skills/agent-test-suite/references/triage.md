@@ -8,7 +8,8 @@ transcription. The report rests on what you verify.
 
 ## Where candidates come from
 
-1. Failed checks and agent-expectation verdicts, read through `read-results`.
+1. Failed checks, flagged metric values and agent-expectation verdicts, read
+   through `read-results`.
 2. The run debrief (`simulationRunPlanJob.createDebrief`) and the group report
    (`simulationRunGroup.regenerateReport`). Use them to cluster, never as
    evidence. Compare every theme against your own findings before trusting it.
@@ -21,7 +22,11 @@ transcription. The report rests on what you verify.
    - an internal ID read aloud;
    - a long silence after a prompt;
    - markup read aloud.
-4. Latency, from the measurement in latency-and-voice.md.
+
+   When reading finds an issue no attached metric measures, create a metric
+   for it and collect it over the suite's calls (a collection job), so its
+   count comes from the platform, not from your notes.
+4. Latency and voice metric values, as in latency-and-voice.md.
 5. Anything the user or customer flags. A "this looks weird" from them is a
    priority lead.
 
@@ -129,7 +134,7 @@ confirming a booking before checking whether it is allowed.
 - **Severity:** give each example a severity (how much it hurts the caller), so
   that examples can be ordered most severe first.
 - **Rate samples:** a rate needs a random or complete sample. Calls picked by a
-  detector or by a reviewer who knew which agent they were hearing overstate it.
+  metric or by a reviewer who knew which agent they were hearing overstate it.
 - **Recompute every number from the final, verified set,** never from an
   earlier draft.
 
