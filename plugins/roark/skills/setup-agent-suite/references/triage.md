@@ -1,7 +1,7 @@
 # From candidates to verified findings
 
 Automated checks, expectation verdicts, run debriefs and group reports are
-**candidates**. In real assessments they have both raised false failures and
+**candidates**. In real test suites they have both raised false failures and
 missed real ones. A generated summary once headlined a high-severity
 "fabricated billing details" theme that came entirely from our own
 transcription. The report rests on what you verify.
@@ -93,8 +93,8 @@ yourself.
   - recorded harness prompts on the agent's channel.
 
 When one judge misfires repeatedly on this agent, drop its check from the
-verdict and keep the metric as information. Do not patch its prompt mid
-assessment.
+verdict and keep the metric as information. Do not patch its prompt in the
+middle of a suite.
 
 ## Classify
 

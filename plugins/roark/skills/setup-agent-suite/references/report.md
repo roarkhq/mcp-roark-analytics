@@ -1,4 +1,4 @@
-# The assessment report
+# The findings report
 
 Agree the format with the user first. If the customer has a results template,
 follow it exactly. The shape below has worked with a demanding reviewer: it

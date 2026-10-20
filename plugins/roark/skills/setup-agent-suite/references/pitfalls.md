@@ -1,7 +1,7 @@
-# Pitfalls that silently invalidate an assessment
+# Pitfalls that silently invalidate a test suite
 
 Each of these has produced a wrong finding, a contaminated run, or a wasted
-batch in a real assessment. Read this list before building flows, and come back
+batch in a real test suite. Read this list before building flows, and come back
 to it whenever a result looks surprising. Uniform results across a run (the
 same duration, the same end reason, or the same failure on every call) almost
 always point to our setup, not the agent.

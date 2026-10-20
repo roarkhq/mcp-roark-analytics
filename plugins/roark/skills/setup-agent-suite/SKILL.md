@@ -1,18 +1,18 @@
 ---
-name: assess-agent
+name: setup-agent-suite
 description: >-
-  Use to run a full assessment of a voice agent and deliver a findings report:
-  onboard a new or existing agent, read the customer's testing document (or
+  Use to set up and run a full test suite for a voice agent and deliver a
+  findings report: onboard a new or existing agent, read the customer's testing document (or
   run discovery without one), turn it into flows, pilot and fix those flows,
   run the suite at sample sizes that survive scrutiny, verify every finding
   against the transcript and recording, re-run thin scenarios, and write a
   report of what the agent did well and what it did not, with latency and
   voice sections. Use whenever someone asks to "test this agent end to end",
-  "onboard an agent", "run the full suite", "produce a test report", "assess
-  this agent", or hands over a testing document or failure-mode list to run.
+  "onboard an agent", "set up a test suite", "run the full suite", "produce a
+  test report", or hands over a testing document or failure-mode list to run.
 ---
 
-# Assess a voice agent end to end
+# Set up and run a test suite for a voice agent
 
 The deliverable is a **report someone can act on**: each issue stated plainly
 with how often it happened, where, and the calls that prove it; what the agent
@@ -216,7 +216,7 @@ A flow problem found after the full run costs the whole run.
 - **Monitor the first calls of every run.** Did they connect, and is the agent
   speaking? Then let it finish.
 - **Group the runs.** Note each run's id and what it covers. When the
-  assessment has 2 to 20 runs, put them in one run group:
+  suite has 2 to 20 runs, put them in one run group:
   - Call `simulationRunGroup.create` with `simulationRunPlanJobIds`, the runs
     that already exist. Never pass `simulationRunPlanIds`: that starts a new
     run of every plan and places real calls.
@@ -308,4 +308,4 @@ against the platform.
 - **Treat "this looks weird" from the user as a priority lead.** Verify it with
   data before defending a result.
 - **Persist state outside temporary folders:** run ids, the ledger, labels.
-  Long assessments outlive scratch directories.
+  Long test suites outlive scratch directories.
