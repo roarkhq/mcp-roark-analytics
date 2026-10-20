@@ -115,9 +115,9 @@ always point to the test setup, not the agent.
 - **You cannot schedule a gap between calls inside one run.** For "call again
   later" scenarios, start separate runs at the times you need and record the
   real timestamps.
-- **`simulationRunPlan.create` nests its result** (`{ runPlan, runPlanJob }`).
-  If you lose the id, find the plan by name. Duplicate plan names make this
-  ambiguous, so keep names unique.
+- **`simulationRunPlan.create` nests its result:**
+  `{ data: { runPlan, runPlanJob } }`. If you lose the id, find the plan by
+  name. Duplicate plan names make this ambiguous, so keep names unique.
 - **A trigger that times out client-side may still have started.** List the runs
   before retrying, or you end up with duplicate runs competing for the same
   line.
