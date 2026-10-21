@@ -237,6 +237,37 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'get',
+    endpoint: '/v1/usage',
+    httpMethod: 'get',
+    summary: 'Get usage & cost',
+    description:
+      'Report billable usage and cost for the organization over a time window, broken down by project (highest spend first). Pass `from`/`to` as ISO 8601 timestamps; optionally pass `projectId` to scope the report to one project. Amounts are billable spend only (what we absorb is never included). Authenticated by an organization API key with the `usage:read` permission.',
+    stainlessPath: '(resource) usage > (method) get',
+    qualified: 'client.usage.get',
+    params: ['from: string;', 'to: string;', 'projectId?: string;'],
+    response:
+      "{ data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: object[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }; }",
+    markdown:
+      "## get\n\n`client.usage.get(from: string, to: string, projectId?: string): { data: object; }`\n\n**get** `/v1/usage`\n\nReport billable usage and cost for the organization over a time window, broken down by project (highest spend first). Pass `from`/`to` as ISO 8601 timestamps; optionally pass `projectId` to scope the report to one project. Amounts are billable spend only (what we absorb is never included). Authenticated by an organization API key with the `usage:read` permission.\n\n### Parameters\n\n- `from: string`\n  Start of the window (inclusive), ISO 8601.\n\n- `to: string`\n  End of the window (exclusive), ISO 8601. Must be after `from`, and the window may not exceed 366 days.\n\n- `projectId?: string`\n  Limit the report to a single project. Omit for the whole organization.\n\n### Returns\n\n- `{ data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: object[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }; }`\n\n  - `data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: { amountUsd: number; amountUsdMicros: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst usage = await client.usage.get({ from: '2026-09-01T00:00:00Z', to: '2026-10-01T00:00:00Z' });\n\nconsole.log(usage);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.usage.get',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst usage = await client.usage.get({ from: '2026-09-01T00:00:00Z', to: '2026-10-01T00:00:00Z' });\n\nconsole.log(usage.data);",
+      },
+      python: {
+        method: 'usage.get',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nusage = client.usage.get(\n    from_="2026-09-01T00:00:00Z",\n    to="2026-10-01T00:00:00Z",\n)\nprint(usage.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/usage \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'list',
     endpoint: '/v1/call',
     httpMethod: 'get',

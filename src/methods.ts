@@ -47,6 +47,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/projects',
   },
   {
+    clientCallName: 'client.usage.get',
+    fullyQualifiedName: 'usage.get',
+    httpMethod: 'get',
+    httpPath: '/v1/usage',
+  },
+  {
     clientCallName: 'client.call.create',
     fullyQualifiedName: 'call.create',
     httpMethod: 'post',

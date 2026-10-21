@@ -114,6 +114,7 @@ const fuse = new Fuse(
     'client.me.listAPIKeys',
     'client.me.revokeAPIKey',
     'client.project.list',
+    'client.usage.get',
     'client.call.appendToolInvocations',
     'client.call.create',
     'client.call.getByID',
