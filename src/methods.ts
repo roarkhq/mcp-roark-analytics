@@ -77,6 +77,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/call/{callId}',
   },
   {
+    clientCallName: 'client.call.getCost',
+    fullyQualifiedName: 'call.getCost',
+    httpMethod: 'get',
+    httpPath: '/v1/call/{callId}/cost',
+  },
+  {
     clientCallName: 'client.call.getTranscript',
     fullyQualifiedName: 'call.getTranscript',
     httpMethod: 'get',
@@ -441,6 +447,12 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'simulationRunPlanJob.getByID',
     httpMethod: 'get',
     httpPath: '/v1/simulation/plan/job/{jobId}',
+  },
+  {
+    clientCallName: 'client.simulationRunPlanJob.getCost',
+    fullyQualifiedName: 'simulationRunPlanJob.getCost',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/plan/job/{jobId}/cost',
   },
   {
     clientCallName: 'client.simulationRunPlanJob.getResults',
