@@ -242,14 +242,14 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     httpMethod: 'get',
     summary: 'Get usage & cost',
     description:
-      'Report billable usage and cost for the organization over a time window, broken down by project (highest spend first). Pass `from`/`to` as ISO 8601 timestamps; optionally pass `projectId` to scope the report to one project. Amounts are billable spend only (what we absorb is never included). Authenticated by an organization API key with the `usage:read` permission.',
+      "Report billable usage and cost for the organization over a time window, broken down by project (highest spend first). Pass `from`/`to` as ISO 8601 timestamps; optionally pass `projectId` to scope the report to one project. Amounts are billable spend only (what we absorb is never included). Authenticated by either an organization API key with the `usage:read` permission (any project in the organization), or a project API key with the `billing:read` permission (that key's own project only; any other `projectId` is a 403).",
     stainlessPath: '(resource) usage > (method) get',
     qualified: 'client.usage.get',
     params: ['from: string;', 'to: string;', 'projectId?: string;'],
     response:
       "{ data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: object[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }; }",
     markdown:
-      "## get\n\n`client.usage.get(from: string, to: string, projectId?: string): { data: object; }`\n\n**get** `/v1/usage`\n\nReport billable usage and cost for the organization over a time window, broken down by project (highest spend first). Pass `from`/`to` as ISO 8601 timestamps; optionally pass `projectId` to scope the report to one project. Amounts are billable spend only (what we absorb is never included). Authenticated by an organization API key with the `usage:read` permission.\n\n### Parameters\n\n- `from: string`\n  Start of the window (inclusive), ISO 8601.\n\n- `to: string`\n  End of the window (exclusive), ISO 8601. Must be after `from`, and the window may not exceed 366 days.\n\n- `projectId?: string`\n  Limit the report to a single project. Omit for the whole organization.\n\n### Returns\n\n- `{ data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: object[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }; }`\n\n  - `data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: { amountUsd: number; amountUsdMicros: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst usage = await client.usage.get({ from: '2026-09-01T00:00:00Z', to: '2026-10-01T00:00:00Z' });\n\nconsole.log(usage);\n```",
+      "## get\n\n`client.usage.get(from: string, to: string, projectId?: string): { data: object; }`\n\n**get** `/v1/usage`\n\nReport billable usage and cost for the organization over a time window, broken down by project (highest spend first). Pass `from`/`to` as ISO 8601 timestamps; optionally pass `projectId` to scope the report to one project. Amounts are billable spend only (what we absorb is never included). Authenticated by either an organization API key with the `usage:read` permission (any project in the organization), or a project API key with the `billing:read` permission (that key's own project only; any other `projectId` is a 403).\n\n### Parameters\n\n- `from: string`\n  Start of the window (inclusive), ISO 8601.\n\n- `to: string`\n  End of the window (exclusive), ISO 8601. Must be after `from`, and the window may not exceed 366 days.\n\n- `projectId?: string`\n  Limit the report to a single project. Omit for the whole organization.\n\n### Returns\n\n- `{ data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: object[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }; }`\n\n  - `data: { currency: 'usd'; from: string; projects: { amountUsd: number; amountUsdMicros: number; breakdown: { amountUsd: number; amountUsdMicros: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; projectId: string; projectName: string; }[]; to: string; totalUsd: number; totalUsdMicros: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst usage = await client.usage.get({ from: '2026-09-01T00:00:00Z', to: '2026-10-01T00:00:00Z' });\n\nconsole.log(usage);\n```",
     perLanguage: {
       typescript: {
         method: 'client.usage.get',
@@ -545,6 +545,37 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       http: {
         example:
           'curl https://api.roark.ai/v1/call/$CALL_ID/properties \\\n    -X PATCH \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "properties": {\n            "partner_outcome": "apr_returned",\n            "delivered_apr": "21.99"\n          }\n        }\'',
+      },
+    },
+  },
+  {
+    name: 'getCost',
+    endpoint: '/v1/call/{callId}/cost',
+    httpMethod: 'get',
+    summary: 'Get call cost',
+    description:
+      'The billable spend attributed to one call, split by cost type, with every cost line behind it. Simulated calls include the costs their simulation incurred before the call connected. Amounts are billable spend only, in exact micro-dollars (`*UsdMicros`) and dollars (`*Usd`, for display). Requires an API key with the `billing:read` permission.',
+    stainlessPath: '(resource) call > (method) getCost',
+    qualified: 'client.call.getCost',
+    params: ['callId: string;'],
+    response:
+      "{ data: { breakdown: { amountUsd: number; amountUsdMicros: number; quantity: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; callId: string; currency: 'usd'; items: { amountUsd: number; amountUsdMicros: number; eventId: string; metricCollectionJobId: string; metricDefinitionId: string; model: string; occurredAt: string; provider: string; quantity: number; quantityUnit: 'MINUTES' | 'INPUT_TOKENS' | 'OUTPUT_TOKENS' | 'CHARACTERS' | 'AUDIO_SECONDS' | 'UNITS'; simulationJobId: string; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; totalUsd: number; totalUsdMicros: number; }; }",
+    markdown:
+      "## getCost\n\n`client.call.getCost(callId: string): { data: object; }`\n\n**get** `/v1/call/{callId}/cost`\n\nThe billable spend attributed to one call, split by cost type, with every cost line behind it. Simulated calls include the costs their simulation incurred before the call connected. Amounts are billable spend only, in exact micro-dollars (`*UsdMicros`) and dollars (`*Usd`, for display). Requires an API key with the `billing:read` permission.\n\n### Parameters\n\n- `callId: string`\n\n### Returns\n\n- `{ data: { breakdown: { amountUsd: number; amountUsdMicros: number; quantity: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; callId: string; currency: 'usd'; items: { amountUsd: number; amountUsdMicros: number; eventId: string; metricCollectionJobId: string; metricDefinitionId: string; model: string; occurredAt: string; provider: string; quantity: number; quantityUnit: 'MINUTES' | 'INPUT_TOKENS' | 'OUTPUT_TOKENS' | 'CHARACTERS' | 'AUDIO_SECONDS' | 'UNITS'; simulationJobId: string; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; totalUsd: number; totalUsdMicros: number; }; }`\n\n  - `data: { breakdown: { amountUsd: number; amountUsdMicros: number; quantity: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; callId: string; currency: 'usd'; items: { amountUsd: number; amountUsdMicros: number; eventId: string; metricCollectionJobId: string; metricDefinitionId: string; model: string; occurredAt: string; provider: string; quantity: number; quantityUnit: 'MINUTES' | 'INPUT_TOKENS' | 'OUTPUT_TOKENS' | 'CHARACTERS' | 'AUDIO_SECONDS' | 'UNITS'; simulationJobId: string; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; totalUsd: number; totalUsdMicros: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.call.getCost('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.call.getCost',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.call.getCost('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'call.get_cost',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.call.get_cost(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/call/$CALL_ID/cost \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
       },
     },
   },
@@ -2511,6 +2542,37 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       http: {
         example:
           'curl https://api.roark.ai/v1/simulation/plan/job/$JOB_ID/debrief \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getCost',
+    endpoint: '/v1/simulation/plan/job/{jobId}/cost',
+    httpMethod: 'get',
+    summary: 'Get simulation run cost',
+    description:
+      'The billable spend for one simulation run (run plan job), split by cost type, with the spend of each simulated call in it. Safe to call while the run is in progress: totals reflect the costs recorded so far. Amounts are billable spend only, in exact micro-dollars (`*UsdMicros`) and dollars (`*Usd`, for display). Requires an API key with the `billing:read` permission.',
+    stainlessPath: '(resource) simulationRunPlanJob > (method) getCost',
+    qualified: 'client.simulationRunPlanJob.getCost',
+    params: ['jobId: string;'],
+    response:
+      "{ data: { breakdown: { amountUsd: number; amountUsdMicros: number; quantity: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; calls: { amountUsd: number; amountUsdMicros: number; breakdown: object[]; conversationId: string; simulationJobId: string; }[]; currency: 'usd'; jobId: string; totalUsd: number; totalUsdMicros: number; }; }",
+    markdown:
+      "## getCost\n\n`client.simulationRunPlanJob.getCost(jobId: string): { data: object; }`\n\n**get** `/v1/simulation/plan/job/{jobId}/cost`\n\nThe billable spend for one simulation run (run plan job), split by cost type, with the spend of each simulated call in it. Safe to call while the run is in progress: totals reflect the costs recorded so far. Amounts are billable spend only, in exact micro-dollars (`*UsdMicros`) and dollars (`*Usd`, for display). Requires an API key with the `billing:read` permission.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { breakdown: { amountUsd: number; amountUsdMicros: number; quantity: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; calls: { amountUsd: number; amountUsdMicros: number; breakdown: object[]; conversationId: string; simulationJobId: string; }[]; currency: 'usd'; jobId: string; totalUsd: number; totalUsdMicros: number; }; }`\n\n  - `data: { breakdown: { amountUsd: number; amountUsdMicros: number; quantity: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; calls: { amountUsd: number; amountUsdMicros: number; breakdown: { amountUsd: number; amountUsdMicros: number; quantity: number; source: string; surface: 'SIMULATION' | 'POST_CALL'; }[]; conversationId: string; simulationJobId: string; }[]; currency: 'usd'; jobId: string; totalUsd: number; totalUsdMicros: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulationRunPlanJob.getCost('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunPlanJob.getCost',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.simulationRunPlanJob.getCost('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'simulation_run_plan_job.get_cost',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.simulation_run_plan_job.get_cost(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/plan/job/$JOB_ID/cost \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
       },
     },
   },
