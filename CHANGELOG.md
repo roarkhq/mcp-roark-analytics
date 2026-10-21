@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.31.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.31.0...v4.31.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** raise the @roarkanalytics/sdk floor to 5.11.0 ([#186](https://github.com/roarkhq/mcp-roark-analytics/issues/186)) ([d16a2fa](https://github.com/roarkhq/mcp-roark-analytics/commit/d16a2faf22e472e01a45e6dcb6b6a8d65f92942d))
+
 ## [4.31.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.30.0...v4.31.0) (2026-10-21)
 
 
