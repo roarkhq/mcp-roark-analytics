@@ -65,10 +65,22 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/call',
   },
   {
+    clientCallName: 'client.call.delete',
+    fullyQualifiedName: 'call.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/call/{callId}',
+  },
+  {
     clientCallName: 'client.call.appendToolInvocations',
     fullyQualifiedName: 'call.appendToolInvocations',
     httpMethod: 'post',
     httpPath: '/v1/call/{callId}/tool-invocations',
+  },
+  {
+    clientCallName: 'client.call.batchDelete',
+    fullyQualifiedName: 'call.batchDelete',
+    httpMethod: 'post',
+    httpPath: '/v1/call/batch-delete',
   },
   {
     clientCallName: 'client.call.getByID',
