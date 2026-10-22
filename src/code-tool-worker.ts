@@ -146,6 +146,7 @@ const fuse = new Fuse(
     'client.metricPolicy.getByID',
     'client.metricPolicy.list',
     'client.metricPolicy.update',
+    'client.metricCollectionJob.cancel',
     'client.metricCollectionJob.create',
     'client.metricCollectionJob.getByID',
     'client.metricCollectionJob.list',

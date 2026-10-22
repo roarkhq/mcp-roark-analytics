@@ -251,6 +251,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/metric/collection-jobs',
   },
   {
+    clientCallName: 'client.metricCollectionJob.cancel',
+    fullyQualifiedName: 'metricCollectionJob.cancel',
+    httpMethod: 'post',
+    httpPath: '/v1/metric/collection-jobs/{jobId}/cancel',
+  },
+  {
     clientCallName: 'client.metricCollectionJob.getByID',
     fullyQualifiedName: 'metricCollectionJob.getByID',
     httpMethod: 'get',

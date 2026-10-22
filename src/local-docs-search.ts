@@ -1440,6 +1440,37 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'cancel',
+    endpoint: '/v1/metric/collection-jobs/{jobId}/cancel',
+    httpMethod: 'post',
+    summary: 'Cancel a metric collection job',
+    description:
+      'Stops a metric collection job that has not finished. No further conversations are processed and the job ends in CANCELED.\n\nItems the job had not reached are marked SKIPPED. Metric values already produced are kept, and items that were mid-computation when the cancel arrived may still complete. Only the items that completed are billed.\n\nSafe to call more than once: a job that has already finished (COMPLETED, FAILED, or CANCELED) is returned unchanged.',
+    stainlessPath: '(resource) metricCollectionJob > (method) cancel',
+    qualified: 'client.metricCollectionJob.cancel',
+    params: ['jobId: string;'],
+    response:
+      "{ data: { id: string; completedAt: string; completedItems: number; createdAt: string; errorMessage: string; failedItems: number; policyIds: string[]; startedAt: string; status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED'; totalItems: number; triggeredBy: 'USER_MANUAL' | 'USER_API' | 'METRIC_POLICY' | 'SIMULATION'; updatedAt: string; }; }",
+    markdown:
+      "## cancel\n\n`client.metricCollectionJob.cancel(jobId: string): { data: object; }`\n\n**post** `/v1/metric/collection-jobs/{jobId}/cancel`\n\nStops a metric collection job that has not finished. No further conversations are processed and the job ends in CANCELED.\n\nItems the job had not reached are marked SKIPPED. Metric values already produced are kept, and items that were mid-computation when the cancel arrived may still complete. Only the items that completed are billed.\n\nSafe to call more than once: a job that has already finished (COMPLETED, FAILED, or CANCELED) is returned unchanged.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { id: string; completedAt: string; completedItems: number; createdAt: string; errorMessage: string; failedItems: number; policyIds: string[]; startedAt: string; status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED'; totalItems: number; triggeredBy: 'USER_MANUAL' | 'USER_API' | 'METRIC_POLICY' | 'SIMULATION'; updatedAt: string; }; }`\n\n  - `data: { id: string; completedAt: string; completedItems: number; createdAt: string; errorMessage: string; failedItems: number; policyIds: string[]; startedAt: string; status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELED'; totalItems: number; triggeredBy: 'USER_MANUAL' | 'USER_API' | 'METRIC_POLICY' | 'SIMULATION'; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.metricCollectionJob.cancel('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.metricCollectionJob.cancel',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.metricCollectionJob.cancel('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'metric_collection_job.cancel',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.metric_collection_job.cancel(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/metric/collection-jobs/$JOB_ID/cancel \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'list',
     endpoint: '/v1/metric/definitions/{idOrSlug}/variants',
     httpMethod: 'get',
