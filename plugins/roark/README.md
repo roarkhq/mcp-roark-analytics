@@ -28,6 +28,7 @@ how to select flow variants without accidentally placing hundreds of calls.
 | `subscribe-webhooks`  | Get event notifications (run done, issue opened) instead of polling. |
 | `manage-config-as-code`| Manage agents/personas/flows/metrics/collectors declaratively.  |
 | `gate-ci`             | Gate a deploy/CI pipeline on a run (start, wait, assert).        |
+| `agent-test-suite`    | Set up and run a full test suite for an agent, then build the run group report. |
 | `roark-concepts`      | What each domain object *is*. The shared definitions the others reference. |
 
 `roark-concepts` is generated, not hand-written: it is synced from
@@ -86,7 +87,7 @@ which reads this repository directly:
 npx skills add roarkhq/mcp-roark-analytics
 ```
 
-That installs all 15 skills. Pass `-a` to choose targets, repeating the flag per
+That installs all 16 skills. Pass `-a` to choose targets, repeating the flag per
 agent (a comma-separated list is parsed as one name and rejected):
 
 ```sh
