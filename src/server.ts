@@ -17,6 +17,7 @@ import { getInstructions } from './instructions';
 import { McpOptions } from './options';
 import { blockedMethodsForCodeTool } from './methods';
 import { HandlerFunction, McpRequestContext, ToolCallResult, McpTool } from './types';
+import { MCP_CLIENT_HEADERS, MCP_SERVER_VERSION } from './client-headers';
 
 export const newMcpServer = async ({
   stainlessApiKey,
@@ -28,7 +29,7 @@ export const newMcpServer = async ({
   new McpServer(
     {
       name: 'roarkanalytics_sdk_api',
-      version: '4.33.0', // x-release-please-version
+      version: MCP_SERVER_VERSION,
     },
     {
       instructions: await getInstructions({ stainlessApiKey, customInstructionsPath }),
@@ -118,7 +119,7 @@ export async function initMcpServer(params: {
           ...params.clientOptions,
           defaultHeaders: {
             ...params.clientOptions?.defaultHeaders,
-            'X-Stainless-MCP': 'true',
+            ...MCP_CLIENT_HEADERS,
           },
         });
         if (_logLevel) {

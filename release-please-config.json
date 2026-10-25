@@ -12,7 +12,7 @@
   "exclude-paths": [".github", "scripts", "tests"],
   "extra-files": [
     { "type": "json", "path": "manifest.json", "jsonpath": "$.version" },
-    { "type": "generic", "path": "src/server.ts" }
+    { "type": "generic", "path": "src/client-headers.ts" }
   ],
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
