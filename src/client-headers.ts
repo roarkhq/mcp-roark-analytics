@@ -1,4 +1,5 @@
-// Kept in step with package.json by scripts/sync-version.cjs, which `pnpm build` runs.
+// Kept in step with package.json by scripts/sync-version.cjs, which `pnpm build` runs,
+// alongside the literal src/server.ts reports in the MCP handshake.
 export const MCP_SERVER_VERSION = '4.34.0'; // x-release-please-version
 
 /**
