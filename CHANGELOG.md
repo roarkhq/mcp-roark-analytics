@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.34.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.33.0...v4.34.0) (2026-10-25)
+
+
+### Features
+
+* **server:** send X-Roark-Client on every API request ([#194](https://github.com/roarkhq/mcp-roark-analytics/issues/194)) ([656279f](https://github.com/roarkhq/mcp-roark-analytics/commit/656279f965df20106c6cedcb782b3cb2d7dad35d))
+
 ## [4.33.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.32.1...v4.33.0) (2026-10-24)
 
 
