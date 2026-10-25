@@ -16,6 +16,7 @@ import { getLogger } from './logger';
 import { SdkMethod } from './methods';
 import { McpCodeExecutionMode } from './options';
 import { ClientOptions } from '@roarkanalytics/sdk';
+import { MCP_CLIENT_HEADERS } from './client-headers';
 
 const prompt = `Runs JavaScript code to interact with the Roark API.
 
@@ -416,9 +417,7 @@ const localDenoHandler = async ({
         ...(client.baseURL != null ? { baseURL: client.baseURL } : undefined),
         ...(client.bearerToken != null ? { bearerToken: client.bearerToken } : undefined),
         ...(reqContext.project != null ? { project: reqContext.project } : undefined),
-        defaultHeaders: {
-          'X-Stainless-MCP': 'true',
-        },
+        defaultHeaders: MCP_CLIENT_HEADERS,
       } satisfies Partial<ClientOptions> as ClientOptions;
 
       const req = worker.request(
