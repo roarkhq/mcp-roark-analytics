@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.34.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.34.0...v4.34.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* **server:** keep the version literal in server.ts, where publish checks it ([#196](https://github.com/roarkhq/mcp-roark-analytics/issues/196)) ([983fcb0](https://github.com/roarkhq/mcp-roark-analytics/commit/983fcb09829d845a0ce770c5198fa8ccf3ec93ba))
+
 ## [4.34.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.33.0...v4.34.0) (2026-10-25)
 
 
