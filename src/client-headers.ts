@@ -1,5 +1,5 @@
 // Kept in step with package.json by scripts/sync-version.cjs, which `pnpm build` runs.
-export const MCP_SERVER_VERSION = '4.33.0'; // x-release-please-version
+export const MCP_SERVER_VERSION = '4.34.0'; // x-release-please-version
 
 /**
  * Sent on every request the server's SDK clients make, including the sandbox that
