@@ -755,6 +755,42 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/agent/endpoint/{endpointId}',
   },
   {
+    clientCallName: 'client.phoneNumber.create',
+    fullyQualifiedName: 'phoneNumber.create',
+    httpMethod: 'post',
+    httpPath: '/v1/phone-number',
+  },
+  {
+    clientCallName: 'client.phoneNumber.update',
+    fullyQualifiedName: 'phoneNumber.update',
+    httpMethod: 'put',
+    httpPath: '/v1/phone-number/{phoneNumberId}',
+  },
+  {
+    clientCallName: 'client.phoneNumber.list',
+    fullyQualifiedName: 'phoneNumber.list',
+    httpMethod: 'get',
+    httpPath: '/v1/phone-number',
+  },
+  {
+    clientCallName: 'client.phoneNumber.delete',
+    fullyQualifiedName: 'phoneNumber.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/phone-number/{phoneNumberId}',
+  },
+  {
+    clientCallName: 'client.phoneNumber.getAllowance',
+    fullyQualifiedName: 'phoneNumber.getAllowance',
+    httpMethod: 'get',
+    httpPath: '/v1/phone-number/allowance',
+  },
+  {
+    clientCallName: 'client.phoneNumber.listAvailable',
+    fullyQualifiedName: 'phoneNumber.listAvailable',
+    httpMethod: 'get',
+    httpPath: '/v1/phone-number/available',
+  },
+  {
     clientCallName: 'client.agentPrompt.update',
     fullyQualifiedName: 'agentPrompt.update',
     httpMethod: 'put',
