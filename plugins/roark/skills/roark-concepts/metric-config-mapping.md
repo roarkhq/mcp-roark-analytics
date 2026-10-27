@@ -15,20 +15,36 @@ share a name and silently mis-pairs the rest, which is how a published reference
 came to claim `trueLabel` was spelled identically in both. The notes are written
 by hand.
 
-| config bundle     | imperative API          | note                                                               |
-| ----------------- | ----------------------- | ------------------------------------------------------------------ |
-| (none)            | `calculationType`       | config has no such field: always `LLM_JUDGE`                       |
-| `displayName`     | `name`                  | falls back to the config `name` when omitted                       |
-| `name`            | `slug`                  | same value                                                         |
-| `type`            | `outputType`            | same value                                                         |
-| `scope`           | `scope`                 | same value                                                         |
-| `participantRole` | `participantRole`       | same value                                                         |
-| `contexts`        | `supportedContexts`     | same value                                                         |
-| `prompt`          | `llmPrompt`             | same value                                                         |
-| `trueLabel`       | `booleanTrueLabel`      | same value                                                         |
-| `falseLabel`      | `booleanFalseLabel`     | same value                                                         |
-| `scaleMin`        | `scaleMin`              | same value                                                         |
-| `scaleMax`        | `scaleMax`              | same value                                                         |
-| `scaleLabels`     | `scaleLabels`           | same value                                                         |
-| `options`         | `classificationOptions` | entry fields: label, description (defaults to label), displayOrder |
-| `maxSelections`   | `maxClassifications`    | same value                                                         |
+A config metric is an LLM judge unless it sets `calculationType: HTTP_REQUEST`,
+which makes it an API check. Each engine has its own translation.
+
+## LLM judge
+
+| config bundle     | imperative API          | note                                                                   |
+| ----------------- | ----------------------- | ---------------------------------------------------------------------- |
+| (none)            | `calculationType`       | always `LLM_JUDGE`; in config the field is optional and defaults to it |
+| `displayName`     | `name`                  | falls back to the config `name` when omitted                           |
+| `name`            | `slug`                  | same value                                                             |
+| `type`            | `outputType`            | same value                                                             |
+| `scope`           | `scope`                 | same value                                                             |
+| `participantRole` | `participantRole`       | same value                                                             |
+| `contexts`        | `supportedContexts`     | same value                                                             |
+| `prompt`          | `llmPrompt`             | same value                                                             |
+| `trueLabel`       | `booleanTrueLabel`      | same value                                                             |
+| `falseLabel`      | `booleanFalseLabel`     | same value                                                             |
+| `scaleMin`        | `scaleMin`              | same value                                                             |
+| `scaleMax`        | `scaleMax`              | same value                                                             |
+| `scaleLabels`     | `scaleLabels`           | same value                                                             |
+| `options`         | `classificationOptions` | entry fields: label, description (defaults to label), displayOrder     |
+| `maxSelections`   | `maxClassifications`    | same value                                                             |
+
+## API check
+
+| config bundle | imperative API      | note                                           |
+| ------------- | ------------------- | ---------------------------------------------- |
+| (none)        | `calculationType`   | always `HTTP_REQUEST`, which config also sets  |
+| `displayName` | `name`              | falls back to the config `name` when omitted   |
+| `name`        | `slug`              | same value                                     |
+| `httpRequest` | `httpRequest`       | same shape: `url`, `method`, `headers`, `body` |
+| `trueLabel`   | `booleanTrueLabel`  | same value                                     |
+| `falseLabel`  | `booleanFalseLabel` | same value                                     |
