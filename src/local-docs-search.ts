@@ -4002,11 +4002,16 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       'Creates a new Roark-hosted agent from a one-line job description. Roark authors the system prompt and hosts the config, so the agent is live and self-improvable from creation.',
     stainlessPath: '(resource) agent > (method) build',
     qualified: 'client.agent.build',
-    params: ['jobDescription: string;', 'name: string;', 'voice?: string;'],
+    params: [
+      'jobDescription: string;',
+      'name: string;',
+      'tts?: { provider: string; voiceId: string; };',
+      'voice?: string;',
+    ],
     response:
       '{ data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }; }',
     markdown:
-      "## build\n\n`client.agent.build(jobDescription: string, name: string, voice?: string): { data: object; }`\n\n**post** `/v1/agent/build`\n\nCreates a new Roark-hosted agent from a one-line job description. Roark authors the system prompt and hosts the config, so the agent is live and self-improvable from creation.\n\n### Parameters\n\n- `jobDescription: string`\n  One-line description of what the agent should do. Roark authors the system prompt from this.\n\n- `name: string`\n  Name of the agent\n\n- `voice?: string`\n  Optional voice label for the hosted agent\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }; }`\n\n  - `data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.agent.build({ jobDescription: 'x', name: 'x' });\n\nconsole.log(response);\n```",
+      "## build\n\n`client.agent.build(jobDescription: string, name: string, tts?: { provider: string; voiceId: string; }, voice?: string): { data: object; }`\n\n**post** `/v1/agent/build`\n\nCreates a new Roark-hosted agent from a one-line job description. Roark authors the system prompt and hosts the config, so the agent is live and self-improvable from creation.\n\n### Parameters\n\n- `jobDescription: string`\n  One-line description of what the agent should do. Roark authors the system prompt from this.\n\n- `name: string`\n  Name of the agent\n\n- `tts?: { provider: string; voiceId: string; }`\n  Optional provider voice the hosted agent speaks with\n\n- `voice?: string`\n  Optional display name of the agent's voice. The authored prompt matches its delivery to it.\n\n### Returns\n\n- `{ data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }; }`\n\n  - `data: { id: string; createdAt: string; customId: string; description: string; name: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.agent.build({ jobDescription: 'x', name: 'x' });\n\nconsole.log(response);\n```",
     perLanguage: {
       typescript: {
         method: 'client.agent.build',
