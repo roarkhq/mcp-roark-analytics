@@ -4229,13 +4229,19 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     httpMethod: 'get',
     summary: 'Search available phone numbers',
     description:
-      'Returns US numbers the carrier has for sale, narrowed by area code or by digits the number must contain. Buy one with POST /v1/phone-number.',
+      'Returns US or Canadian numbers the carrier has for sale, local or toll-free, narrowed by area code or by digits the number must contain. When an area code has no numbers, nearby ones are returned flagged bestEffort; an empty list means nothing matched. Buy one with POST /v1/phone-number, or let Roark pick with autoPick.',
     stainlessPath: '(resource) phoneNumber > (method) listAvailable',
     qualified: 'client.phoneNumber.listAvailable',
-    params: ['areaCode?: string;', 'contains?: string;', 'limit?: number;'],
-    response: '{ data: { e164: string; locality: string; region: string; }[]; }',
+    params: [
+      'areaCode?: string;',
+      'contains?: string;',
+      "country?: 'US' | 'CA';",
+      'limit?: number;',
+      "numberType?: 'LOCAL' | 'TOLL_FREE';",
+    ],
+    response: '{ data: { bestEffort: boolean; e164: string; locality: string; region: string; }[]; }',
     markdown:
-      "## listAvailable\n\n`client.phoneNumber.listAvailable(areaCode?: string, contains?: string, limit?: number): { data: object[]; }`\n\n**get** `/v1/phone-number/available`\n\nReturns US numbers the carrier has for sale, narrowed by area code or by digits the number must contain. Buy one with POST /v1/phone-number.\n\n### Parameters\n\n- `areaCode?: string`\n  Three-digit US area code\n\n- `contains?: string`\n  Digits or letters the number must contain (1 to 7, * matches any digit)\n\n- `limit?: number`\n  Maximum number of results (default: 20, max: 50)\n\n### Returns\n\n- `{ data: { e164: string; locality: string; region: string; }[]; }`\n\n  - `data: { e164: string; locality: string; region: string; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.phoneNumber.listAvailable();\n\nconsole.log(response);\n```",
+      "## listAvailable\n\n`client.phoneNumber.listAvailable(areaCode?: string, contains?: string, country?: 'US' | 'CA', limit?: number, numberType?: 'LOCAL' | 'TOLL_FREE'): { data: object[]; }`\n\n**get** `/v1/phone-number/available`\n\nReturns US or Canadian numbers the carrier has for sale, local or toll-free, narrowed by area code or by digits the number must contain. When an area code has no numbers, nearby ones are returned flagged bestEffort; an empty list means nothing matched. Buy one with POST /v1/phone-number, or let Roark pick with autoPick.\n\n### Parameters\n\n- `areaCode?: string`\n  Three-digit area code, or a toll-free prefix such as 800. When it has no numbers, nearby ones are returned instead, flagged bestEffort.\n\n- `contains?: string`\n  Digits or letters the number must contain (1 to 7, * matches any digit)\n\n- `country?: 'US' | 'CA'`\n  ISO 3166-1 alpha-2 country of the number: US or CA\n\n- `limit?: number`\n  Maximum number of results (default: 20, max: 100)\n\n- `numberType?: 'LOCAL' | 'TOLL_FREE'`\n  LOCAL for a number in an area code, TOLL_FREE for one from the shared US and Canada toll-free pool\n\n### Returns\n\n- `{ data: { bestEffort: boolean; e164: string; locality: string; region: string; }[]; }`\n\n  - `data: { bestEffort: boolean; e164: string; locality: string; region: string; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.phoneNumber.listAvailable();\n\nconsole.log(response);\n```",
     perLanguage: {
       typescript: {
         method: 'client.phoneNumber.listAvailable',
@@ -4289,12 +4295,14 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     httpMethod: 'post',
     summary: 'Buy a phone number',
     description:
-      'Buys a number from the carrier for this project. Free inside the plan allowance; past it, the first month of rent is charged now and monthly after that.',
+      'Buys a number from the carrier for this project: the one named by e164, or one Roark picks to match autoPick (trying the next match if the carrier has just sold one). Free inside the plan allowance; past it, the first month of rent is charged now and monthly after that.',
     stainlessPath: '(resource) phoneNumber > (method) create',
     qualified: 'client.phoneNumber.create',
     params: [
-      'e164: string;',
       'agentId?: string;',
+      "autoPick?: { areaCode?: string; contains?: string; country?: 'US' | 'CA'; numberType?: 'LOCAL' | 'TOLL_FREE'; };",
+      "country?: 'US' | 'CA';",
+      'e164?: string;',
       'expectFree?: boolean;',
       'expectMonthlyRentMicros?: number;',
       'name?: string;',
@@ -4302,21 +4310,21 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     response:
       '{ data: { id: string; agentId: string; e164: string; isFree: boolean; localityCode: string; monthlyRentMicros: number; name: string; purchasedAt: string; rentNextChargeAt: string; }; }',
     markdown:
-      "## create\n\n`client.phoneNumber.create(e164: string, agentId?: string, expectFree?: boolean, expectMonthlyRentMicros?: number, name?: string): { data: object; }`\n\n**post** `/v1/phone-number`\n\nBuys a number from the carrier for this project. Free inside the plan allowance; past it, the first month of rent is charged now and monthly after that.\n\n### Parameters\n\n- `e164: string`\n  The number to buy, in E.164 format, from a search result\n\n- `agentId?: string`\n  The agent to assign the number to\n\n- `expectFree?: boolean`\n  Whether you expect this number to be free (from the allowance). The purchase is refused with 409 if that has changed since you checked.\n\n- `expectMonthlyRentMicros?: number`\n  The monthly rent you expect for a paid number, in micros (from the allowance). The purchase is refused with 409 if that has changed since you checked.\n\n- `name?: string`\n  A label for the number\n\n### Returns\n\n- `{ data: { id: string; agentId: string; e164: string; isFree: boolean; localityCode: string; monthlyRentMicros: number; name: string; purchasedAt: string; rentNextChargeAt: string; }; }`\n\n  - `data: { id: string; agentId: string; e164: string; isFree: boolean; localityCode: string; monthlyRentMicros: number; name: string; purchasedAt: string; rentNextChargeAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst phoneNumber = await client.phoneNumber.create({ e164: '+14155550123' });\n\nconsole.log(phoneNumber);\n```",
+      "## create\n\n`client.phoneNumber.create(agentId?: string, autoPick?: { areaCode?: string; contains?: string; country?: 'US' | 'CA'; numberType?: 'LOCAL' | 'TOLL_FREE'; }, country?: 'US' | 'CA', e164?: string, expectFree?: boolean, expectMonthlyRentMicros?: number, name?: string): { data: object; }`\n\n**post** `/v1/phone-number`\n\nBuys a number from the carrier for this project: the one named by e164, or one Roark picks to match autoPick (trying the next match if the carrier has just sold one). Free inside the plan allowance; past it, the first month of rent is charged now and monthly after that.\n\n### Parameters\n\n- `agentId?: string`\n  The agent to assign the number to\n\n- `autoPick?: { areaCode?: string; contains?: string; country?: 'US' | 'CA'; numberType?: 'LOCAL' | 'TOLL_FREE'; }`\n  Let Roark pick a matching number instead of naming one. Give this or e164.\n\n- `country?: 'US' | 'CA'`\n  The country of the number given by e164 (default: US). An auto-picked number uses autoPick.country.\n\n- `e164?: string`\n  The number to buy, in E.164 format, from a search result. Give this or autoPick.\n\n- `expectFree?: boolean`\n  Whether you expect this number to be free (from the allowance). The purchase is refused with 409 if that has changed since you checked.\n\n- `expectMonthlyRentMicros?: number`\n  The monthly rent you expect for a paid number, in micros (from the allowance). The purchase is refused with 409 if that has changed since you checked.\n\n- `name?: string`\n  A label for the number\n\n### Returns\n\n- `{ data: { id: string; agentId: string; e164: string; isFree: boolean; localityCode: string; monthlyRentMicros: number; name: string; purchasedAt: string; rentNextChargeAt: string; }; }`\n\n  - `data: { id: string; agentId: string; e164: string; isFree: boolean; localityCode: string; monthlyRentMicros: number; name: string; purchasedAt: string; rentNextChargeAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst phoneNumber = await client.phoneNumber.create();\n\nconsole.log(phoneNumber);\n```",
     perLanguage: {
       typescript: {
         method: 'client.phoneNumber.create',
         example:
-          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst phoneNumber = await client.phoneNumber.create({ e164: '+14155550123' });\n\nconsole.log(phoneNumber.data);",
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst phoneNumber = await client.phoneNumber.create();\n\nconsole.log(phoneNumber.data);",
       },
       python: {
         method: 'phone_number.create',
         example:
-          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nphone_number = client.phone_number.create(\n    e164="+14155550123",\n)\nprint(phone_number.data)',
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nphone_number = client.phone_number.create()\nprint(phone_number.data)',
       },
       http: {
         example:
-          'curl https://api.roark.ai/v1/phone-number \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "e164": "+14155550123",\n          "expectMonthlyRentMicros": 2000000\n        }\'',
+          'curl https://api.roark.ai/v1/phone-number \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
       },
     },
   },
