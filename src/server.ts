@@ -30,7 +30,7 @@ export const newMcpServer = async ({
     {
       name: 'roarkanalytics_sdk_api',
       // A literal, not MCP_SERVER_VERSION: publish.yml checks dist/server.js for it.
-      version: '4.38.0', // x-release-please-version
+      version: '4.39.0', // x-release-please-version
     },
     {
       instructions: await getInstructions({ stainlessApiKey, customInstructionsPath }),
