@@ -16,7 +16,8 @@ came to claim `trueLabel` was spelled identically in both. The notes are written
 by hand.
 
 A config metric is an LLM judge unless it sets `calculationType: HTTP_REQUEST`,
-which makes it an API check. Each engine has its own translation.
+which makes it an API check, or `calculationType: THRESHOLD`, which makes it a
+threshold. Each engine has its own translation.
 
 ## LLM judge
 
@@ -48,3 +49,23 @@ which makes it an API check. Each engine has its own translation.
 | `httpRequest` | `httpRequest`       | same shape: `url`, `method`, `headers`, `body` |
 | `trueLabel`   | `booleanTrueLabel`  | same value                                     |
 | `falseLabel`  | `booleanFalseLabel` | same value                                     |
+
+## Threshold
+
+A threshold maps onto `POST /v1/metric/definitions/{idOrSlug}/thresholds`. Its
+`sourceMetric` is not in the body: it is the source metric's slug, which the
+endpoint takes as `idOrSlug` in the path. `sourceVariant` names the source's
+variant and is resolved to the body's `sourceVariantId`; omitted, config sends
+the source's default variant. The API derives the threshold's name from the
+comparison, so config has no `displayName` for it.
+
+| config bundle           | imperative API          | note                                                      |
+| ----------------------- | ----------------------- | --------------------------------------------------------- |
+| `name`                  | `slug`                  | same value                                                |
+| `operator`              | `operator`              | same value                                                |
+| `value`                 | `value`                 | sent as a string; config also takes a number or a boolean |
+| `aggregationMode`       | `aggregationMode`       | same value                                                |
+| `countThreshold`        | `countThreshold`        | same value                                                |
+| `sourceParticipantRole` | `sourceParticipantRole` | same value                                                |
+| `trueLabel`             | `booleanTrueLabel`      | config only: the API route sets `Pass`                    |
+| `falseLabel`            | `booleanFalseLabel`     | config only: the API route sets `Fail`                    |
