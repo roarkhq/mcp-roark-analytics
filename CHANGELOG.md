@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.42.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.42.0...v4.42.1) (2026-10-30)
+
+
+### Documentation
+
+* **concepts:** sync from app-roark-analytics@627cb44 ([#219](https://github.com/roarkhq/mcp-roark-analytics/issues/219)) ([4717ac4](https://github.com/roarkhq/mcp-roark-analytics/commit/4717ac46ed04f7b552d38ef0bfbacd2d50380e85))
+
 ## [4.42.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.41.0...v4.42.0) (2026-10-28)
 
 
