@@ -821,10 +821,10 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/agent/{agentId}/versions/{versionId}',
   },
   {
-    clientCallName: 'client.agentVersion.restore',
-    fullyQualifiedName: 'agentVersion.restore',
+    clientCallName: 'client.agentVersion.rollback',
+    fullyQualifiedName: 'agentVersion.rollback',
     httpMethod: 'post',
-    httpPath: '/v1/agent/{agentId}/versions/{versionId}/restore',
+    httpPath: '/v1/agent/{agentId}/versions/{versionId}/rollback',
   },
   {
     clientCallName: 'client.agentDraft.create',
@@ -835,7 +835,7 @@ export const sdkMethods: SdkMethod[] = [
   {
     clientCallName: 'client.agentDraft.update',
     fullyQualifiedName: 'agentDraft.update',
-    httpMethod: 'patch',
+    httpMethod: 'put',
     httpPath: '/v1/agent/{agentId}/draft',
   },
   {
