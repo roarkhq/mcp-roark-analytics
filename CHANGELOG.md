@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.43.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.42.1...v4.43.0) (2026-10-31)
+
+
+### Features
+
+* **mcp:** named directory tools for the remote OAuth server ([#222](https://github.com/roarkhq/mcp-roark-analytics/issues/222)) ([d270691](https://github.com/roarkhq/mcp-roark-analytics/commit/d2706919d1b9f69be62b61ad650e7ae9180d4ec9))
+
 ## [4.42.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.42.0...v4.42.1) (2026-10-30)
 
 
