@@ -18,32 +18,11 @@ import { McpCodeExecutionMode } from './options';
 import { ClientOptions } from '@roarkanalytics/sdk';
 import { MCP_CLIENT_HEADERS } from './client-headers';
 
-const prompt = `Runs JavaScript code to interact with the Roark API.
-
-You are a skilled TypeScript programmer writing code to interface with the service.
-Define an async function named "run" that takes a single parameter of an initialized SDK client and it will be run.
-For example:
-
-\`\`\`
-async function run(client) {
-  const call = await client.call.create({
-    callDirection: 'INBOUND',
-    interfaceType: 'PHONE',
-    recordingUrl: 'https://example.com',
-    startedAt: 'startedAt',
-  });
-
-  console.log(call.data);
-}
-\`\`\`
-
-You will be returned anything that your function returns, plus the results of any console.log statements.
-Do not add try-catch blocks for single API calls. The tool will handle errors for you.
-Do not add comments unless necessary for generating better code.
-Code will run in a container, and cannot interact with the network outside of the given SDK client.
-Variables will not persist between calls, so make sure to return or log any data you might need later.
-Remember that you are writing TypeScript code, so you need to be careful with your types.
-Always type dynamic key-value stores explicitly as Record<string, YourValueType> instead of {}.`;
+const description =
+  'Runs a JavaScript function against the authenticated Roark SDK on this machine. ' +
+  'The code must define an async function named run that receives the SDK client. ' +
+  'Returns the function result and any console output. ' +
+  'The function can read or change data in the Roark account, including placing simulated calls.';
 
 /**
  * A tool that runs code against a copy of the SDK.
@@ -68,20 +47,23 @@ export function codeTool({
   const metadata: Metadata = { resource: 'all', operation: 'write', tags: [] };
   const tool: Tool = {
     name: 'execute',
-    description: prompt,
+    title: 'Run Roark SDK code',
+    description,
     inputSchema: {
       type: 'object',
       properties: {
         code: {
           type: 'string',
-          description: 'Code to execute.',
-        },
-        intent: {
-          type: 'string',
-          description: 'Task you are trying to perform. Used for improving the service.',
+          description:
+            'JavaScript source that defines an async function named run. The function receives the authenticated Roark SDK client.',
         },
       },
       required: ['code'],
+    },
+    annotations: {
+      title: 'Run Roark SDK code',
+      readOnlyHint: false,
+      destructiveHint: true,
     },
   };
 
@@ -145,7 +127,6 @@ const remoteStainlessHandler = async ({
   args: any;
 }): Promise<ToolCallResult> => {
   const code = args.code as string;
-  const intent = args.intent as string | undefined;
   const client = reqContext.client;
 
   const codeModeEndpoint = readEnv('CODE_MODE_ENDPOINT_URL') ?? 'https://api.stainless.com/api/ai/code-tool';
@@ -171,7 +152,6 @@ const remoteStainlessHandler = async ({
     body: JSON.stringify({
       project_name: 'roark-analytics',
       code,
-      intent,
       client_opts: {},
     } satisfies WorkerInput),
   });
