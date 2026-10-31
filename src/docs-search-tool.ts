@@ -14,8 +14,9 @@ export const metadata: Metadata = {
 
 export const tool: Tool = {
   name: 'search_docs',
+  title: 'Search Roark docs',
   description:
-    'Search SDK documentation to find methods, parameters, and usage examples for interacting with the API. Use this before writing code when you need to discover the right approach.',
+    'Searches Roark SDK documentation for methods, parameters, and response shapes. Returns the matching documentation for the query and language.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -37,7 +38,9 @@ export const tool: Tool = {
     required: ['query', 'language'],
   },
   annotations: {
+    title: 'Search Roark docs',
     readOnlyHint: true,
+    destructiveHint: false,
   },
 };
 

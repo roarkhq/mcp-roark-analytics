@@ -10,11 +10,12 @@ import {
 import { ClientOptions } from '@roarkanalytics/sdk';
 import Roark from '@roarkanalytics/sdk';
 import { codeTool } from './code-tool';
+import { DIRECTORY_SERVER_INSTRUCTIONS, directoryTools } from './directory-tools';
 import docsSearchTool from './docs-search-tool';
 import { setLocalSearch } from './docs-search-tool';
 import { LocalDocsSearch } from './local-docs-search';
 import { getInstructions } from './instructions';
-import { McpOptions } from './options';
+import { McpOptions, toolSurfaceFor } from './options';
 import { blockedMethodsForCodeTool } from './methods';
 import { HandlerFunction, McpRequestContext, ToolCallResult, McpTool } from './types';
 import { MCP_CLIENT_HEADERS } from './client-headers';
@@ -22,9 +23,11 @@ import { MCP_CLIENT_HEADERS } from './client-headers';
 export const newMcpServer = async ({
   stainlessApiKey,
   customInstructionsPath,
+  toolSurface,
 }: {
   stainlessApiKey?: string | undefined;
   customInstructionsPath?: string | undefined;
+  toolSurface?: McpOptions['toolSurface'] | undefined;
 }) =>
   new McpServer(
     {
@@ -33,7 +36,13 @@ export const newMcpServer = async ({
       version: '4.42.1', // x-release-please-version
     },
     {
-      instructions: await getInstructions({ stainlessApiKey, customInstructionsPath }),
+      // Directory mode does not fetch instructions. The hosted document tells a
+      // model how to write SDK snippets for `execute`, which this surface does
+      // not expose, and the directory reviews that kind of instruction.
+      instructions:
+        toolSurface === 'directory' ?
+          DIRECTORY_SERVER_INSTRUCTIONS
+        : await getInstructions({ stainlessApiKey, customInstructionsPath }),
       capabilities: { tools: {}, logging: {} },
     },
   );
@@ -213,8 +222,14 @@ export async function initMcpServer(params: {
  */
 export function selectTools(options?: McpOptions): McpTool[] {
   const includedTools = [];
+  const surface = toolSurfaceFor(options);
 
-  if (options?.includeCodeTool ?? true) {
+  if (surface === 'directory') {
+    // `includeCodeTool` cannot put `execute` back on this surface. The directory
+    // endpoint is the one Claude reviews, and a query or header that re-enabled
+    // arbitrary SDK code would put a mixed read/write tool back in front of it.
+    includedTools.push(...directoryTools());
+  } else if (options?.includeCodeTool ?? true) {
     includedTools.push(
       codeTool({
         blockedMethods: blockedMethodsForCodeTool(options),

@@ -5,10 +5,12 @@ agent an expert at testing voice and chat AI agents: registering agents,
 designing personas and customer flows, building simulation run plans, and
 configuring the metrics that grade them.
 
-These skills complement the MCP. The MCP gives your agent the tools (a code tool
-that runs `@roarkanalytics/sdk` snippets, plus docs search); these skills give it
-the workflow and judgment: which testing template fits, which metrics to attach,
-how to select flow variants without accidentally placing hundreds of calls.
+These skills complement the MCP. The plugin connects to Roark's remote connector,
+which signs you in through the browser and exposes separate tools for reading
+agents, calls, transcripts, and simulation results, and for creating personas,
+customer flows, and simulations. The skills give the workflow and judgment:
+which testing template fits, which metrics to attach, how to select flow
+variants without accidentally placing hundreds of calls.
 
 ## Skills
 
@@ -56,15 +58,6 @@ Add the Roark marketplace once if it is not already registered:
 /plugin marketplace add roarkhq/mcp-roark-analytics
 ```
 
-Set your Roark API key in the environment that launches Claude Code:
-
-```sh
-export ROARK_API_BEARER_TOKEN="My Bearer Token"
-```
-
-The bundled MCP executes SDK snippets locally, so install
-[Deno](https://deno.com) first.
-
 Then install the bundled MCP and skills together:
 
 ```
@@ -72,9 +65,16 @@ Then install the bundled MCP and skills together:
 ```
 
 The bundled MCP server is named `roark`, so Claude Code exposes its tools as
-`mcp__roark__*`. It reads `ROARK_API_BEARER_TOKEN` from the environment; Claude
-Code does not prompt for this value during plugin installation. See
+`mcp__roark__*`. When Claude connects, it opens a browser window so you can
+sign in to Roark. No API key is pasted into the plugin. See
 https://docs.roark.ai.
+
+The remote connector covers the everyday loop: list what a project already
+has, create a persona or customer flow, run a simulation, and read the
+results. Workflows the named tools do not cover (scripted flow graphs, metric
+policies, webhooks, config as code, importing a recording) use the local
+code-execution server instead. That install is separate and is described in
+the [repository README](../../README.md). It needs Deno and a Roark API key.
 
 ## Other agents
 

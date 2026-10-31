@@ -2,9 +2,9 @@
 name: roark-overview
 description: >-
   Use when testing, simulating, or evaluating a voice or chat AI agent with
-  Roark, or when the Roark MCP is connected. Covers how the Roark MCP works
-  (you write @roarkanalytics/sdk snippets, you do not call one tool per
-  endpoint), how to authenticate, the core testing loop (register agent ->
+  Roark, or when the Roark MCP is connected. Covers the remote connector's
+  named tools, when the local code-execution server is the one that runs SDK
+  snippets, how to authenticate, the core testing loop (register agent ->
   personas and flows -> run plan -> run -> metrics -> results), and which
   companion skill to use for each step. Read this first.
 ---
@@ -17,38 +17,52 @@ companion skills (`build-run-plan`, `configure-metrics`) do the detailed work.
 
 ## How the Roark MCP works (read this)
 
-The Roark MCP is a **code-execution** server, not a one-tool-per-endpoint server.
-You do not call `create_run_plan(...)`. Instead you **write short TypeScript
-against the `@roarkanalytics/sdk` client** and run it through the MCP's code
-tool. One snippet can chain several calls (list personas, then build a plan, then
-start it).
+The Claude Code plugin connects to the remote Roark connector at
+`https://mcp.api.roark.ai/mcp`. Sign-in happens in the browser. That server
+exposes named tools. It does not run TypeScript snippets, and it has no
+`execute` tool.
 
-Two MCP tools matter:
+Read tools: `list_projects`, `list_agents`, `list_agent_endpoints`,
+`list_calls`, `get_call`, `get_call_transcript`, `list_call_metrics`,
+`list_metric_definitions`, `get_simulation_results`, `list_personas`,
+`list_customer_flows`, `list_simulation_environments`, and `search_docs`.
 
-- **the code tool** runs your `@roarkanalytics/sdk` snippet and returns the
-  result. A pre-initialized `client` is in scope. Write `await client.<resource>.<method>(...)`.
-- **the docs search tool** looks up exact method signatures, parameter names, and
-  response shapes. **Use it whenever you are unsure of an argument** rather than
-  guessing. The skills give you the shape; docs search confirms it against the
-  installed SDK version.
+Write tools: `create_agent`, `create_agent_endpoint` (phone numbers),
+`create_persona`, `create_customer_flow`, and `run_simulation`.
 
-Everything the client can do maps to `resource.method`, for example:
+`https://mcp.api.roark.ai/mcp` is not pinned to one project. Pass `project`
+on each tool that acts inside a project. `list_projects` returns the ids.
+A URL of the form `https://mcp.api.roark.ai/mcp/<projectId>` is already
+pinned, so `project` can be omitted.
 
-```ts
-const { data: personas } = await client.simulationPersona.list({ limit: 50 })
-const agents = await client.agent.list()
-const run = await client.simulation.run({ plan: { /* ... */ } })
-```
+`search_docs` searches SDK documentation for method and payload details that
+a tool schema does not list.
 
-If a snippet fails schema validation, the error names the offending field. Read
-it, fix that one field, and re-run. Do not fall back to raw HTTP.
+The TypeScript snippets in the other skills are the underlying Roark API.
+They run on the local code-execution server, which is a separate install
+(see the repository README) and is not what this plugin connects to. That
+server has two tools: a code tool that runs an `async function run(client)`
+against `@roarkanalytics/sdk`, and `search_docs`. Workflows with no named
+tool need it: scripted flow graphs, metric policies, webhooks, config as
+code, and importing a recording.
+
+On that local server, one snippet can chain several calls. If a snippet
+fails schema validation, the error names the offending field. Fix that field
+and run it again.
 
 ## Auth
 
-The MCP authenticates with a bearer token from the `ROARK_API_BEARER_TOKEN`
-environment variable against `https://api.roark.ai`. If calls return 401, the
-token is missing or expired; tell the user to set a Roark API key rather than
-trying to work around it. Never read a token out of a checked-in file.
+On the remote connector, sign in with the Roark account in the browser. There
+is no API key to paste into Claude.
+
+On the local code-execution server, the MCP authenticates with a bearer token
+from the `ROARK_API_BEARER_TOKEN` environment variable against
+`https://api.roark.ai`. A project API key is scoped to one project. The
+remote connector's user credential can reach every project the person belongs
+to, which is why those tools take `project`. If calls return 401, the sign-in
+expired or the local token is missing. Tell the user to sign in again, or to
+set a Roark API key on the local server. Never read a token out of a
+checked-in file.
 
 ## The core loop
 
