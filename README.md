@@ -3,10 +3,11 @@
 The official MCP server for the [Roark API](https://docs.roark.ai), published as
 [`@roarkanalytics/sdk-mcp`](https://www.npmjs.com/package/@roarkanalytics/sdk-mcp).
 
-Its tool table, the code tool's prompt and its embedded docs index are generated from
-Roark's OpenAPI spec by [app-agent-codegen](https://github.com/roarkhq/app-agent-codegen) and
-arrive here as pull requests. Everything else - the transports, auth, the code tool runtime -
-is hand-maintained. Four files carry generated regions: `src/methods.ts`, `src/code-tool.ts`,
+Its code tool prompt and embedded docs index are generated from Roark's OpenAPI spec by
+[app-agent-codegen](https://github.com/roarkhq/app-agent-codegen) and arrive here as pull
+requests. Everything else, including the transports, auth, the code tool runtime, and the
+named tools the remote OAuth server exposes (`src/directory-tools.ts`), is hand-maintained.
+Four files carry generated regions: `src/methods.ts`, `src/code-tool.ts`,
 `src/code-tool-worker.ts` and `src/local-docs-search.ts`.
 
 ## Installation
@@ -123,20 +124,19 @@ why the skills must stay installed together.
 
 ## Code Mode
 
-This MCP server is built on the "Code Mode" tool scheme. In this MCP Server,
-your agent will write code against the TypeScript SDK, which will then be executed in an
-isolated sandbox. To accomplish this, the server will expose two tools to your agent:
+Local installs, and any server started without OAuth, use the "Code Mode" tool scheme. The
+agent writes code against the TypeScript SDK, and that code runs in an isolated sandbox. That
+surface exposes two tools:
 
-- The first tool is a docs search tool, which can be used to generically query for
-  documentation about your API/SDK.
+- `search_docs`, which searches SDK documentation for methods, parameters, and response shapes.
 
-- The second tool is a code tool, where the agent can write code against the TypeScript SDK.
-  The code will be executed in a sandbox environment without web or filesystem access. Then,
-  anything the code returns or prints will be returned to the agent as the result of the
-  tool call.
+- `execute`, which runs the code. The code cannot use the network or the filesystem except
+  through the SDK client. Whatever the code returns or prints comes back as the tool result.
 
-Using this scheme, agents are capable of performing very complex tasks deterministically
-and repeatably.
+The hosted server at `https://mcp.api.roark.ai/mcp` does not use Code Mode. With OAuth
+enabled it exposes the named read and write tools described under Remote OAuth, not `execute`.
+`--tool-surface=code` forces Code Mode on an OAuth server. `--tool-surface=directory` exposes
+the named tools on a server that is not using OAuth.
 
 ## Running remotely
 
