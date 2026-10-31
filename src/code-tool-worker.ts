@@ -243,7 +243,7 @@ const fuse = new Fuse(
     'client.agentPrompt.update',
     'client.agentVersion.getByID',
     'client.agentVersion.list',
-    'client.agentVersion.restore',
+    'client.agentVersion.rollback',
     'client.agentDraft.create',
     'client.agentDraft.delete',
     'client.agentDraft.get',
