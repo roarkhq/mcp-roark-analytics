@@ -1,4 +1,4 @@
-import { APIError } from '@roarkanalytics/sdk';
+import Roark, { APIError } from '@roarkanalytics/sdk';
 import { configureLogger } from '../src/logger';
 import { selectTools } from '../src/server';
 import { McpRequestContext, McpTool } from '../src/types';
@@ -305,6 +305,159 @@ describe('directory tool handlers', () => {
 
     expect(result.isError).toBe(true);
     expect((result.content[0] as { text: string }).text).toMatch(/environmentId/);
+  });
+
+  const agentA = '11111111-1111-4111-8111-111111111111';
+  const agentB = '22222222-2222-4222-8222-222222222222';
+
+  it('exposes agent, property, and sort filters on list_calls', () => {
+    const schema = toolByName(tools, 'list_calls').tool;
+    const properties = schema.inputSchema.properties ?? {};
+
+    expect(properties).toHaveProperty('agentId');
+    expect(properties).toHaveProperty('properties');
+    expect(properties).toHaveProperty('sortBy');
+    expect(properties).toHaveProperty('sortDirection');
+    expect(properties['sortBy']).toMatchObject({
+      enum: ['createdAt', 'startedAt', 'endedAt', 'duration', 'title', 'status'],
+    });
+    expect(properties['sortDirection']).toMatchObject({ enum: ['asc', 'desc'] });
+    expect(properties['properties']).toMatchObject({
+      type: 'object',
+      additionalProperties: {
+        type: 'object',
+        properties: {
+          eq: { type: 'string' },
+          exists: { type: 'boolean' },
+        },
+      },
+    });
+    expect(schema.description).toMatch(/agent_name/);
+    expect(schema.description).toMatch(/agentName/);
+    expect(schema.description).toMatch(/agent_id/);
+    expect(schema.description).toMatch(/\beq\b/);
+  });
+
+  it('passes agent, property, and sort filters through to call.list', async () => {
+    const { calls } = await call(toolByName(tools, 'list_calls'), {
+      project: 'proj_1',
+      agentId: `${agentA},${agentB}`,
+      properties: {
+        agent_name: { eq: 'Front Desk' },
+        agentName: { eq: 'Front Desk' },
+        agent_id: { eq: agentA },
+        plan_tier: { exists: false },
+      },
+      sortBy: 'startedAt',
+      sortDirection: 'asc',
+      status: 'ENDED',
+    });
+
+    expect(calls[0]).toMatchObject({
+      method: 'call.list',
+      project: 'proj_1',
+      args: [
+        {
+          agentId: `${agentA},${agentB}`,
+          properties: {
+            agent_name: { eq: 'Front Desk' },
+            agentName: { eq: 'Front Desk' },
+            agent_id: { eq: agentA },
+            plan_tier: { exists: false },
+          },
+          sortBy: 'startedAt',
+          sortDirection: 'asc',
+          status: 'ENDED',
+        },
+      ],
+    });
+  });
+
+  it('serializes list_calls filters as GET /v1/call query parameters', async () => {
+    const seen: string[] = [];
+    const client = new Roark({
+      bearerToken: 'test-token',
+      fetch: async (url) => {
+        seen.push(String(url));
+        return new Response(
+          JSON.stringify({ data: [], pagination: { hasMore: false, nextCursor: null, total: 0 } }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      },
+    });
+    const result = await toolByName(tools, 'list_calls').handler({
+      reqContext: { client, project: 'proj_1' },
+      args: {
+        project: 'proj_1',
+        agentId: `${agentA},${agentB}`,
+        properties: {
+          agent_name: { eq: 'Front Desk' },
+          agent_id: { eq: agentA },
+          plan_tier: { exists: true },
+        },
+        sortBy: 'duration',
+        sortDirection: 'desc',
+      },
+    });
+
+    expect(result.isError).toBeUndefined();
+    expect(seen).toHaveLength(1);
+    const url = new URL(seen[0] ?? '');
+    expect(url.pathname).toBe('/v1/call');
+    expect(url.searchParams.get('agentId')).toBe(`${agentA},${agentB}`);
+    expect(url.searchParams.get('properties[agent_name][eq]')).toBe('Front Desk');
+    expect(url.searchParams.get('properties[agent_id][eq]')).toBe(agentA);
+    expect(url.searchParams.get('properties[plan_tier][exists]')).toBe('true');
+    expect(url.searchParams.get('sortBy')).toBe('duration');
+    expect(url.searchParams.get('sortDirection')).toBe('desc');
+  });
+
+  it('rejects an agentId list the API would answer with 400', async () => {
+    const spaced = await call(toolByName(tools, 'list_calls'), {
+      project: 'proj_1',
+      agentId: `${agentA}, ${agentB}`,
+    });
+    expect(spaced.result.isError).toBe(true);
+    expect((spaced.result.content[0] as { text: string }).text).toMatch(/no spaces/);
+    expect(spaced.calls).toEqual([]);
+
+    const malformed = await call(toolByName(tools, 'list_calls'), {
+      project: 'proj_1',
+      agentId: 'not-a-uuid',
+    });
+    expect(malformed.result.isError).toBe(true);
+    expect((malformed.result.content[0] as { text: string }).text).toMatch(/UUID/);
+    expect(malformed.calls).toEqual([]);
+
+    const tooMany = await call(toolByName(tools, 'list_calls'), {
+      project: 'proj_1',
+      agentId: Array.from({ length: 101 }, () => agentA).join(','),
+    });
+    expect(tooMany.result.isError).toBe(true);
+    expect((tooMany.result.content[0] as { text: string }).text).toMatch(/100/);
+    expect(tooMany.calls).toEqual([]);
+  });
+
+  it('rejects a property filter that sets more than one operator', async () => {
+    const { result, calls } = await call(toolByName(tools, 'list_calls'), {
+      project: 'proj_1',
+      properties: { agent_name: { eq: 'Frontdesk', exists: true } },
+    });
+
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { text: string }).text).toMatch(/exactly one of eq or exists/);
+    expect(calls).toEqual([]);
+  });
+
+  it('rejects an agent_id property that is not one UUID', async () => {
+    const { result, calls } = await call(toolByName(tools, 'list_calls'), {
+      project: 'proj_1',
+      properties: { agent_id: { eq: `${agentA},${agentB}` } },
+    });
+
+    expect(result.isError).toBe(true);
+    expect((result.content[0] as { text: string }).text).toMatch(/agent_id/);
+    expect(calls).toEqual([]);
   });
 
   it('returns the API error message when the SDK rejects the call', async () => {

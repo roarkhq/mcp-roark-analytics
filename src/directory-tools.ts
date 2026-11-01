@@ -9,6 +9,7 @@
 // The local code-execution server stays on `execute`. This file is not generated.
 
 import { APIError, type Roark } from '@roarkanalytics/sdk';
+import type { CallListParams } from '@roarkanalytics/sdk/resources/call';
 import type { SimulationRunParams } from '@roarkanalytics/sdk/resources/simulation';
 import type { SimulationPersonaCreateParams } from '@roarkanalytics/sdk/resources/simulation-persona';
 import type { CustomerFlowCreateParams } from '@roarkanalytics/sdk/resources/customer-flow';
@@ -104,6 +105,12 @@ const EMOTIONS = [
 const DIRECTIONS = ['INBOUND', 'OUTBOUND'] as const;
 const ENDPOINT_DIRECTIONS = ['INCOMING', 'OUTGOING', 'INCOMING_AND_OUTGOING'] as const;
 const CALL_STATUSES = ['RINGING', 'IN_PROGRESS', 'ENDED'] as const;
+const CALL_SORT_FIELDS = ['createdAt', 'startedAt', 'endedAt', 'duration', 'title', 'status'] as const;
+const SORT_DIRECTIONS = ['asc', 'desc'] as const;
+/** GET /v1/call rejects a non-UUID in `agentId` and in `properties[agent_id][eq]`. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_AGENT_IDS = 100;
+const MAX_PROPERTY_FILTERS = 20;
 const FLOW_TYPES = ['SCRIPTED', 'IMPROV', 'VOICEMAIL'] as const;
 const TRANSCRIPT_SOURCES = [
   'ROARK_POST_CALL',
@@ -205,6 +212,80 @@ const optionalLimit = (args: Record<string, unknown>): number | undefined => {
   return value;
 };
 
+/**
+ * `agentId` on GET /v1/call: one UUID, or several comma-separated with no spaces, at most 100.
+ * A non-UUID list is a 400 from the API, so reject it before the request.
+ */
+const optionalAgentIds = (args: Record<string, unknown>): string | undefined => {
+  const value = optionalString(args, 'agentId');
+  if (value === undefined) return undefined;
+  if (/\s/.test(value)) {
+    throw new ToolInputError('agentId is one UUID, or several comma-separated UUIDs with no spaces.');
+  }
+  const ids = value.split(',');
+  if (ids.length > MAX_AGENT_IDS) {
+    throw new ToolInputError(`agentId accepts at most ${MAX_AGENT_IDS} UUIDs.`);
+  }
+  if (ids.some((id) => !UUID_PATTERN.test(id))) {
+    throw new ToolInputError('agentId must be one UUID, or several comma-separated UUIDs.');
+  }
+  return value;
+};
+
+type CallPropertyFilter = { eq: string } | { exists: boolean };
+
+/**
+ * `properties[<name>][eq]` and `properties[<name>][exists]` on GET /v1/call.
+ * One operator per property. `agent_id` eq is a single UUID; every other name,
+ * including the `agent_name` / `agentName` built-in, is passed through as a string.
+ */
+const optionalCallProperties = (
+  args: Record<string, unknown>,
+): Record<string, CallPropertyFilter> | undefined => {
+  if (args['properties'] === undefined) return undefined;
+  const value = args['properties'];
+  if (!isRecord(value)) {
+    throw new ToolInputError('properties must be an object keyed by property name.');
+  }
+  const names = Object.keys(value);
+  if (names.length === 0) return undefined;
+  if (names.length > MAX_PROPERTY_FILTERS) {
+    throw new ToolInputError(`properties accepts at most ${MAX_PROPERTY_FILTERS} entries.`);
+  }
+  const out: Record<string, CallPropertyFilter> = {};
+  for (const name of names) {
+    if (name.length === 0) {
+      throw new ToolInputError('properties names must be non-empty.');
+    }
+    const entry = value[name];
+    if (!isRecord(entry)) {
+      throw new ToolInputError(`properties.${name} must be an object with eq or exists.`);
+    }
+    const operators = Object.keys(entry);
+    const operator = operators[0];
+    if (operators.length !== 1 || (operator !== 'eq' && operator !== 'exists')) {
+      throw new ToolInputError(`properties.${name} must set exactly one of eq or exists.`);
+    }
+    if (operator === 'eq') {
+      const eq = entry['eq'];
+      if (typeof eq !== 'string') {
+        throw new ToolInputError(`properties.${name}.eq must be a string.`);
+      }
+      if (name === 'agent_id' && !UUID_PATTERN.test(eq)) {
+        throw new ToolInputError('properties.agent_id.eq must be one UUID.');
+      }
+      out[name] = { eq };
+    } else {
+      const exists = entry['exists'];
+      if (typeof exists !== 'boolean') {
+        throw new ToolInputError(`properties.${name}.exists must be a boolean.`);
+      }
+      out[name] = { exists };
+    }
+  }
+  return out;
+};
+
 const requireEnum = <T extends string>(
   args: Record<string, unknown>,
   key: string,
@@ -284,6 +365,29 @@ const omitUndefined = <T extends Record<string, unknown>>(
   }
   return out as { [K in keyof T]?: Exclude<T[K], undefined> };
 };
+
+/**
+ * Query for GET /v1/call.
+ *
+ * The published SDK type knows `sortBy`, `sortDirection`, and `properties.exists`.
+ * `agentId` and `properties.<name>.eq` are on the same endpoint (app-roark-analytics#3795)
+ * and are not in that type yet. `call.list` forwards the query object and the SDK
+ * stringifies every key, so the value still leaves as `agentId` and
+ * `properties[<name>][eq]`. The cast only satisfies the current type. Drop it when
+ * `CallListParams` declares those fields.
+ */
+const callListQuery = (args: Record<string, unknown>): CallListParams =>
+  omitUndefined({
+    searchText: optionalString(args, 'searchText'),
+    status: optionalEnum(args, 'status', CALL_STATUSES),
+    simulationRunPlanJobId: optionalString(args, 'simulationRunPlanJobId'),
+    agentId: optionalAgentIds(args),
+    properties: optionalCallProperties(args),
+    sortBy: optionalEnum(args, 'sortBy', CALL_SORT_FIELDS),
+    sortDirection: optionalEnum(args, 'sortDirection', SORT_DIRECTIONS),
+    after: optionalString(args, 'after'),
+    limit: optionalLimit(args),
+  }) as CallListParams;
 
 const callApi = async (fn: () => Promise<unknown>): Promise<ToolCallResult> => {
   try {
@@ -576,11 +680,47 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_calls',
       'List calls',
-      'Lists calls in a Roark project, including simulated and live calls. Returns call ids, status, direction, and timestamps. Does not include transcripts.',
+      'Lists calls in a Roark project, including simulated and live calls. Returns call ids, status, direction, and timestamps. Does not include transcripts. ' +
+        'agentId is one agent UUID, or up to 100 comma-separated UUIDs with no spaces. ' +
+        'properties filters with one operator per name: eq is a case-insensitive exact match, and exists checks whether the property is set. ' +
+        "Built-in agent_name, also accepted as agentName, matches any participating agent's current name. Built-in agent_id matches one agent UUID. Any other name is a custom property. " +
+        'sortBy is createdAt (the default), startedAt, endedAt, duration, title, or status, and sortDirection is desc (the default) or asc. The filters and the sort apply together.',
       objectSchema({
         project: projectProperty,
         searchText: { type: 'string', description: 'Match against call title, summary, or transcript text.' },
         status: { type: 'string', enum: [...CALL_STATUSES], description: 'Call status filter.' },
+        agentId: {
+          type: 'string',
+          description:
+            'One agent UUID, or up to 100 comma-separated UUIDs with no spaces. Returns calls that include any of these agents.',
+        },
+        properties: {
+          type: 'object',
+          description:
+            "One entry per property name, at most 20. Each entry sets eq (case-insensitive exact match, sent as properties[<name>][eq]=<value>) or exists (properties[<name>][exists]=true or false), and not both. agent_name (alias agentName) matches any participating agent's current name. agent_id takes one UUID. Any other name is a custom property.",
+          additionalProperties: {
+            type: 'object',
+            description: 'Exactly one of eq or exists.',
+            properties: {
+              eq: { type: 'string', description: 'Case-insensitive exact match.' },
+              exists: {
+                type: 'boolean',
+                description: 'true: the property is set. false: the property is missing.',
+              },
+            },
+          },
+        },
+        sortBy: {
+          type: 'string',
+          enum: [...CALL_SORT_FIELDS],
+          description:
+            'Field to sort by. createdAt is the default. Combines with the filters and with sortDirection.',
+        },
+        sortDirection: {
+          type: 'string',
+          enum: [...SORT_DIRECTIONS],
+          description: 'asc or desc. desc is the default. Combines with sortBy and the filters.',
+        },
         simulationRunPlanJobId: {
           type: 'string',
           description: 'Return calls from this simulation run only.',
@@ -589,16 +729,7 @@ export function directoryTools(): McpTool[] {
       }),
       readAnnotations('List calls'),
       readMeta('call', '/v1/call'),
-      async (reqContext, args) =>
-        scopedClient(reqContext, args).call.list(
-          omitUndefined({
-            searchText: optionalString(args, 'searchText'),
-            status: optionalEnum(args, 'status', CALL_STATUSES),
-            simulationRunPlanJobId: optionalString(args, 'simulationRunPlanJobId'),
-            after: optionalString(args, 'after'),
-            limit: optionalLimit(args),
-          }),
-        ),
+      async (reqContext, args) => scopedClient(reqContext, args).call.list(callListQuery(args)),
     ),
     defineTool(
       'get_call',

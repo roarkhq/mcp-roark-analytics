@@ -27,6 +27,20 @@ Read tools: `list_projects`, `list_agents`, `list_agent_endpoints`,
 `list_metric_definitions`, `get_simulation_results`, `list_personas`,
 `list_customer_flows`, `list_simulation_environments`, and `search_docs`.
 
+`list_calls` filters and sorts with the same parameters as `GET /v1/call`:
+
+- `agentId` — one agent UUID, or up to 100 comma-separated UUIDs with no spaces.
+  Every entry is a UUID.
+- `properties` — an object keyed by property name, at most 20. Each value sets
+  one operator. `eq` is a case-insensitive exact match, sent as
+  `properties[<name>][eq]=<value>`. `exists` checks whether the property is set,
+  sent as `properties[<name>][exists]=true` or `false`. Built-in `agent_name`
+  (alias `agentName`) matches any participating agent's current name. Built-in
+  `agent_id` takes one UUID. Any other name is a custom property.
+- `sortBy` — `createdAt` (default), `startedAt`, `endedAt`, `duration`, `title`,
+  or `status`. `sortDirection` is `desc` (default) or `asc`. The sort combines
+  with the filters.
+
 Write tools: `create_agent`, `create_agent_endpoint` (phone numbers),
 `create_persona`, `create_customer_flow`, and `run_simulation`.
 
