@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.44.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.43.0...v4.44.0) (2026-11-01)
+
+
+### Features
+
+* **mcp:** filter and sort list_calls by agent ([#224](https://github.com/roarkhq/mcp-roark-analytics/issues/224)) ([635d2b0](https://github.com/roarkhq/mcp-roark-analytics/commit/635d2b0f17d4e875855b60fe75b1a68c82202c15))
+
 ## [4.43.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.42.1...v4.43.0) (2026-10-31)
 
 
