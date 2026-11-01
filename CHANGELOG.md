@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.1...v5.0.0) (2026-11-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mcp:** removes or renames tools. Agents and prompts naming the old tools will fail.
+
+### Features
+
+* **mcp:** mcp update ([#218](https://github.com/roarkhq/mcp-roark-analytics/issues/218)) ([ed921b9](https://github.com/roarkhq/mcp-roark-analytics/commit/ed921b971baf54e7ecfb4c9b8d89b5d80e0717fe))
+
 ## [4.44.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.0...v4.44.1) (2026-11-01)
 
 
