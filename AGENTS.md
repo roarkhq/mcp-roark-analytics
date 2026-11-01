@@ -16,12 +16,16 @@ into each of four files and opens a PR here (`automation/mcp-update`) when the A
 inside a region is overwritten by the next regeneration, and until then the codegen review's "Reproducible
 from the spec" gate fails.
 
-| File                       | Generated region                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| `src/methods.ts`           | the entries of `export const sdkMethods: SdkMethod[] = [ ... ];` (the tool table)    |
-| `src/local-docs-search.ts` | the entries of `const EMBEDDED_METHODS: MethodEntry[] = [ ... ];` (the docs index)   |
-| `src/code-tool-worker.ts`  | the method names inside `const fuse = new Fuse([ ... ],` (the "did you mean" corpus) |
-| `src/code-tool.ts`         | the fenced `async function run(client) { ... }` worked example in the prompt         |
+- `src/methods.ts`: the entries of the `sdkMethods` array (the tool table). Opens at
+  `export const sdkMethods: SdkMethod[] = [`, ends at the next line that is `];`.
+- `src/local-docs-search.ts`: the entries of the `EMBEDDED_METHODS` array (the docs index). Opens at
+  `const EMBEDDED_METHODS: MethodEntry[] = [`, ends at the next line that is `];`.
+- `src/code-tool-worker.ts`: the method names in the Fuse index (the "did you mean" corpus). Opens at
+  `const fuse = new Fuse(` followed by a line holding only `[`, ends at the next line that is `],`.
+- `src/code-tool.ts`: the worked example in the prompt, the fenced block that opens with
+  `async function run(client) {`. Only when `sdk.yml` names a headline endpoint.
+
+The exact anchor strings are the `*_START`/`*_END` constants in app-agent-codegen's `src/emit/mcp-*.ts`.
 
 Plus `package.json` `dependencies["@roarkanalytics/sdk"]` and `pnpm-lock.yaml`, which codegen's `open-pr`
 raises (SDK floor sync) when the tool table names a method an older SDK lacks. Do not lower the range by
@@ -31,14 +35,15 @@ Rules for the four files:
 
 - Everything outside the region is hand-written (the allow/block filtering in `methods.ts`, the MiniSearch
   wiring in `local-docs-search.ts`, the worker and the prompt around the example).
-- Do not rename, reformat or move the anchors above. The splice finds them by exact text and throws
+- Do not rename, reformat or move the anchors. The splice finds them by exact text and throws
   when it cannot.
 - After splicing, codegen runs prettier over the whole file. Hand edits anywhere in these files must
   already be prettier-clean, or regeneration produces a diff and the reproducibility gate fails.
 
-Verified against `src/generate-mcp.ts`, `src/emit/mcp-*.ts`, `src/targets.ts` (the `mcp` target owns no
-directory, so codegen never deletes a file here) and `src/sdk-floor-sync.ts` in app-agent-codegen, and by
-running `apply --target mcp --dry-run` against this repository: it touches only these four paths.
+The source of truth is `src/generate-mcp.ts`, `src/emit/mcp-*.ts`, `src/targets.ts` (the `mcp` target owns
+no directory, so codegen never deletes a file here) and `src/sdk-floor-sync.ts` in app-agent-codegen; if
+this list and those files disagree, those files win. (Checked on 2026-11-01 at codegen `ba1690e` by running
+`apply --target mcp --dry-run` against this repository: it planned only these four paths.)
 
 ### How to change generated output
 
@@ -81,6 +86,9 @@ and `pnpm lint` fails without them. Follow the config, not the house no-semicolo
 
 ## Code structure (hand-written files)
 
+These rules apply to every line you write, including in files that already break them: do not copy an
+existing deviation into new code. Do not refactor unrelated existing code just to conform.
+
 - **Arrow functions only**: `const foo = () => {}`, never `function foo() {}`. No classes; group related
   functions in a module (or a namespace object).
 - **kebab-case** file and folder names.
@@ -107,5 +115,5 @@ and `pnpm lint` fails without them. Follow the config, not the house no-semicolo
 ## Copy
 
 No em dashes in user-facing text you write: tool names and descriptions, server instructions, error
-messages and skill prose. Use a colon, a comma or a new sentence. Method descriptions in the generated docs
-index come from the spec; fix them there.
+messages and skill prose. Use a colon, a comma or a new sentence. The rule does not cover the generated
+regions: method descriptions in the docs index come from the spec, so fix them there.
