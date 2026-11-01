@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.44.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.0...v4.44.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **mcp:** derive directory-tool SDK types from the client ([#226](https://github.com/roarkhq/mcp-roark-analytics/issues/226)) ([029890c](https://github.com/roarkhq/mcp-roark-analytics/commit/029890caa15d64f4a3cd2977444c50a75833baca))
+
 ## [4.44.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.43.0...v4.44.0) (2026-11-01)
 
 
