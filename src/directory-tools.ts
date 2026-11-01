@@ -9,11 +9,6 @@
 // The local code-execution server stays on `execute`. This file is not generated.
 
 import { APIError, type Roark } from '@roarkanalytics/sdk';
-import type { CallListParams } from '@roarkanalytics/sdk/resources/call';
-import type { SimulationRunParams } from '@roarkanalytics/sdk/resources/simulation';
-import type { SimulationPersonaCreateParams } from '@roarkanalytics/sdk/resources/simulation-persona';
-import type { CustomerFlowCreateParams } from '@roarkanalytics/sdk/resources/customer-flow';
-import type { AgentEndpointCreateParams } from '@roarkanalytics/sdk/resources/agent-endpoint';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import {
   McpRequestContext,
@@ -23,6 +18,29 @@ import {
   asErrorResult,
   asTextContentResult,
 } from './types';
+
+/**
+ * Request types for the SDK methods these tools call.
+ *
+ * Taken from the client, not from `@roarkanalytics/sdk/resources/...`. The
+ * published package lays those files out where `moduleResolution: node` can
+ * see them. The package the codegen gate links does not: declarations live
+ * under `dist/*.d.mts` and the subpaths are only in the exports map, which
+ * this tsconfig does not follow. The package root resolves in both layouts,
+ * because `types` points at `index.d.ts` or `dist/index.d.ts`.
+ *
+ * `SimulationRunParams` is a union. The SDK also publishes its members as a
+ * namespace on that name. A parameter type does not carry the namespace, so
+ * each member is named here by the field this file already branches on.
+ */
+type CallListParams = NonNullable<Parameters<Roark['call']['list']>[0]>;
+type SimulationRunParams = NonNullable<Parameters<Roark['simulation']['run']>[0]>;
+type RunSimulationFromPlanID = Extract<SimulationRunParams, { planId: string }>;
+type RunSimulationFromTemplate = Extract<SimulationRunParams, { template: string }>;
+type RunSimulationFromConfig = Extract<SimulationRunParams, { plan: object }>;
+type SimulationPersonaCreateParams = NonNullable<Parameters<Roark['simulationPersona']['create']>[0]>;
+type CustomerFlowCreateParams = NonNullable<Parameters<Roark['customerFlow']['create']>[0]>;
+type AgentEndpointCreateParams = NonNullable<Parameters<Roark['agentEndpoint']['create']>[0]>;
 
 /**
  * Server instructions for the directory surface.
@@ -484,11 +502,9 @@ const buildRunBody = (args: Record<string, unknown>): SimulationRunParams => {
 
   if (hasPlanId) {
     const planId = requireString(args, 'planId');
-    const body: SimulationRunParams.RunSimulationFromPlanID = { planId };
+    const body: RunSimulationFromPlanID = { planId };
     if (args['variables'] !== undefined) {
-      body.variables = args['variables'] as NonNullable<
-        SimulationRunParams.RunSimulationFromPlanID['variables']
-      >;
+      body.variables = args['variables'] as NonNullable<RunSimulationFromPlanID['variables']>;
     }
     return body;
   }
@@ -499,16 +515,14 @@ const buildRunBody = (args: Record<string, unknown>): SimulationRunParams => {
       throw new ToolInputError('A template run requires agentEndpoints, a non-empty array of { id }.');
     }
     const direction = requireEnum(args, 'direction', DIRECTIONS);
-    const body: SimulationRunParams.RunSimulationFromTemplate = {
+    const body: RunSimulationFromTemplate = {
       template,
       direction,
-      agentEndpoints: args[
-        'agentEndpoints'
-      ] as SimulationRunParams.RunSimulationFromTemplate['agentEndpoints'],
+      agentEndpoints: args['agentEndpoints'] as RunSimulationFromTemplate['agentEndpoints'],
     };
     if (args['flows'] !== undefined) {
       if (!Array.isArray(args['flows'])) throw new ToolInputError('flows must be an array.');
-      body.flows = args['flows'] as NonNullable<SimulationRunParams.RunSimulationFromTemplate['flows']>;
+      body.flows = args['flows'] as NonNullable<RunSimulationFromTemplate['flows']>;
     }
     const iterationCount = optionalNumber(args, 'iterationCount');
     if (iterationCount !== undefined) body.iterationCount = iterationCount;
@@ -531,14 +545,12 @@ const buildRunBody = (args: Record<string, unknown>): SimulationRunParams => {
   ) {
     throw new ToolInputError('plan.maxSimulationDurationSeconds must be a number of seconds.');
   }
-  const body: SimulationRunParams.RunSimulationFromConfig = {
-    plan: plan as unknown as SimulationRunParams.RunSimulationFromConfig['plan'],
+  const body: RunSimulationFromConfig = {
+    plan: plan as unknown as RunSimulationFromConfig['plan'],
   };
   if (typeof args['saveAsPlan'] === 'boolean') body.saveAsPlan = args['saveAsPlan'];
   if (args['variables'] !== undefined) {
-    body.variables = args['variables'] as NonNullable<
-      SimulationRunParams.RunSimulationFromConfig['variables']
-    >;
+    body.variables = args['variables'] as NonNullable<RunSimulationFromConfig['variables']>;
   }
   return body;
 };
