@@ -1061,6 +1061,276 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'list',
+    endpoint: '/v1/live-report',
+    httpMethod: 'get',
+    summary: 'List live reports',
+    description: "Lists the project's saved live call reports, newest first.",
+    stainlessPath: '(resource) liveReport > (method) list',
+    qualified: 'client.liveReport.list',
+    params: ['limit?: number;', 'offset?: number;'],
+    response:
+      "{ data: { items: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: object[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: object; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: object[]; timezone: string; updatedAt: string; }[]; totalCount: number; }; }",
+    markdown:
+      "## list\n\n`client.liveReport.list(limit?: number, offset?: number): { data: object; }`\n\n**get** `/v1/live-report`\n\nLists the project's saved live call reports, newest first.\n\n### Parameters\n\n- `limit?: number`\n  Page size, at most 100.\n\n- `offset?: number`\n\n### Returns\n\n- `{ data: { items: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: object[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: object; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: object[]; timezone: string; updatedAt: string; }[]; totalCount: number; }; }`\n\n  - `data: { items: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: object; slack: object[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }[]; totalCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst liveReports = await client.liveReport.list();\n\nconsole.log(liveReports);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst liveReports = await client.liveReport.list();\n\nconsole.log(liveReports.data);",
+      },
+      python: {
+        method: 'live_report.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nlive_reports = client.live_report.list()\nprint(live_reports.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'create',
+    endpoint: '/v1/live-report',
+    httpMethod: 'post',
+    summary: 'Create a live report',
+    description:
+      "Saves a report on the project's live calls. Simulations are never included.\n\nTargets are analytics measures held to a bar: a threshold metric is read as its pass rate (`value` is a\npercentage, 0-100, held AT_LEAST by default); a numeric metric as its average (held AT_MOST by default).\nEvery target is read for the period and the period before it, so the report says whether each was met\nand how it moved.\n\nScheduled reports are written `deliveryHour` hours into the day after each period ends in `timezone`\n(a week runs Monday to Sunday), then emailed and posted per `notifications`. With `generateNow` (the\ndefault) the report for the latest closed period is written right away and not sent.",
+    stainlessPath: '(resource) liveReport > (method) create',
+    qualified: 'client.liveReport.create',
+    params: [
+      'name: string;',
+      'agentId?: string;',
+      "cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY';",
+      'dashboardId?: string;',
+      'deliveryHour?: number;',
+      'description?: string;',
+      "filters?: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[];",
+      'generateNow?: boolean;',
+      'includeTranscriptExcerpts?: boolean;',
+      'notifications?: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; }[]; };',
+      "status?: 'ACTIVE' | 'PAUSED';",
+      "targets?: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[];",
+      'timezone?: string;',
+    ],
+    response:
+      "{ data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: object; slack: object[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }; }",
+    markdown:
+      "## create\n\n`client.liveReport.create(name: string, agentId?: string, cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY', dashboardId?: string, deliveryHour?: number, description?: string, filters?: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[], generateNow?: boolean, includeTranscriptExcerpts?: boolean, notifications?: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; }[]; }, status?: 'ACTIVE' | 'PAUSED', targets?: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[], timezone?: string): { data: object; }`\n\n**post** `/v1/live-report`\n\nSaves a report on the project's live calls. Simulations are never included.\n\nTargets are analytics measures held to a bar: a threshold metric is read as its pass rate (`value` is a\npercentage, 0-100, held AT_LEAST by default); a numeric metric as its average (held AT_MOST by default).\nEvery target is read for the period and the period before it, so the report says whether each was met\nand how it moved.\n\nScheduled reports are written `deliveryHour` hours into the day after each period ends in `timezone`\n(a week runs Monday to Sunday), then emailed and posted per `notifications`. With `generateNow` (the\ndefault) the report for the latest closed period is written right away and not sent.\n\n### Parameters\n\n- `name: string`\n\n- `agentId?: string`\n\n- `cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY'`\n\n- `dashboardId?: string`\n\n- `deliveryHour?: number`\n\n- `description?: string`\n\n- `filters?: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]`\n\n- `generateNow?: boolean`\n  Write the report for the latest closed period right away. Default true.\n\n- `includeTranscriptExcerpts?: boolean`\n\n- `notifications?: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; }[]; }`\n\n- `status?: 'ACTIVE' | 'PAUSED'`\n\n- `targets?: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]`\n\n- `timezone?: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: object; slack: object[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }; }`\n\n  - `data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; notificationConfigId: string; }[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst liveReport = await client.liveReport.create({ name: 'x' });\n\nconsole.log(liveReport);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.create',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst liveReport = await client.liveReport.create({ name: 'x' });\n\nconsole.log(liveReport.data);",
+      },
+      python: {
+        method: 'live_report.create',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nlive_report = client.live_report.create(\n    name="x",\n)\nprint(live_report.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "name": "x"\n        }\'',
+      },
+    },
+  },
+  {
+    name: 'getById',
+    endpoint: '/v1/live-report/{reportId}',
+    httpMethod: 'get',
+    summary: 'Get a live report',
+    description: 'Get a live report',
+    stainlessPath: '(resource) liveReport > (method) getById',
+    qualified: 'client.liveReport.getByID',
+    params: ['reportId: string;'],
+    response:
+      "{ data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: object; slack: object[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }; }",
+    markdown:
+      "## getById\n\n`client.liveReport.getByID(reportId: string): { data: object; }`\n\n**get** `/v1/live-report/{reportId}`\n\nGet a live report\n\n### Parameters\n\n- `reportId: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: object; slack: object[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }; }`\n\n  - `data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; notificationConfigId: string; }[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.liveReport.getByID('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.getByID',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.liveReport.getByID('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'live_report.get_by_id',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.live_report.get_by_id(\n    "5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report/$REPORT_ID \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'update',
+    endpoint: '/v1/live-report/{reportId}',
+    httpMethod: 'patch',
+    summary: 'Update a live report',
+    description: 'Changes the fields sent. Set `status` to PAUSED to stop scheduled reports.',
+    stainlessPath: '(resource) liveReport > (method) update',
+    qualified: 'client.liveReport.update',
+    params: [
+      'reportId: string;',
+      'agentId?: string;',
+      "cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY';",
+      'dashboardId?: string;',
+      'deliveryHour?: number;',
+      'description?: string;',
+      "filters?: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[];",
+      'includeTranscriptExcerpts?: boolean;',
+      'name?: string;',
+      'notifications?: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; }[]; };',
+      "status?: 'ACTIVE' | 'PAUSED';",
+      "targets?: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[];",
+      'timezone?: string;',
+    ],
+    response:
+      "{ data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: object; slack: object[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }; }",
+    markdown:
+      "## update\n\n`client.liveReport.update(reportId: string, agentId?: string, cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY', dashboardId?: string, deliveryHour?: number, description?: string, filters?: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[], includeTranscriptExcerpts?: boolean, name?: string, notifications?: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; }[]; }, status?: 'ACTIVE' | 'PAUSED', targets?: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[], timezone?: string): { data: object; }`\n\n**patch** `/v1/live-report/{reportId}`\n\nChanges the fields sent. Set `status` to PAUSED to stop scheduled reports.\n\n### Parameters\n\n- `reportId: string`\n\n- `agentId?: string`\n\n- `cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY'`\n\n- `dashboardId?: string`\n\n- `deliveryHour?: number`\n\n- `description?: string`\n\n- `filters?: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]`\n\n- `includeTranscriptExcerpts?: boolean`\n\n- `name?: string`\n\n- `notifications?: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; }[]; }`\n\n- `status?: 'ACTIVE' | 'PAUSED'`\n\n- `targets?: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]`\n\n- `timezone?: string`\n\n### Returns\n\n- `{ data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: object; slack: object[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }; }`\n\n  - `data: { id: string; agentId: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; configKey: string; configManaged: boolean; createdAt: string; dashboardId: string; deliveryHour: number; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; nextDeliveryAt: string; notifications: { email: { enabled: boolean; recipients: string[]; }; slack: { channelId: string; channelName: string; notificationConfigId: string; }[]; fromConfig?: boolean; }; projectId: string; status: 'ACTIVE' | 'PAUSED'; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; timezone: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst liveReport = await client.liveReport.update('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(liveReport);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.update',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst liveReport = await client.liveReport.update('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(liveReport.data);",
+      },
+      python: {
+        method: 'live_report.update',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nlive_report = client.live_report.update(\n    report_id="5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f",\n)\nprint(live_report.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report/$REPORT_ID \\\n    -X PATCH \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'delete',
+    endpoint: '/v1/live-report/{reportId}',
+    httpMethod: 'delete',
+    summary: 'Delete a live report',
+    description: 'Deletes the report and stops its scheduled reports.',
+    stainlessPath: '(resource) liveReport > (method) delete',
+    qualified: 'client.liveReport.delete',
+    params: ['reportId: string;'],
+    response: '{ data: { id: string; deleted: true; }; }',
+    markdown:
+      "## delete\n\n`client.liveReport.delete(reportId: string): { data: object; }`\n\n**delete** `/v1/live-report/{reportId}`\n\nDeletes the report and stops its scheduled reports.\n\n### Parameters\n\n- `reportId: string`\n\n### Returns\n\n- `{ data: { id: string; deleted: true; }; }`\n\n  - `data: { id: string; deleted: true; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst liveReport = await client.liveReport.delete('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(liveReport);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.delete',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst liveReport = await client.liveReport.delete('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(liveReport.data);",
+      },
+      python: {
+        method: 'live_report.delete',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nlive_report = client.live_report.delete(\n    "5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f",\n)\nprint(live_report.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report/$REPORT_ID \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'run',
+    endpoint: '/v1/live-report/{reportId}/generate',
+    httpMethod: 'post',
+    summary: 'Generate a live report document',
+    description:
+      'Writes the report now, for its latest closed period or a custom window (`periodStart` + `periodEnd`,\nat most 92 days, ended). Returns 202 with the document in PENDING; poll\nGET /v1/live-report/{reportId}/document/{documentId} until `status` is READY or FAILED (typically a few\nminutes). An identical request already in flight is returned as-is. A generated document is not emailed.',
+    stainlessPath: '(resource) liveReport > (method) run',
+    qualified: 'client.liveReport.run',
+    params: ['reportId: string;', 'periodEnd?: string;', 'periodStart?: string;'],
+    response:
+      "{ data: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: { agentId: string; agentName: string; dashboardId: string; description: string; filters: object[]; includeTranscriptExcerpts: boolean; name: string; targets: object[]; }; document: { agents: object[]; appendix: object; charts: object[]; checks: object[]; evidence: object; executiveSummary: object; generatedAtIso: string; headline: object; liveReportId: string; model: string; recommendations: object[]; targets: object[]; themes: object[]; version: 1; volume: object; }; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }; }",
+    markdown:
+      "## run\n\n`client.liveReport.run(reportId: string, periodEnd?: string, periodStart?: string): { data: object; }`\n\n**post** `/v1/live-report/{reportId}/generate`\n\nWrites the report now, for its latest closed period or a custom window (`periodStart` + `periodEnd`,\nat most 92 days, ended). Returns 202 with the document in PENDING; poll\nGET /v1/live-report/{reportId}/document/{documentId} until `status` is READY or FAILED (typically a few\nminutes). An identical request already in flight is returned as-is. A generated document is not emailed.\n\n### Parameters\n\n- `reportId: string`\n\n- `periodEnd?: string`\n  ISO 8601 end (exclusive) of a custom window. Requires periodStart.\n\n- `periodStart?: string`\n  ISO 8601 start of a custom window. Omit both for the latest closed period.\n\n### Returns\n\n- `{ data: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: { agentId: string; agentName: string; dashboardId: string; description: string; filters: object[]; includeTranscriptExcerpts: boolean; name: string; targets: object[]; }; document: { agents: object[]; appendix: object; charts: object[]; checks: object[]; evidence: object; executiveSummary: object; generatedAtIso: string; headline: object; liveReportId: string; model: string; recommendations: object[]; targets: object[]; themes: object[]; version: 1; volume: object; }; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }; }`\n\n  - `data: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: { agentId: string; agentName: string; dashboardId: string; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; }; document: { agents: { agentId: string; agentName: string; conversationCount: number; sharePct: number; targets: object[]; }[]; appendix: { methodology: string; notes: string[]; }; charts: { blocked: boolean; description: string; display: 'LINE' | 'NUMBER' | 'RADAR' | 'STACKED_BAR' | 'TABLE'; error: string; interval: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH'; name: string; omittedSeries: number; series: object[]; }[]; checks: { checkName: string; comparable: boolean; deltaPts: number; evaluatedCount: number; failedCount: number; isTarget: boolean; metricDefinitionId: string; metricSlug: string; passRatePct: number; previousPassRatePct: number; }[]; evidence: { failingConversationCount: number; failingCountIsLowerBound: boolean; readConversationCount: number; sampled: boolean; }; executiveSummary: { keyFindings: object[]; paragraphs: string[]; sections?: object[]; }; generatedAtIso: string; headline: { agentName: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; periodEndIso: string; periodLabel: string; periodStartIso: string; reportName: string; statTiles: object[]; timezone: string; verdict: 'ON_TARGET' | 'OFF_TARGET' | 'NO_TARGETS' | 'NO_DATA'; verdictProse: string; }; liveReportId: string; model: string; recommendations: { afterText: string; beforeText: string; body: string; channel: 'PROMPT' | 'VOICE_CONFIG' | 'STT' | 'SPEECH_MODEL' | 'LLM_MODEL' | 'INFRA' | 'EXTERNAL'; order: number; promptOptimizationFindingId: string; severity: 'HIGH' | 'MEDIUM' | 'LOW'; source: 'PROMPT_OPTIMIZER' | 'DEBRIEF'; themeSlugs: string[]; title: string; }[]; targets: { actual: number; actualLabel: string; aggregation: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator: 'AT_LEAST' | 'AT_MOST'; deltaDirection: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'; deltaLabel: string; error: string; failingConversationCount: number; key: string; label: string; lifecycle: 'NEW_MISS' | 'STILL_MISSED' | 'RECOVERED' | 'HOLDING'; metricDefinitionId: string; metricName: string; metricSlug: string; percentile: number; previous: number; previousLabel: string; sampleSize: number; series: object[]; status: 'MET' | 'MISSED' | 'NO_DATA'; targetLabel: string; targetValue: number; unit: 'PERCENT' | 'VALUE'; }[]; themes: { affectedConversationCount: number; analysis: string; checkNames: string[]; collectorQuote: object; estimatedAffectedConversationCount: number; excerpts: object[]; flaggedForImpact: boolean; impact: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'; impactReason: string; issue: object; lifecycle: 'NEW' | 'PERSISTENT' | 'IMPROVING' | 'FIXED'; memberConversationIds: string[]; metricDefinitionIds: string[]; prevalence: 'WIDESPREAD' | 'RECURRING' | 'ISOLATED'; rootCauseChannel: 'PROMPT' | 'VOICE_CONFIG' | 'STT' | 'SPEECH_MODEL' | 'LLM_MODEL' | 'INFRA' | 'EXTERNAL'; severity: 'HIGH' | 'MEDIUM' | 'LOW'; slug: string; title: string; totalConversationCount: number; memberCalls?: object[]; }[]; version: 1; volume: { conversationCount: number; deltaPct: number; endings: object[]; previousConversationCount: number; series: object[]; }; }; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.liveReport.run('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.run',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.liveReport.run('5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'live_report.run',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.live_report.run(\n    report_id="5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report/$REPORT_ID/generate \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'listDocuments',
+    endpoint: '/v1/live-report/{reportId}/document',
+    httpMethod: 'get',
+    summary: 'List report documents',
+    description: "Lists a report's documents, newest period first.",
+    stainlessPath: '(resource) liveReport > (method) listDocuments',
+    qualified: 'client.liveReport.listDocuments',
+    params: ['reportId: string;', 'limit?: number;', 'offset?: number;'],
+    response:
+      "{ data: { items: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: object; document: object; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }[]; totalCount: number; }; }",
+    markdown:
+      "## listDocuments\n\n`client.liveReport.listDocuments(reportId: string, limit?: number, offset?: number): { data: object; }`\n\n**get** `/v1/live-report/{reportId}/document`\n\nLists a report's documents, newest period first.\n\n### Parameters\n\n- `reportId: string`\n\n- `limit?: number`\n  Page size, at most 100.\n\n- `offset?: number`\n\n### Returns\n\n- `{ data: { items: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: object; document: object; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }[]; totalCount: number; }; }`\n\n  - `data: { items: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: { agentId: string; agentName: string; dashboardId: string; description: string; filters: object[]; includeTranscriptExcerpts: boolean; name: string; targets: object[]; }; document: { agents: object[]; appendix: object; charts: object[]; checks: object[]; evidence: object; executiveSummary: object; generatedAtIso: string; headline: object; liveReportId: string; model: string; recommendations: object[]; targets: object[]; themes: object[]; version: 1; volume: object; }; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }[]; totalCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.liveReport.listDocuments('reportId');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.listDocuments',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.liveReport.listDocuments('reportId');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'live_report.list_documents',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.live_report.list_documents(\n    report_id="reportId",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report/$REPORT_ID/document \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getDocument',
+    endpoint: '/v1/live-report/{reportId}/document/{documentId}',
+    httpMethod: 'get',
+    summary: 'Get a report document',
+    description:
+      'Returns one written report. `document` is null until `status` is READY. Theme excerpts and grader quotes (call transcript text) are included only for keys with transcript:read.',
+    stainlessPath: '(resource) liveReport > (method) getDocument',
+    qualified: 'client.liveReport.getDocument',
+    params: ['reportId: string;', 'documentId: string;'],
+    response:
+      "{ data: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: { agentId: string; agentName: string; dashboardId: string; description: string; filters: object[]; includeTranscriptExcerpts: boolean; name: string; targets: object[]; }; document: { agents: object[]; appendix: object; charts: object[]; checks: object[]; evidence: object; executiveSummary: object; generatedAtIso: string; headline: object; liveReportId: string; model: string; recommendations: object[]; targets: object[]; themes: object[]; version: 1; volume: object; }; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }; }",
+    markdown:
+      "## getDocument\n\n`client.liveReport.getDocument(reportId: string, documentId: string): { data: object; }`\n\n**get** `/v1/live-report/{reportId}/document/{documentId}`\n\nReturns one written report. `document` is null until `status` is READY. Theme excerpts and grader quotes (call transcript text) are included only for keys with transcript:read.\n\n### Parameters\n\n- `reportId: string`\n\n- `documentId: string`\n\n### Returns\n\n- `{ data: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: { agentId: string; agentName: string; dashboardId: string; description: string; filters: object[]; includeTranscriptExcerpts: boolean; name: string; targets: object[]; }; document: { agents: object[]; appendix: object; charts: object[]; checks: object[]; evidence: object; executiveSummary: object; generatedAtIso: string; headline: object; liveReportId: string; model: string; recommendations: object[]; targets: object[]; themes: object[]; version: 1; volume: object; }; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }; }`\n\n  - `data: { id: string; announcedAt: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; completedAt: string; createdAt: string; definition: { agentId: string; agentName: string; dashboardId: string; description: string; filters: { type: 'METRIC_PROPERTY' | 'CALL_PROPERTY' | 'AGENT_PROPERTY' | 'CALL_ID' | 'MODALITY' | 'DATASET' | 'METRIC_VALUE'; operator?: string; property?: string; value?: string | number | boolean; }[]; includeTranscriptExcerpts: boolean; name: string; targets: { metric: string; value: number; aggregation?: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator?: 'AT_LEAST' | 'AT_MOST'; label?: string; passOperator?: 'EQUALS' | 'NOT_EQUALS' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL_TO' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL_TO'; passValue?: string | number | boolean; percentile?: number; }[]; }; document: { agents: { agentId: string; agentName: string; conversationCount: number; sharePct: number; targets: object[]; }[]; appendix: { methodology: string; notes: string[]; }; charts: { blocked: boolean; description: string; display: 'LINE' | 'NUMBER' | 'RADAR' | 'STACKED_BAR' | 'TABLE'; error: string; interval: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH'; name: string; omittedSeries: number; series: object[]; }[]; checks: { checkName: string; comparable: boolean; deltaPts: number; evaluatedCount: number; failedCount: number; isTarget: boolean; metricDefinitionId: string; metricSlug: string; passRatePct: number; previousPassRatePct: number; }[]; evidence: { failingConversationCount: number; failingCountIsLowerBound: boolean; readConversationCount: number; sampled: boolean; }; executiveSummary: { keyFindings: object[]; paragraphs: string[]; sections?: object[]; }; generatedAtIso: string; headline: { agentName: string; cadence: 'DAILY' | 'WEEKLY' | 'MONTHLY'; periodEndIso: string; periodLabel: string; periodStartIso: string; reportName: string; statTiles: object[]; timezone: string; verdict: 'ON_TARGET' | 'OFF_TARGET' | 'NO_TARGETS' | 'NO_DATA'; verdictProse: string; }; liveReportId: string; model: string; recommendations: { afterText: string; beforeText: string; body: string; channel: 'PROMPT' | 'VOICE_CONFIG' | 'STT' | 'SPEECH_MODEL' | 'LLM_MODEL' | 'INFRA' | 'EXTERNAL'; order: number; promptOptimizationFindingId: string; severity: 'HIGH' | 'MEDIUM' | 'LOW'; source: 'PROMPT_OPTIMIZER' | 'DEBRIEF'; themeSlugs: string[]; title: string; }[]; targets: { actual: number; actualLabel: string; aggregation: 'PASS_RATE' | 'AVG' | 'MEDIAN' | 'PERCENTILE' | 'MIN' | 'MAX'; comparator: 'AT_LEAST' | 'AT_MOST'; deltaDirection: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'; deltaLabel: string; error: string; failingConversationCount: number; key: string; label: string; lifecycle: 'NEW_MISS' | 'STILL_MISSED' | 'RECOVERED' | 'HOLDING'; metricDefinitionId: string; metricName: string; metricSlug: string; percentile: number; previous: number; previousLabel: string; sampleSize: number; series: object[]; status: 'MET' | 'MISSED' | 'NO_DATA'; targetLabel: string; targetValue: number; unit: 'PERCENT' | 'VALUE'; }[]; themes: { affectedConversationCount: number; analysis: string; checkNames: string[]; collectorQuote: object; estimatedAffectedConversationCount: number; excerpts: object[]; flaggedForImpact: boolean; impact: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'; impactReason: string; issue: object; lifecycle: 'NEW' | 'PERSISTENT' | 'IMPROVING' | 'FIXED'; memberConversationIds: string[]; metricDefinitionIds: string[]; prevalence: 'WIDESPREAD' | 'RECURRING' | 'ISOLATED'; rootCauseChannel: 'PROMPT' | 'VOICE_CONFIG' | 'STT' | 'SPEECH_MODEL' | 'LLM_MODEL' | 'INFRA' | 'EXTERNAL'; severity: 'HIGH' | 'MEDIUM' | 'LOW'; slug: string; title: string; totalConversationCount: number; memberCalls?: object[]; }[]; version: 1; volume: { conversationCount: number; deltaPct: number; endings: object[]; previousConversationCount: number; series: object[]; }; }; errorMessage: string; liveReportId: string; periodEnd: string; periodStart: string; projectId: string; status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED'; timezone: string; trigger: 'SCHEDULED' | 'MANUAL'; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.liveReport.getDocument('9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b', {\n  reportId: '5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f',\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.liveReport.getDocument',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.liveReport.getDocument('9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b', {\n  reportId: '5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f',\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'live_report.get_document',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.live_report.get_document(\n    "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",\n    report_id="5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/live-report/$REPORT_ID/document/$DOCUMENT_ID \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'listDefinitions',
     endpoint: '/v1/metric/definitions',
     httpMethod: 'get',
