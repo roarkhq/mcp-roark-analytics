@@ -54,7 +54,13 @@ webhook ── events (run finished, analysis done, issue opened)
 
 **No client methods** - do not invent them. Where a documented route exists,
 call it through the same client (`client.get`, `client.post`, `client.put`,
-`client.delete`), which carries your credentials:
+`client.delete`), which carries your credentials.
+
+A raw request names a route rather than a method, so the code tool cannot check
+it against `--code-allowed-methods` / `--code-blocked-methods` and refuses every
+one of them on a server started with those flags. If a raw request comes back
+refused for that reason, the operation has to happen outside the MCP; say so
+rather than hunting for a method that does not exist.
 
 - **chat ingestion** - real chats are brought in and graded through
   `client.post('/v1/chat', { body })`. There is no `client.chat.*`. Chat agents

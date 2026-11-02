@@ -64,19 +64,19 @@ export function parseCLIOptions(): CLIOptions {
     .option('code-allow-http-gets', {
       type: 'boolean',
       description:
-        'Allow all code tool methods that map to HTTP GET operations. If all code-allow-* flags are unset, then everything is allowed.',
+        'Allow all code tool methods that map to HTTP GET operations. If all code-allow-* flags are unset, then everything is allowed. If any method ends up blocked, raw client requests (client.post and friends) are refused as well: they address a route rather than a method, so they cannot be checked against this list.',
     })
     .option('code-allowed-methods', {
       type: 'string',
       array: true,
       description:
-        'Methods to explicitly allow for code tool. Evaluated as regular expressions against method fully qualified names. If all code-allow-* flags are unset, then everything is allowed.',
+        'Methods to explicitly allow for code tool. Evaluated as regular expressions against method fully qualified names. If all code-allow-* flags are unset, then everything is allowed. If any method ends up blocked, raw client requests (client.post and friends) are refused as well: they address a route rather than a method, so they cannot be checked against this list.',
     })
     .option('code-blocked-methods', {
       type: 'string',
       array: true,
       description:
-        'Methods to explicitly block for code tool. Evaluated as regular expressions against method fully qualified names. If all code-allow-* flags are unset, then everything is allowed.',
+        'Methods to explicitly block for code tool. Evaluated as regular expressions against method fully qualified names. If all code-allow-* flags are unset, then everything is allowed. If any method ends up blocked, raw client requests (client.post and friends) are refused as well: they address a route rather than a method, so they cannot be checked against this list.',
     })
     .option('code-execution-mode', {
       type: 'string',

@@ -1,4 +1,4 @@
-import { denoAcceptsUnixAllowNet, scopeAllowNetToWorkerSocket } from '../src/code-tool';
+import { denoAcceptsUnixAllowNet, rawRequestsInCode, scopeAllowNetToWorkerSocket } from '../src/code-tool';
 
 // Mirrors the arguments deno-http-worker builds: it appends its generated socket to
 // any `--allow-read`/`--allow-write` flag we pass, then passes the bare path through
@@ -138,4 +138,91 @@ describe('denoAcceptsUnixAllowNet', () => {
 
     expect(probe).toHaveBeenCalledTimes(1);
   });
+});
+
+/* `--code-allowed-methods` and `--code-blocked-methods` are enforced by looking for a
+   method's fully qualified name in the snippet. A raw request carries a route instead of
+   a method name, so it matches nothing on that list while still reaching the route with
+   the server's credential - which is what this finds so the code tool can refuse it. */
+describe('rawRequestsInCode', () => {
+  it.each(['get', 'post', 'put', 'patch', 'delete', 'request'])('finds a raw %s on the client', (verb) => {
+    expect(rawRequestsInCode(`async function run(client) { await client.${verb}('/v1/chat') }`)).toEqual([
+      `client.${verb}`,
+    ]);
+  });
+
+  it('finds the threshold route the skills document, which has no SDK method', () => {
+    const code = `
+      async function run(client) {
+        await client.post('/v1/metric/definitions/response_time/thresholds', {
+          body: { operator: 'LESS_THAN_OR_EQUALS', value: 5000 },
+        })
+      }`;
+
+    expect(rawRequestsInCode(code)).toEqual(['client.post']);
+  });
+
+  /* The whole point is to catch a snippet that names no method at all, so a resource
+     method must not be mistaken for a raw request - several of them end in one of the
+     verbs, and refusing `metricPolicy.delete` would block a method the allowlist may
+     well allow. */
+  it.each([
+    'client.metricPolicy.delete(policyId)',
+    'client.metricVariant.delete(idOrSlug, variantId)',
+    'client.call.getByID(callId)',
+    'client.simulationEnvironment.list()',
+  ])('does not treat %s as a raw request', (call) => {
+    expect(rawRequestsInCode(`async function run(client) { await ${call} }`)).toEqual([]);
+  });
+
+  /* Nor may an unrelated receiver count: a snippet that pages results into a Map, or
+     reads a Response, is not reaching past the allowlist. */
+  it.each(['seen.get(id)', 'response.get(key)', 'rows.delete(0)'])(
+    'does not treat %s as a raw request',
+    (call) => {
+      expect(rawRequestsInCode(`async function run(client) { ${call} }`)).toEqual([]);
+    },
+  );
+
+  /* The binding is whatever `run` was written with, so reading it off the signature is
+     what makes the receiver check above work on a snippet that did not call it `client`. */
+  it.each([
+    ['a named declaration', 'async function run(sdk) { await sdk.post("/v1/chat") }'],
+    ['an assigned function', 'const run = async function (sdk) { await sdk.post("/v1/chat") }'],
+    ['a parenthesised arrow', 'const run = async (sdk) => { await sdk.post("/v1/chat") }'],
+    ['a bare arrow', 'const run = sdk => sdk.post("/v1/chat")'],
+  ])('reads the client binding from %s', (_form, code) => {
+    expect(rawRequestsInCode(code)).toEqual(['sdk.post']);
+  });
+
+  it('reports each verb once, however many calls use it', () => {
+    const code = `
+      async function run(client) {
+        await client.post('/v1/chat', { body: a })
+        await client.post('/v1/chat', { body: b })
+        await client.delete('/v1/metric/definitions/mine')
+      }`;
+
+    expect(rawRequestsInCode(code)).toEqual(['client.post', 'client.delete']);
+  });
+
+  it('finds nothing in a snippet that only calls resource methods', () => {
+    const code = `
+      async function run(client) {
+        const { data: metrics } = await client.metric.listDefinitions({ limit: 100 })
+        return metrics.map((m) => m.slug)
+      }`;
+
+    expect(rawRequestsInCode(code)).toEqual([]);
+  });
+
+  /* A snippet the server cannot run anyway (no `run`, or a `run` taking no client) has no
+     binding to match, and guessing `client` there would start rejecting on a name the
+     snippet never bound. */
+  it.each(['const x = client.post("/v1/chat")', 'async function run() { return 1 }'])(
+    'finds nothing when no client binding is declared: %s',
+    (code) => {
+      expect(rawRequestsInCode(code)).toEqual([]);
+    },
+  );
 });
