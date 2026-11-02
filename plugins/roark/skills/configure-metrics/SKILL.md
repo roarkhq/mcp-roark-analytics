@@ -27,14 +27,16 @@ Roark ships a large library of audio-native and conversational metrics. Before
 authoring anything, list what exists and match it to the goal:
 
 ```ts
-const { data: metrics } = await client.metric.listDefinitions()
+const { data: metrics, pagination } = await client.metric.listDefinitions({ limit: 100 })
 // each: { id, slug, metricId, variantId, versionId, name, description,
 //         type (output type), calculationType, scope, supportedContexts, unit? }
 ```
 
-`listDefinitions` takes **no arguments**: no search, no filter, no paging. Its
-`data` holds every metric visible to the project (system + org + project) in one array,
-so filter client-side.
+`listDefinitions` has **no search and no filter** - only cursor paging, `limit`
+and `after`. `data` holds the metrics visible to the project (system + org +
+project), so filter client-side; `pagination` is
+`{ hasMore, limit, nextCursor }`, so page with `after: pagination.nextCursor`
+while `hasMore` is true rather than assuming one page holds everything.
 
 The [templates recipe](../build-run-plan/references/templates.md) maps common
 goals to built-in slugs. Attach a metric by putting `{ slug }` in the plan's
@@ -87,6 +89,11 @@ In preference order:
    Operators: `GREATER_THAN`, `GREATER_THAN_OR_EQUALS`, `LESS_THAN`,
    `LESS_THAN_OR_EQUALS`, `EQUALS`, `NOT_EQUALS`. Aggregation modes include
    `EACH`, `COUNT`, `AVERAGE`, `MIN`, `MAX`, `MEDIAN`, `P95` and `P99`.
+
+   A server that restricts code-tool methods (`--code-allowed-methods`,
+   `--code-blocked-methods`) refuses raw requests, because a route cannot be
+   checked against a list of method names. There the threshold has to be created
+   outside the MCP - fall back to the `LLM_JUDGE` boolean below, or say so.
 2. **`LLM_JUDGE` with `outputType: 'BOOLEAN'`** - fully supported by
    `client.metric.createDefinition` (below). This is the practical choice from the
    MCP.

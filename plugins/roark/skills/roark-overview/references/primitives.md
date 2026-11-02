@@ -57,8 +57,8 @@ call it through the same client (`client.get`, `client.post`, `client.put`,
 `client.delete`), which carries your credentials.
 
 A raw request names a route rather than a method, so the code tool cannot check
-it against `--code-allowed-methods` / `--code-blocked-methods` and refuses every
-one of them on a server started with those flags. If a raw request comes back
+it against `--code-allowed-methods` / `--code-blocked-methods` and refuses raw
+requests outright on a server where any method is restricted. If one comes back
 refused for that reason, the operation has to happen outside the MCP; say so
 rather than hunting for a method that does not exist.
 

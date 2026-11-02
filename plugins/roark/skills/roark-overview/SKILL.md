@@ -77,9 +77,9 @@ A handful of documented routes have no client method (they are listed in
 [references/primitives.md](references/primitives.md)). They are reached with
 `client.get` / `client.post` on the same client, which carries the server's
 credentials. A raw request names a route rather than a method, so the code
-tool cannot check it against `--code-allowed-methods` / `--code-blocked-methods`
-and **rejects every raw request on a server started with those flags**. On
-such a server, do those operations outside the MCP.
+tool cannot check it against `--code-allowed-methods` /
+`--code-blocked-methods` and **refuses raw requests outright on a server where
+any method is restricted**. There, do those operations outside the MCP.
 
 ## Auth
 
