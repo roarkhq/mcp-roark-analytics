@@ -5313,6 +5313,195 @@ const EMBEDDED_METHODS: MethodEntry[] = [
   },
   {
     name: 'list',
+    endpoint: '/v1/calendar-connection',
+    httpMethod: 'get',
+    summary: 'List calendar connections',
+    description:
+      'Returns every calendar connection in the authenticated project, by label. A project has a handful of these, so the list is not paginated: `pagination.hasMore` is always false.',
+    stainlessPath: '(resource) calendarConnection > (method) list',
+    qualified: 'client.calendarConnection.list',
+    params: ["provider?: 'CAL_COM' | 'GOOGLE' | 'CALENDLY';"],
+    response:
+      "{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }[]; pagination: { hasMore: boolean; nextCursor: string; total: number; }; }",
+    markdown:
+      "## list\n\n`client.calendarConnection.list(provider?: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'): { data: object[]; pagination: object; }`\n\n**get** `/v1/calendar-connection`\n\nReturns every calendar connection in the authenticated project, by label. A project has a handful of these, so the list is not paginated: `pagination.hasMore` is always false.\n\n### Parameters\n\n- `provider?: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'`\n  Who holds the calendar. CAL_COM is the only provider that can be connected today; GOOGLE and CALENDLY are described by `capabilities` but not yet connectable.\n\n### Returns\n\n- `{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }[]; pagination: { hasMore: boolean; nextCursor: string; total: number; }; }`\n\n  - `data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }[]`\n  - `pagination: { hasMore: boolean; nextCursor: string; total: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calendarConnections = await client.calendarConnection.list();\n\nconsole.log(calendarConnections);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst calendarConnections = await client.calendarConnection.list();\n\nconsole.log(calendarConnections.data);",
+      },
+      python: {
+        method: 'calendar_connection.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\ncalendar_connections = client.calendar_connection.list()\nprint(calendar_connections.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getById',
+    endpoint: '/v1/calendar-connection/{connectionId}',
+    httpMethod: 'get',
+    summary: 'Get a calendar connection',
+    description: 'Returns one calendar connection. The stored credential is never included.',
+    stainlessPath: '(resource) calendarConnection > (method) getById',
+    qualified: 'client.calendarConnection.getByID',
+    params: ['connectionId: string;'],
+    response:
+      "{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }",
+    markdown:
+      "## getById\n\n`client.calendarConnection.getByID(connectionId: string): { data: object; }`\n\n**get** `/v1/calendar-connection/{connectionId}`\n\nReturns one calendar connection. The stored credential is never included.\n\n### Parameters\n\n- `connectionId: string`\n\n### Returns\n\n- `{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }`\n\n  - `data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.calendarConnection.getByID('connectionId');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.getByID',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.calendarConnection.getByID('connectionId');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'calendar_connection.get_by_id',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.calendar_connection.get_by_id(\n    "connectionId",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection/$CONNECTION_ID \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'create',
+    endpoint: '/v1/calendar-connection',
+    httpMethod: 'post',
+    summary: 'Connect a calendar account',
+    description:
+      'Verifies the credential against the provider and, only if it works, stores it encrypted. A credential the provider rejects is a 400 and no connection is created: a connection that has never worked would next be exercised by an inbound call at 2am, with nobody there to fix it.',
+    stainlessPath: '(resource) calendarConnection > (method) create',
+    qualified: 'client.calendarConnection.create',
+    params: [
+      'apiKey: string;',
+      'label: string;',
+      "provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY';",
+      'timezone?: string;',
+    ],
+    response:
+      "{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }",
+    markdown:
+      "## create\n\n`client.calendarConnection.create(apiKey: string, label: string, provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY', timezone?: string): { data: object; }`\n\n**post** `/v1/calendar-connection`\n\nVerifies the credential against the provider and, only if it works, stores it encrypted. A credential the provider rejects is a 400 and no connection is created: a connection that has never worked would next be exercised by an inbound call at 2am, with nobody there to fix it.\n\n### Parameters\n\n- `apiKey: string`\n  For CAL_COM: a Cal.com API key (starts with `cal_`). It is verified against Cal.com before anything is stored, so an invalid key is a 400 and no connection is created. Stored encrypted and never returned.\n\n- `label: string`\n  Customer-facing name for this account, unique within the project. Required.\n\n- `provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'`\n  Who holds the calendar. CAL_COM is the only provider that can be connected today; GOOGLE and CALENDLY are described by `capabilities` but not yet connectable.\n\n- `timezone?: string`\n  The named IANA timezone to offer slots in, for example `America/Los_Angeles`. Omit to adopt the provider account’s own timezone. A fixed offset such as `-08:00` is rejected: it does not observe DST.\n\n### Returns\n\n- `{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }`\n\n  - `data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calendarConnection = await client.calendarConnection.create({\n  apiKey: 'x',\n  label: 'x',\n  provider: 'CAL_COM',\n});\n\nconsole.log(calendarConnection);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.create',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst calendarConnection = await client.calendarConnection.create({\n  apiKey: 'x',\n  label: 'x',\n  provider: 'CAL_COM',\n});\n\nconsole.log(calendarConnection.data);",
+      },
+      python: {
+        method: 'calendar_connection.create',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\ncalendar_connection = client.calendar_connection.create(\n    api_key="x",\n    label="x",\n    provider="CAL_COM",\n)\nprint(calendar_connection.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "apiKey": "x",\n          "label": "x",\n          "provider": "CAL_COM"\n        }\'',
+      },
+    },
+  },
+  {
+    name: 'update',
+    endpoint: '/v1/calendar-connection/{connectionId}',
+    httpMethod: 'patch',
+    summary: 'Update a calendar connection',
+    description:
+      'Renames a connection, changes the timezone slots are offered in, or rotates the credential. A rotated credential is verified first, and a verified credential returns the connection to ACTIVE.',
+    stainlessPath: '(resource) calendarConnection > (method) update',
+    qualified: 'client.calendarConnection.update',
+    params: ['connectionId: string;', 'apiKey?: string;', 'label?: string;', 'timezone?: string;'],
+    response:
+      "{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }",
+    markdown:
+      "## update\n\n`client.calendarConnection.update(connectionId: string, apiKey?: string, label?: string, timezone?: string): { data: object; }`\n\n**patch** `/v1/calendar-connection/{connectionId}`\n\nRenames a connection, changes the timezone slots are offered in, or rotates the credential. A rotated credential is verified first, and a verified credential returns the connection to ACTIVE.\n\n### Parameters\n\n- `connectionId: string`\n\n- `apiKey?: string`\n  Rotate the credential. The new key is verified before it is stored, and a verified key returns the connection to ACTIVE, which is how a connection recovers from INVALID_CREDENTIALS.\n\n- `label?: string`\n  Rename the connection.\n\n- `timezone?: string`\n  Change the named IANA timezone slots are offered in.\n\n### Returns\n\n- `{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }`\n\n  - `data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calendarConnection = await client.calendarConnection.update('connectionId');\n\nconsole.log(calendarConnection);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.update',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst calendarConnection = await client.calendarConnection.update('connectionId');\n\nconsole.log(calendarConnection.data);",
+      },
+      python: {
+        method: 'calendar_connection.update',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\ncalendar_connection = client.calendar_connection.update(\n    connection_id="connectionId",\n)\nprint(calendar_connection.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection/$CONNECTION_ID \\\n    -X PATCH \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'check',
+    endpoint: '/v1/calendar-connection/{connectionId}/check',
+    httpMethod: 'post',
+    summary: 'Check a calendar connection',
+    description:
+      'Re-verifies the stored credential against the provider and records the result on the connection. A credential the provider rejects sets `status` to INVALID_CREDENTIALS. A provider outage is a 500 and leaves the status untouched: being unable to reach the provider is not evidence that the customer’s credential is bad.',
+    stainlessPath: '(resource) calendarConnection > (method) check',
+    qualified: 'client.calendarConnection.check',
+    params: ['connectionId: string;'],
+    response:
+      "{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }",
+    markdown:
+      "## check\n\n`client.calendarConnection.check(connectionId: string): { data: object; }`\n\n**post** `/v1/calendar-connection/{connectionId}/check`\n\nRe-verifies the stored credential against the provider and records the result on the connection. A credential the provider rejects sets `status` to INVALID_CREDENTIALS. A provider outage is a 500 and leaves the status untouched: being unable to reach the provider is not evidence that the customer’s credential is bad.\n\n### Parameters\n\n- `connectionId: string`\n\n### Returns\n\n- `{ data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }; }`\n\n  - `data: { id: string; accountLabel: string; capabilities: { auth: 'API_KEY' | 'OAUTH'; availabilityWindowDays: number; operations: 'CHECK_AVAILABILITY' | 'BOOK' | 'LOOKUP_BOOKING' | 'RESCHEDULE' | 'CANCEL' | 'LIST_BOOKINGS'[]; requiresAttendeeEmail: boolean; roarkOwnsBookingPolicy: boolean; slotHold: 'RESERVATION' | 'NONE'; }; createdAt: string; credentialExpiresAt: string; label: string; lastCheckedAt: string; provider: 'CAL_COM' | 'GOOGLE' | 'CALENDLY'; scopes: string[]; status: 'ACTIVE' | 'INVALID_CREDENTIALS' | 'ERROR'; statusMessage: string; timezone: string; updatedAt: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.calendarConnection.check('connectionId');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.check',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.calendarConnection.check('connectionId');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'calendar_connection.check',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.calendar_connection.check(\n    "connectionId",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection/$CONNECTION_ID/check \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'delete',
+    endpoint: '/v1/calendar-connection/{connectionId}',
+    httpMethod: 'delete',
+    summary: 'Delete a calendar connection',
+    description:
+      'Deletes the connection and its stored credential outright. A credential the customer deleted should stop existing, so this is not an archive.',
+    stainlessPath: '(resource) calendarConnection > (method) delete',
+    qualified: 'client.calendarConnection.delete',
+    params: ['connectionId: string;'],
+    response: '{ data: { id: string; deleted: true; }; }',
+    markdown:
+      "## delete\n\n`client.calendarConnection.delete(connectionId: string): { data: object; }`\n\n**delete** `/v1/calendar-connection/{connectionId}`\n\nDeletes the connection and its stored credential outright. A credential the customer deleted should stop existing, so this is not an archive.\n\n### Parameters\n\n- `connectionId: string`\n\n### Returns\n\n- `{ data: { id: string; deleted: true; }; }`\n\n  - `data: { id: string; deleted: true; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calendarConnection = await client.calendarConnection.delete('connectionId');\n\nconsole.log(calendarConnection);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.delete',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst calendarConnection = await client.calendarConnection.delete('connectionId');\n\nconsole.log(calendarConnection.data);",
+      },
+      python: {
+        method: 'calendar_connection.delete',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\ncalendar_connection = client.calendar_connection.delete(\n    "connectionId",\n)\nprint(calendar_connection.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection/$CONNECTION_ID \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'list',
     endpoint: '/v1/webhook',
     httpMethod: 'get',
     summary: 'List webhooks',

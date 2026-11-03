@@ -959,6 +959,42 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/http-request-definition/{definitionId}',
   },
   {
+    clientCallName: 'client.calendarConnection.create',
+    fullyQualifiedName: 'calendarConnection.create',
+    httpMethod: 'post',
+    httpPath: '/v1/calendar-connection',
+  },
+  {
+    clientCallName: 'client.calendarConnection.update',
+    fullyQualifiedName: 'calendarConnection.update',
+    httpMethod: 'patch',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.list',
+    fullyQualifiedName: 'calendarConnection.list',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection',
+  },
+  {
+    clientCallName: 'client.calendarConnection.delete',
+    fullyQualifiedName: 'calendarConnection.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.check',
+    fullyQualifiedName: 'calendarConnection.check',
+    httpMethod: 'post',
+    httpPath: '/v1/calendar-connection/{connectionId}/check',
+  },
+  {
+    clientCallName: 'client.calendarConnection.getByID',
+    fullyQualifiedName: 'calendarConnection.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
     clientCallName: 'client.webhook.create',
     fullyQualifiedName: 'webhook.create',
     httpMethod: 'post',
