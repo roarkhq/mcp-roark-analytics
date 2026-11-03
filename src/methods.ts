@@ -905,6 +905,36 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/agent/{agentId}/draft/publish',
   },
   {
+    clientCallName: 'client.tool.create',
+    fullyQualifiedName: 'tool.create',
+    httpMethod: 'post',
+    httpPath: '/v1/tool',
+  },
+  {
+    clientCallName: 'client.tool.update',
+    fullyQualifiedName: 'tool.update',
+    httpMethod: 'put',
+    httpPath: '/v1/tool/{toolId}',
+  },
+  {
+    clientCallName: 'client.tool.list',
+    fullyQualifiedName: 'tool.list',
+    httpMethod: 'get',
+    httpPath: '/v1/tool',
+  },
+  {
+    clientCallName: 'client.tool.delete',
+    fullyQualifiedName: 'tool.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/tool/{toolId}',
+  },
+  {
+    clientCallName: 'client.tool.getByID',
+    fullyQualifiedName: 'tool.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/tool/{toolId}',
+  },
+  {
     clientCallName: 'client.httpRequestDefinition.create',
     fullyQualifiedName: 'httpRequestDefinition.create',
     httpMethod: 'post',
