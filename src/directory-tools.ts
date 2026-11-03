@@ -467,6 +467,13 @@ const metricRefSchema = {
   },
 };
 
+// A {{variable}} name to value map. The API takes string values only.
+const stringMapSchema = (description: string) => ({
+  type: 'object' as const,
+  description,
+  additionalProperties: { type: 'string' as const },
+});
+
 const flowAttachmentSchema = {
   type: 'object' as const,
   description:
@@ -476,7 +483,21 @@ const flowAttachmentSchema = {
     slug: { type: 'string' as const, description: 'Roark-curated flow slug, used instead of id.' },
     happyPath: { type: 'boolean' as const, description: 'Whether to run the flow happy path.' },
     edgeCases: {
-      description: 'ALL runs every edge case. An array runs only the named edge case ids.',
+      type: ['string', 'array'] as const,
+      description:
+        'The string ALL runs every edge case. An array runs only the listed edge cases, each named by id or slug.',
+      items: {
+        type: 'object' as const,
+        properties: {
+          id: { type: 'string' as const, description: 'Edge case id from list_customer_flows.' },
+          slug: { type: 'string' as const, description: 'Edge case slug, used instead of id.' },
+          personaOverrideId: {
+            type: 'string' as const,
+            description: 'Persona id to use for this edge case.',
+          },
+          variables: stringMapSchema('Values for this edge case only.'),
+        },
+      },
     },
     personaOverrideId: { type: 'string' as const, description: 'Persona id to use for this attachment.' },
   },
@@ -1118,8 +1139,24 @@ export function directoryTools(): McpTool[] {
             'When plan is set, true keeps the plan so it can be run again by planId. Requires plan.name.',
         },
         variables: {
+          type: ['object', 'array'],
           description:
-            'Placeholder values for the run. An object applies to the whole run. An array applies per flow.',
+            'Placeholder values for the run. An object of name to string value applies to the whole run. An array applies values per flow (flowId, optionally narrowed by edgeCaseId or happyPath) or per scenario (scenarioId).',
+          additionalProperties: { type: 'string' },
+          items: {
+            type: 'object',
+            properties: {
+              flowId: { type: 'string', description: 'Customer flow id the values apply to.' },
+              edgeCaseId: { type: 'string', description: 'Narrow to one edge case of that flow.' },
+              happyPath: { type: 'boolean', description: "Narrow to the flow's happy path." },
+              scenarioId: {
+                type: 'string',
+                description: 'Scenario id the values apply to, instead of flowId.',
+              },
+              variables: stringMapSchema('The values to apply.'),
+            },
+            required: ['variables'],
+          },
         },
       }),
       writeAnnotations('Run simulation'),
