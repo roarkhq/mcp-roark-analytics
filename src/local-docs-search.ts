@@ -5538,13 +5538,13 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     httpMethod: 'delete',
     summary: 'Delete a calendar connection',
     description:
-      'Deletes the connection and its stored credential outright. A credential the customer deleted should stop existing, so this is not an archive.',
+      'Disconnects the calendar and destroys the stored credential. A credential the customer deleted should stop existing, so this is not an archive. Appointments already recorded against the connection are kept, so a booking stays explainable after the calendar is disconnected.',
     stainlessPath: '(resource) calendarConnection > (method) delete',
     qualified: 'client.calendarConnection.delete',
     params: ['connectionId: string;'],
     response: '{ data: { id: string; deleted: true; }; }',
     markdown:
-      "## delete\n\n`client.calendarConnection.delete(connectionId: string): { data: object; }`\n\n**delete** `/v1/calendar-connection/{connectionId}`\n\nDeletes the connection and its stored credential outright. A credential the customer deleted should stop existing, so this is not an archive.\n\n### Parameters\n\n- `connectionId: string`\n\n### Returns\n\n- `{ data: { id: string; deleted: true; }; }`\n\n  - `data: { id: string; deleted: true; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calendarConnection = await client.calendarConnection.delete('connectionId');\n\nconsole.log(calendarConnection);\n```",
+      "## delete\n\n`client.calendarConnection.delete(connectionId: string): { data: object; }`\n\n**delete** `/v1/calendar-connection/{connectionId}`\n\nDisconnects the calendar and destroys the stored credential. A credential the customer deleted should stop existing, so this is not an archive. Appointments already recorded against the connection are kept, so a booking stays explainable after the calendar is disconnected.\n\n### Parameters\n\n- `connectionId: string`\n\n### Returns\n\n- `{ data: { id: string; deleted: true; }; }`\n\n  - `data: { id: string; deleted: true; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calendarConnection = await client.calendarConnection.delete('connectionId');\n\nconsole.log(calendarConnection);\n```",
     perLanguage: {
       typescript: {
         method: 'client.calendarConnection.delete',
