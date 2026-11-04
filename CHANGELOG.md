@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.44.2](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.1...v4.44.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **mcp:** give run_simulation's variables and edgeCases a JSON Schema type (backport of [#238](https://github.com/roarkhq/mcp-roark-analytics/issues/238))
+
 ## [4.44.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.0...v4.44.1) (2026-11-01)
 
 
