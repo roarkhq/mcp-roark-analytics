@@ -5471,6 +5471,68 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'listTargets',
+    endpoint: '/v1/calendar-connection/{connectionId}/targets',
+    httpMethod: 'get',
+    summary: 'List what can be booked on a calendar',
+    description:
+      'What an agent can be pointed at on this connection: Cal.com event types today, Google calendars when that lands. Read live from the provider, so an event type added since you connected is here without reconnecting. Each entry carries a `target` ready to put on a calendar tool, so nothing has to assemble one by hand.',
+    stainlessPath: '(resource) calendarConnection > (method) listTargets',
+    qualified: 'client.calendarConnection.listTargets',
+    params: ['connectionId: string;'],
+    response:
+      "{ data: { id: string; durationMinutes: number; durationOptions: number[]; isHidden: boolean; label: string; requiresConfirmation: boolean; target: { eventTypeId: number; provider: 'CAL_COM'; }; }[]; }",
+    markdown:
+      "## listTargets\n\n`client.calendarConnection.listTargets(connectionId: string): { data: object[]; }`\n\n**get** `/v1/calendar-connection/{connectionId}/targets`\n\nWhat an agent can be pointed at on this connection: Cal.com event types today, Google calendars when that lands. Read live from the provider, so an event type added since you connected is here without reconnecting. Each entry carries a `target` ready to put on a calendar tool, so nothing has to assemble one by hand.\n\n### Parameters\n\n- `connectionId: string`\n\n### Returns\n\n- `{ data: { id: string; durationMinutes: number; durationOptions: number[]; isHidden: boolean; label: string; requiresConfirmation: boolean; target: { eventTypeId: number; provider: 'CAL_COM'; }; }[]; }`\n\n  - `data: { id: string; durationMinutes: number; durationOptions: number[]; isHidden: boolean; label: string; requiresConfirmation: boolean; target: { eventTypeId: number; provider: 'CAL_COM'; }; }[]`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.calendarConnection.listTargets('connectionId');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.listTargets',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.calendarConnection.listTargets('connectionId');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'calendar_connection.list_targets',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.calendar_connection.list_targets(\n    "connectionId",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection/$CONNECTION_ID/targets \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getTarget',
+    endpoint: '/v1/calendar-connection/{connectionId}/targets/{targetId}',
+    httpMethod: 'get',
+    summary: 'Read one bookable target',
+    description:
+      'The same entry as the list, plus what it demands of a booker. `requiresAttendeeEmail` is the field that decides an agent’s design: the attendee object itself needs only a name and a timezone, but an event type can declare email required, and an agent that cannot collect one simply cannot book on it. Read this when configuring a calendar tool, not after a caller is already waiting. Costs one provider call more than the list, which is why the list does not fold it in.',
+    stainlessPath: '(resource) calendarConnection > (method) getTarget',
+    qualified: 'client.calendarConnection.getTarget',
+    params: ['connectionId: string;', 'targetId: string;'],
+    response:
+      "{ data: { id: string; durationMinutes: number; durationOptions: number[]; isHidden: boolean; label: string; requiredBookingFields: string[]; requiresAttendeeEmail: boolean; requiresConfirmation: boolean; target: { eventTypeId: number; provider: 'CAL_COM'; }; }; }",
+    markdown:
+      "## getTarget\n\n`client.calendarConnection.getTarget(connectionId: string, targetId: string): { data: object; }`\n\n**get** `/v1/calendar-connection/{connectionId}/targets/{targetId}`\n\nThe same entry as the list, plus what it demands of a booker. `requiresAttendeeEmail` is the field that decides an agent’s design: the attendee object itself needs only a name and a timezone, but an event type can declare email required, and an agent that cannot collect one simply cannot book on it. Read this when configuring a calendar tool, not after a caller is already waiting. Costs one provider call more than the list, which is why the list does not fold it in.\n\n### Parameters\n\n- `connectionId: string`\n\n- `targetId: string`\n\n### Returns\n\n- `{ data: { id: string; durationMinutes: number; durationOptions: number[]; isHidden: boolean; label: string; requiredBookingFields: string[]; requiresAttendeeEmail: boolean; requiresConfirmation: boolean; target: { eventTypeId: number; provider: 'CAL_COM'; }; }; }`\n\n  - `data: { id: string; durationMinutes: number; durationOptions: number[]; isHidden: boolean; label: string; requiredBookingFields: string[]; requiresAttendeeEmail: boolean; requiresConfirmation: boolean; target: { eventTypeId: number; provider: 'CAL_COM'; }; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.calendarConnection.getTarget('targetId', {\n  connectionId: 'connectionId',\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.calendarConnection.getTarget',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.calendarConnection.getTarget('targetId', {\n  connectionId: 'connectionId',\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'calendar_connection.get_target',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.calendar_connection.get_target(\n    "targetId",\n    connection_id="connectionId",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/calendar-connection/$CONNECTION_ID/targets/$TARGET_ID \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'delete',
     endpoint: '/v1/calendar-connection/{connectionId}',
     httpMethod: 'delete',

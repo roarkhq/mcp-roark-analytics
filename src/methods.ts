@@ -995,6 +995,18 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/calendar-connection/{connectionId}',
   },
   {
+    clientCallName: 'client.calendarConnection.getTarget',
+    fullyQualifiedName: 'calendarConnection.getTarget',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}/targets/{targetId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.listTargets',
+    fullyQualifiedName: 'calendarConnection.listTargets',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}/targets',
+  },
+  {
     clientCallName: 'client.webhook.create',
     fullyQualifiedName: 'webhook.create',
     httpMethod: 'post',
