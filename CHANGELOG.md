@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.9.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.9.0...v5.9.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **deps:** raise the SDK floor to 7.0.0, which carries the tools the table names ([#253](https://github.com/roarkhq/mcp-roark-analytics/issues/253)) ([b773ba6](https://github.com/roarkhq/mcp-roark-analytics/commit/b773ba678221e3cdd131b686ab7cd5f9a9c9e7e9))
+
 ## [5.9.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.8.0...v5.9.0) (2026-11-04)
 
 
