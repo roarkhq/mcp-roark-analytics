@@ -371,6 +371,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/job/{jobId}/tool-mock',
   },
   {
+    clientCallName: 'client.simulationAudioClip.list',
+    fullyQualifiedName: 'simulationAudioClip.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/audio-clip',
+  },
+  {
     clientCallName: 'client.simulationToolFixture.create',
     fullyQualifiedName: 'simulationToolFixture.create',
     httpMethod: 'post',
