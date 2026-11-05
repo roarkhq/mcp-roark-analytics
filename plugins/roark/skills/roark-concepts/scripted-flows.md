@@ -24,6 +24,9 @@ Each node is one turn, typed by who speaks and how:
   usually the agent does. `CUSTOMER_FIRST_MESSAGE` is the retired name for that
   opening case and is still accepted.
 - `CUSTOMER_SILENCE` - the caller says nothing, for a stated duration.
+- `CUSTOMER_AUDIO` - audio from Roark's library plays on the line for a stated
+  duration, the way an IVR plays hold music or ringback. Nobody is speaking, and
+  it runs in a `STRICT` voice flow only: anywhere else it is a pause of that length.
 - `CUSTOMER_DTMF` - the caller presses keys, where a `w` means a pause.
 - `AGENT_DTMF` - the agent under test sends keypad tones, carrying `dtmfDigits`
   exactly as the customer variant does. For flows where the agent drives a
@@ -40,7 +43,7 @@ back at an ancestor. A back-edge is the most common way to author a graph that
 cannot be walked.
 
 **Roles alternate along every path.** Customer, then agent, then customer.
-`CUSTOMER_SILENCE` and `CUSTOMER_DTMF` count as customer turns, and `AGENT_DTMF`
+`CUSTOMER_SILENCE`, `CUSTOMER_AUDIO` and `CUSTOMER_DTMF` count as customer turns, and `AGENT_DTMF`
 counts as an agent turn alongside `AGENT_TURN`. The one exception is branching: a
 single customer step may have several agent responses hanging off it, one per
 branch.
@@ -77,6 +80,18 @@ step; an `AGENT_TURN` step can carry its own `offScriptPolicy`, which replaces i
 at that step. Invalidate when a missed step makes the rest of the call
 meaningless, an authentication menu for instance: put `HANG_UP_INVALIDATE` on that
 step and keep a gentler policy on the flow.
+
+An `AGENT_DTMF` step does not follow the flow's policy. If the agent presses
+nothing and says no option until just before the run's silence timeout, the call
+hangs up in silence with ended reason `SCRIPT_DIVERGED`, without playing the next
+step or moving into a following improv flow. The step's own `offScriptPolicy`
+changes that: `waitSeconds` is how long to wait, at least 5 and at most that same
+limit, and `then` is `MOVE_ON`, `HANG_UP` or `HANG_UP_INVALIDATE`. `reaction` is
+`STAY_SILENT` or `REPEAT`: with `REPEAT` the caller says the line before the step
+again each time the wait runs out, up to `maxAttempts` waits (at most 5), and `then`
+follows the last one. Speech does not end the wait. In a menu with several keypad options, the first one with a
+policy decides. To test a dedicated no-answer path, add a `CUSTOMER_SILENCE`
+option: the call waits its duration and then follows that path.
 
 ## Branching modes
 
