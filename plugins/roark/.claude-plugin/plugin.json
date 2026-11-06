@@ -1,7 +1,7 @@
 {
   "name": "roark",
   "version": "0.2.0",
-  "description": "Expert workflows for the Roark MCP: register a voice agent, design personas and flows, build simulation run plans, and configure the metrics that grade them.",
+  "description": "Expert workflows for the Roark MCP: a create-and-run quickstart, industry flow playbooks, and skills to register a voice agent, design personas and flows, build simulation run plans, and configure the metrics that grade them.",
   "author": {
     "name": "Roark",
     "url": "https://roark.ai"

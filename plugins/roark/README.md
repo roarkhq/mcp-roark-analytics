@@ -5,6 +5,11 @@ agent an expert at testing voice and chat AI agents: registering agents,
 designing personas and customer flows, building simulation run plans, and
 configuring the metrics that grade them.
 
+New to Roark, or not sure where to begin? Ask your agent to use
+`simulate-quickstart`. It picks the industry playbook (`flows-*`) that matches
+your agent, authors personas and flows from it, builds the run plan, and tells
+you how many billable calls the run will place before anything starts.
+
 These skills complement the MCP. The plugin connects to Roark's remote connector,
 which signs you in through the browser and exposes separate tools for reading
 agents, calls, transcripts, and simulation results, and for creating personas,
@@ -17,6 +22,15 @@ variants without accidentally placing hundreds of calls.
 | Skill                 | Use it to                                                        |
 | --------------------- | ---------------------------------------------------------------- |
 | `roark-overview`      | Understand how the Roark MCP works, learn the primitives, and route to the right skill. |
+| `simulate-quickstart` | **Start here.** Go from "test my agent" to a created, previewed, confirmed run. |
+| `flows-customer-support`| Playbook: billing, account access, troubleshooting, cancellation, escalation. |
+| `flows-healthcare`    | Playbook: appointments, refills, insurance verification, after-hours, disclosures. |
+| `flows-car-dealership`| Playbook: sales, service scheduling, parts, financing, test-drive follow-up. |
+| `flows-home-services` | Playbook: booking, rescheduling, technician ETA, billing, emergency triage. |
+| `flows-finance`       | Playbook: account inquiries, fraud and cards, transfers, disputes, identity checks. |
+| `flows-car-insurance` | Playbook: first notice of loss, policy, claims status, billing, coverage. |
+| `flows-debt-collection`| Playbook: payment plans, hardship, disputes, disclosures, collection policy. |
+| `simulate-load-testing`| Run the Load testing template: concurrency, iterations, staged ramp-up. |
 | `register-agent`      | Create the agent under test and a phone endpoint Roark reaches.  |
 | `author-personas-flows`| Define who calls (personas) and what they do (improv flows).    |
 | `author-scripted-flows`| Author IVR/DTMF/scripted conversation graphs (exact routing).   |
@@ -86,7 +100,7 @@ which reads this repository directly:
 npx skills add roarkhq/mcp-roark-analytics
 ```
 
-That installs all 15 skills. Pass `-a` to choose targets, repeating the flag per
+That installs all 24 skills. Pass `-a` to choose targets, repeating the flag per
 agent (a comma-separated list is parsed as one name and rejected):
 
 ```sh
@@ -102,8 +116,9 @@ The MCP is separate: the CLI installs skills only. Agents that want the Roark
 API tools as well still configure the MCP server, per the [root
 README](../../README.md).
 
-**Keep the skills together.** 24 of the cross-references in this tree point from
-one skill into another, mostly into `roark-concepts`. Any install that packages
+**Keep the skills together.** More than 40 of the cross-references in this tree
+point from one skill into another, mostly into `roark-concepts` and from the
+industry playbooks into the core skills. Any install that packages
 skills individually breaks those links. That rules out Claude Desktop, whose
 Customize -> Skills screen takes one zip per skill and has no notion of sibling
 skills; use Claude Code or one of the `.agents/skills/` agents instead.

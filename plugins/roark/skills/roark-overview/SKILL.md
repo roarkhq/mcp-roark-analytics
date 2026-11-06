@@ -12,8 +12,10 @@ description: >-
 # Roark: testing voice AI agents
 
 Roark stress-tests a voice or chat agent with simulated calls before launch, then
-grades every call against a suite of metrics. This skill orients you; the
-companion skills (`build-run-plan`, `configure-metrics`) do the detailed work.
+grades every call against a suite of metrics. This skill orients you;
+`simulate-quickstart` is the default entry point for creating and running a
+simulation, and the companion skills (`build-run-plan`, `configure-metrics`) do
+the detailed work.
 
 ## How the Roark MCP works (read this)
 
@@ -121,6 +123,32 @@ reconstructing it from a skill: the nine of them sit alongside
 
 ## Which skill to use
 
+**Start with `simulate-quickstart`** when someone wants to create and run a
+simulation, is new to Roark, or is not sure which skill applies. It runs the
+whole path in order and routes to the matching industry playbook.
+
+Industry flow playbooks (personas, a copy-ready improv flow catalog, templates
+and metrics for the industry):
+
+- **`flows-customer-support`** - billing, account access, troubleshooting,
+  cancellation, escalation.
+- **`flows-healthcare`** - appointments, prescription refills, insurance
+  verification, after-hours.
+- **`flows-car-dealership`** - sales, service scheduling, parts, financing,
+  test-drive follow-up.
+- **`flows-home-services`** - booking, rescheduling, technician ETA, billing,
+  emergency vs routine triage.
+- **`flows-finance`** - account inquiries, fraud and card issues, transfers,
+  disputes.
+- **`flows-car-insurance`** - first notice of loss, policy questions, claims
+  status, billing, coverage.
+- **`flows-debt-collection`** - payment arrangements, hardship, disputes,
+  disclosures, staying inside the customer's collection policy.
+- **`simulate-load-testing`** - the Load testing template: concurrency,
+  iterations, staged ramp-up, what to watch.
+
+The detailed skills:
+
 - **`build-run-plan`** - configure and start a simulation: pick a testing goal,
   choose flows and how much of each to run, set iteration and concurrency, attach
   metrics, preview the call count, and run. This is the main skill.
@@ -169,9 +197,11 @@ in-product only), **issues**, **provider call imports**
 complete list is in [references/primitives.md](references/primitives.md). If unsure
 whether a method exists, use docs search rather than guessing a name.
 
-A typical first-time setup runs them in order: `register-agent` ->
-`author-personas-flows` -> `build-run-plan` (+ `configure-metrics`) ->
-`read-results`. Most repeat runs are just `build-run-plan` -> `read-results`.
+A typical first-time setup runs them in order: `simulate-quickstart` -> the
+matching `flows-*` playbook -> `build-run-plan` (+ `configure-metrics`) ->
+`read-results`, with `register-agent` and `author-personas-flows` pulled in when
+the agent, personas, or flows do not exist yet. Most repeat runs are just
+`build-run-plan` -> `read-results`.
 
 ## The one rule that costs money
 
