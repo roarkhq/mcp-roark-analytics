@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.11.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.10.0...v5.11.0) (2026-11-06)
+
+
+### Features
+
+* **mcp:** mcp update ([#257](https://github.com/roarkhq/mcp-roark-analytics/issues/257)) ([b276fd2](https://github.com/roarkhq/mcp-roark-analytics/commit/b276fd25f66013637a4eab083975e4524d134ce7))
+
 ## [5.10.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.9.1...v5.10.0) (2026-11-05)
 
 
