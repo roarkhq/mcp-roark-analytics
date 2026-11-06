@@ -1,4 +1,4 @@
-import { parseCLIOptions } from '../src/options';
+import { parseCLIOptions, parseQueryOptions, toolSurfaceFor } from '../src/options';
 
 // Mock process.argv
 const mockArgv = (args: string[]) => {
@@ -64,6 +64,71 @@ describe('docs search mode', () => {
     expect(parseCLIOptions().docsSearchMode).toBe('stainless-api');
 
     cleanup();
+  });
+});
+
+describe('tool surface', () => {
+  const OAUTH_ENV = ['MCP_OAUTH_ISSUER', 'MCP_OAUTH_RESOURCE_BASE_URL'] as const;
+  let savedEnv: Record<string, string | undefined>;
+
+  beforeEach(() => {
+    savedEnv = Object.fromEntries(OAUTH_ENV.map((key) => [key, process.env[key]]));
+    for (const key of OAUTH_ENV) delete process.env[key];
+  });
+
+  afterEach(() => {
+    for (const key of OAUTH_ENV) {
+      const value = savedEnv[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  it('defaults a local install to the code execution tool', () => {
+    const cleanup = mockArgv([]);
+
+    expect(parseCLIOptions().toolSurface).toBe('code');
+
+    cleanup();
+  });
+
+  it('defaults the OAuth server to the directory tool set', () => {
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.api.roark.ai',
+    ]);
+
+    expect(parseCLIOptions().toolSurface).toBe('directory');
+
+    cleanup();
+  });
+
+  it('lets an operator keep code execution on an OAuth server explicitly', () => {
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.api.roark.ai',
+      '--tool-surface=code',
+    ]);
+
+    expect(parseCLIOptions().toolSurface).toBe('code');
+
+    cleanup();
+  });
+
+  it('treats an unset surface with OAuth config as directory', () => {
+    expect(
+      toolSurfaceFor({ oauth: { issuer: 'https://auth.example', resourceBaseUrl: 'https://mcp.example' } }),
+    ).toBe('directory');
+    expect(toolSurfaceFor(undefined)).toBe('code');
+  });
+
+  it('does not let a query string change the surface', () => {
+    const parsed = parseQueryOptions(
+      { codeExecutionMode: 'local', toolSurface: 'directory', includeCodeTool: true },
+      { tools: ['code'] },
+    );
+
+    expect(parsed.toolSurface).toBe('directory');
   });
 });
 

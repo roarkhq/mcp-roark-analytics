@@ -9,7 +9,7 @@ import pino from 'pino';
 import pinoHttp from 'pino-http';
 import { getStainlessApiKey, parseClientAuthHeaders } from './auth';
 import { getLogger } from './logger';
-import { McpOptions } from './options';
+import { McpOptions, toolSurfaceFor } from './options';
 import {
   Connector,
   ORIGIN_CONNECTOR,
@@ -49,9 +49,9 @@ const newServer = async ({
   // token is a Roark API key and is forwarded to the SDK unchanged. Without oauth
   // config we keep the legacy optional-bearer behavior (local installs).
   //
-  // This runs before the server is built on purpose: `newMcpServer` fetches the
-  // instructions document over the network, and an unauthenticated caller should
-  // not be able to make us do that.
+  // This runs before the server is built on purpose: in code mode `newMcpServer`
+  // fetches the instructions document over the network, and an unauthenticated
+  // caller should not be able to make us do that. Directory mode does not fetch.
   let authOptions: Partial<ClientOptions>;
   if (mcpOptions.oauth) {
     const connector = connectorFrom(req);
@@ -74,7 +74,11 @@ const newServer = async ({
 
   const stainlessApiKey = getStainlessApiKey(req, mcpOptions);
   const customInstructionsPath = mcpOptions.customInstructionsPath;
-  const server = await newMcpServer({ stainlessApiKey, customInstructionsPath });
+  const server = await newMcpServer({
+    stainlessApiKey,
+    customInstructionsPath,
+    toolSurface: toolSurfaceFor(mcpOptions),
+  });
 
   let upstreamClientEnvs: Record<string, string> | undefined;
   const clientEnvsHeader = req.headers['x-stainless-mcp-client-envs'];

@@ -1,7 +1,7 @@
 // Keep the version the MCP server reports in step with this package's
 // `package.json`.
 //
-// `src/server.ts` declares it as a literal, marked `x-release-please-version`,
+// `src/server.ts` and `src/client-headers.ts` each declare it as a literal, marked `x-release-please-version`,
 // because release-please rewrote it in the repository this package used to live
 // in. There is no release-please here: this package is not on the SDK's release
 // train, its version is its own, and a human bumps `package.json` before
@@ -12,6 +12,9 @@
 // That is not hypothetical. `@roarkanalytics/cli@0.1.0` published reporting
 // `2.31.0` for exactly this reason, one repository over, and npm versions are
 // immutable.
+//
+// The server reports one in the MCP handshake, and publish.yml checks the
+// compiled server.js for it; the other goes to the API in `X-Roark-Client`.
 //
 // Runs before tsc, so the compiled output can only ever carry the version that
 // is about to be published.
@@ -30,23 +33,28 @@ const main = () => {
     throw new Error(`package.json version is not semver: ${version}`);
   }
 
-  const serverFile = path.resolve(__dirname, '..', 'src', 'server.ts');
-  const contents = fs.readFileSync(serverFile, 'utf8');
-  // Anchored on the marker rather than on `version:`, which appears several
-  // times in this file - `mcpClientInfo` has one, and rewriting that would
-  // report the client's version as the server's.
-  const PATTERN = /(version: ')([^']*)(', \/\/ x-release-please-version)/;
-  if (!PATTERN.test(contents)) {
-    throw new Error(
-      'src/server.ts has no x-release-please-version marker; nothing to sync. If the line was ' +
-        'reworded, reword this pattern with it rather than deleting the sync.',
-    );
-  }
+  // Each anchored on its marker, so nothing else that mentions a version is
+  // rewritten: `version:` appears several times in server.ts (`mcpClientInfo`
+  // has one), and rewriting that would report the client's version as the server's.
+  const FILES = [
+    ['server.ts', /(version: ')([^']*)(', \/\/ x-release-please-version)/],
+    ['client-headers.ts', /(MCP_SERVER_VERSION = ')([^']*)('; \/\/ x-release-please-version)/],
+  ];
+  for (const [name, PATTERN] of FILES) {
+    const file = path.resolve(__dirname, '..', 'src', name);
+    const contents = fs.readFileSync(file, 'utf8');
+    if (!PATTERN.test(contents)) {
+      throw new Error(
+        `src/${name} has no x-release-please-version marker; nothing to sync. If the line was ` +
+          'reworded, reword this pattern with it rather than deleting the sync.',
+      );
+    }
 
-  const updated = contents.replace(PATTERN, `$1${version}$3`);
-  if (updated !== contents) {
-    fs.writeFileSync(serverFile, updated);
-    console.log(`synced src/server.ts to ${version}`);
+    const updated = contents.replace(PATTERN, `$1${version}$3`);
+    if (updated !== contents) {
+      fs.writeFileSync(file, updated);
+      console.log(`synced src/${name} to ${version}`);
+    }
   }
 };
 

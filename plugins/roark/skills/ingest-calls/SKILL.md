@@ -61,17 +61,39 @@ which makes imports idempotent if you key on your own id.
 
 ## Reading calls back
 
+On the remote connector this is the `list_calls` tool, with the same filters as
+`GET /v1/call`. On the local code-execution server it is `client.call.list`.
+
 ```ts
-// List with filters and sorting.
+// List with filters and sorting. The remote tool takes the same fields.
 const { data, pagination } = await client.call.list({
   limit: 50,                 // 1-100
   status: 'ENDED',
   searchText: 'refund',      // matches title / summary / transcript
+  agentId,                   // one UUID, or comma-separated UUIDs, no spaces, max 100
+  properties: {
+    agent_name: { eq: 'Frontdesk' }, // alias agentName; any participating agent's current name
+    // agent_id: { eq: agentId },    // one UUID
+    // plan_tier: { eq: 'gold' },    // any other name is a custom property
+    // plan_tier: { exists: true },  // one operator per property
+  },
   sortBy: 'startedAt',       // createdAt | startedAt | endedAt | duration | title | status
-  sortDirection: 'desc',
+  sortDirection: 'desc',     // default desc; combines with the filters
   simulationRunPlanJobId,    // optional: only calls from a given run
 })
+```
 
+`eq` is a case-insensitive exact match (`properties[<name>][eq]=<value>`).
+`exists` is `properties[<name>][exists]=true` or `false`. `sortBy` defaults to
+`createdAt`.
+
+The published SDK type for `call.list` declares `sortBy`, `sortDirection`, and
+`properties.<name>.exists`. `agentId` and `properties.<name>.eq` are accepted by
+`list_calls` now and are forwarded on `client.call.list` once that type is
+regenerated; until then a snippet that passes `eq` fails the code tool's
+typecheck. Use `list_calls` for those filters.
+
+```ts
 const call = await client.call.getByID(callId)
 // title, summary (auto-generated), status, durationMs, endedStatus,
 // recordingUrl (pre-signed, ~1h), recordingUrlAccess, properties, policyIds, agents, customers

@@ -192,6 +192,27 @@ describe('remote OAuth mode', () => {
     );
   });
 
+  it('lists named tools on the OAuth connector, each with a title and a hint', async () => {
+    const request = await serve(options);
+    const res = await request(
+      '/mcp',
+      postJson(
+        { jsonrpc: '2.0', id: 8, method: 'tools/list', params: {} },
+        { authorization: `Bearer ${LIVE_TOKEN}` },
+      ),
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('"list_agents"');
+    expect(body).toContain('"run_simulation"');
+    expect(body).toContain('"search_docs"');
+    expect(body).not.toContain('"execute"');
+    expect(body).toContain('"readOnlyHint":true');
+    expect(body).toContain('"destructiveHint":true');
+    expect(body).toContain('"title":"List agents"');
+  });
+
   it('serves the unpinned connector once a bearer is present', async () => {
     const request = await serve(options);
     const res = await request('/mcp', postJson(INITIALIZE, { authorization: 'Bearer roark_test_key' }));

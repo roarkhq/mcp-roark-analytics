@@ -5,12 +5,17 @@ classes of mistakes.
 
 ## Auth and scoping
 
-- The MCP authenticates with a bearer token from `ROARK_API_BEARER_TOKEN` against
-  `https://api.roark.ai`.
-- **A token is scoped to one project.** Everything you list or create lives in
-  that project. There is no cross-project call; to work in another project you
-  need that project's key. Do not assume resources from one project are visible
-  in another.
+- The plugin's remote connector (`https://mcp.api.roark.ai/mcp`) signs the user
+  in through the browser. It exposes the named tools in `roark-overview`, not
+  the TypeScript snippets below. Those snippets run on the local
+  code-execution server, which authenticates with a bearer token from
+  `ROARK_API_BEARER_TOKEN` against `https://api.roark.ai`.
+- **A project API key is scoped to one project.** Everything it lists or
+  creates lives in that project. The remote connector's user credential is
+  different: it can reach every project the person belongs to, and each named
+  tool takes a `project` id (`list_projects` returns them). A pinned connector
+  URL (`/mcp/<projectId>`) is already limited to that project. Do not assume
+  resources from one project are visible in another.
 - Some actions need a **permission** on the key, not just a valid token. A 403
   names the missing permission; tell the user to grant it on the API key rather
   than working around it. Permissions are `resource:action` strings:

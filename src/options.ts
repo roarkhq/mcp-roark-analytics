@@ -25,6 +25,11 @@ export type McpOptions = {
   codeAllowedMethods?: string[] | undefined;
   codeBlockedMethods?: string[] | undefined;
   codeExecutionMode: McpCodeExecutionMode;
+  /**
+   * Which tool set to expose. Unset means `directory` when `oauth` is set and
+   * `code` otherwise. See `toolSurfaceFor`.
+   */
+  toolSurface?: ToolSurface | undefined;
   customInstructionsPath?: string | undefined;
   /**
    * Remote OAuth resource-server config. When set (http transport), every request
@@ -36,6 +41,23 @@ export type McpOptions = {
 };
 
 export type McpCodeExecutionMode = 'stainless-sandbox' | 'local';
+
+/**
+ * `directory` is the Claude connector surface: one named tool per action, reads
+ * and writes split. `code` is the local install: `execute` plus docs search.
+ */
+export type ToolSurface = 'code' | 'directory';
+
+/**
+ * OAuth is what the hosted directory server runs with, so that process defaults
+ * to the named tools. A local stdio install, and an HTTP server without OAuth,
+ * keep the code tool. An explicit `toolSurface` wins over that default, which
+ * is how a private server can still opt into code execution.
+ */
+export function toolSurfaceFor(options?: Pick<McpOptions, 'toolSurface' | 'oauth'>): ToolSurface {
+  if (options?.toolSurface) return options.toolSurface;
+  return options?.oauth ? 'directory' : 'code';
+}
 
 export function parseCLIOptions(): CLIOptions {
   const opts = yargs(hideBin(process.argv))
@@ -110,6 +132,12 @@ export function parseCLIOptions(): CLIOptions {
       description:
         'API key for Stainless. Used to authenticate requests to Stainless-hosted tools endpoints.',
     })
+    .option('tool-surface', {
+      type: 'string',
+      choices: ['code', 'directory'],
+      description:
+        "Which tools to expose. 'directory' is a set of separate read and write tools and is the default when OAuth is enabled. 'code' exposes the code execution tool and is the default otherwise.",
+    })
     .option('tools', {
       type: 'string',
       array: true,
@@ -177,6 +205,10 @@ export function parseCLIOptions(): CLIOptions {
     codeAllowedMethods: argv.codeAllowedMethods,
     codeBlockedMethods: argv.codeBlockedMethods,
     codeExecutionMode,
+    toolSurface: toolSurfaceFor({
+      toolSurface: argv.toolSurface as ToolSurface | undefined,
+      ...(oauth && { oauth }),
+    }),
     customInstructionsPath: argv.customInstructionsPath,
     ...(oauth && { oauth }),
     transport,
@@ -235,6 +267,7 @@ export function parseQueryOptions(defaultOptions: McpOptions, query: unknown): M
     ...(codeTool !== undefined && { includeCodeTool: codeTool }),
     ...(docsTools !== undefined && { includeDocsTools: docsTools }),
     codeExecutionMode: defaultOptions.codeExecutionMode,
+    toolSurface: defaultOptions.toolSurface,
     docsSearchMode: defaultOptions.docsSearchMode,
     docsDir: defaultOptions.docsDir,
   };

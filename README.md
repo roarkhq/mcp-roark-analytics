@@ -3,10 +3,11 @@
 The official MCP server for the [Roark API](https://docs.roark.ai), published as
 [`@roarkanalytics/sdk-mcp`](https://www.npmjs.com/package/@roarkanalytics/sdk-mcp).
 
-Its tool table, the code tool's prompt and its embedded docs index are generated from
-Roark's OpenAPI spec by [app-agent-codegen](https://github.com/roarkhq/app-agent-codegen) and
-arrive here as pull requests. Everything else - the transports, auth, the code tool runtime -
-is hand-maintained. Four files carry generated regions: `src/methods.ts`, `src/code-tool.ts`,
+Its code tool prompt and embedded docs index are generated from Roark's OpenAPI spec by
+[app-agent-codegen](https://github.com/roarkhq/app-agent-codegen) and arrive here as pull
+requests. Everything else, including the transports, auth, the code tool runtime, and the
+named tools the remote OAuth server exposes (`src/directory-tools.ts`), is hand-maintained.
+Four files carry generated regions: `src/methods.ts`, `src/code-tool.ts`,
 `src/code-tool-worker.ts` and `src/local-docs-search.ts`.
 
 ## Installation
@@ -66,6 +67,20 @@ environment variables in Claude Code's `.claude.json`, which can be found in you
 claude mcp add roarkanalytics_sdk_mcp_api --env ROARK_API_BEARER_TOKEN="My Bearer Token" -- npx --yes --package @roarkanalytics/sdk-mcp mcp-server
 ```
 
+### Claude.ai
+
+Add Roark as a custom connector. This uses the hosted server, so there is nothing to install and no API key to paste.
+
+1. Open Customize, then Connectors. On a Team or Enterprise plan, an Owner adds it under Organization settings, then Connectors.
+2. Choose Add custom connector.
+3. Enter `https://mcp.api.roark.ai/mcp` as the remote MCP server URL.
+4. For authentication, choose to sign in. Leave the OAuth client on Claude's published identity, or on automatic registration. Do not add an API key under request headers.
+5. Add the connector, then sign in with your Roark account in the browser when Claude asks.
+
+The server reads and writes data in the signed-in account: agents, calls, transcripts, simulation results, metrics, personas, customer flows, and simulation runs. Roark is a voice and chat agent observability and simulation platform.
+
+A project-pinned URL, `https://mcp.api.roark.ai/mcp/<projectId>`, is available when the connector should stay on one project. `https://mcp.api.roark.ai/mcp` reaches every project the account can use, and each tool takes a project id.
+
 ## Claude Code plugin and skills
 
 The [`roark` plugin](./plugins/roark) bundles this MCP server with skills for
@@ -80,10 +95,11 @@ After adding the Roark marketplace once, install both together in Claude Code:
 /plugin install roark@roark
 ```
 
-Set `ROARK_API_BEARER_TOKEN` in the environment that launches Claude Code. The
-plugin's MCP server uses the `roark` key, so its tools are exposed as
-`mcp__roark__*`. See the [plugin README](./plugins/roark/README.md) for the
-complete setup and the available skills.
+The plugin connects to the remote Roark connector and signs you in through the
+browser. No API key is set for the plugin. Its MCP server uses the `roark`
+key, so its tools are exposed as `mcp__roark__*`. See the
+[plugin README](./plugins/roark/README.md) for the complete setup and the
+available skills.
 
 ### Skills in other agents
 
@@ -108,20 +124,19 @@ why the skills must stay installed together.
 
 ## Code Mode
 
-This MCP server is built on the "Code Mode" tool scheme. In this MCP Server,
-your agent will write code against the TypeScript SDK, which will then be executed in an
-isolated sandbox. To accomplish this, the server will expose two tools to your agent:
+Local installs, and any server started without OAuth, use the "Code Mode" tool scheme. The
+agent writes code against the TypeScript SDK, and that code runs in an isolated sandbox. That
+surface exposes two tools:
 
-- The first tool is a docs search tool, which can be used to generically query for
-  documentation about your API/SDK.
+- `search_docs`, which searches SDK documentation for methods, parameters, and response shapes.
 
-- The second tool is a code tool, where the agent can write code against the TypeScript SDK.
-  The code will be executed in a sandbox environment without web or filesystem access. Then,
-  anything the code returns or prints will be returned to the agent as the result of the
-  tool call.
+- `execute`, which runs the code. The code cannot use the network or the filesystem except
+  through the SDK client. Whatever the code returns or prints comes back as the tool result.
 
-Using this scheme, agents are capable of performing very complex tasks deterministically
-and repeatably.
+The hosted server at `https://mcp.api.roark.ai/mcp` does not use Code Mode. With OAuth
+enabled it exposes the named read and write tools described under Remote OAuth, not `execute`.
+`--tool-surface=code` forces Code Mode on an OAuth server. `--tool-surface=directory` exposes
+the named tools on a server that is not using OAuth.
 
 ## Running remotely
 
@@ -136,6 +151,14 @@ When the OAuth environment variables are set, the HTTP server runs as an MCP OAu
 authorization server, and rejects requests without a bearer with `401` + `WWW-Authenticate`.
 This is what lets users add the server to Claude, ChatGPT, Cursor, VS Code, etc. and sign in
 with their Roark account instead of pasting an API key.
+
+OAuth mode also switches the tool set. Instead of the `execute` code tool, which can both
+read and write, the server exposes separate read tools and write tools (list agents, read
+calls and transcripts, read simulation results and metrics, create a persona or customer
+flow, run a simulation, and search docs). That is the surface served at
+`https://mcp.api.roark.ai/mcp`. Pass `--tool-surface=code` to keep the code tool on an
+OAuth server, or `--tool-surface=directory` to expose the named tools without OAuth. A
+local stdio install stays on the code tool unless you pass `--tool-surface=directory`.
 
 The access token the authorization server issues **is a Roark API key**: it is minted on the
 consent page with the permissions the user picked (same picker as the CLI login), expires, and
@@ -171,7 +194,8 @@ user credential used on `/mcp/<projectId>` acts on that project only.
 #### Choosing a project on the unpinned connector
 
 The unpinned connector deliberately sets no project, because there is no single right answer: the
-credential reaches several. Code written in the `execute` tool names one per call:
+credential reaches several. On the directory tool set, pass `project` to the tool. `list_projects`
+returns the ids. On the code tool, name one per call:
 
 ```js
 async function run(client) {
