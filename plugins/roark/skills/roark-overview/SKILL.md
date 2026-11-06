@@ -1,213 +1,153 @@
 ---
 name: roark-overview
 description: >-
-  Use when testing, simulating, or evaluating a voice or chat AI agent with
-  Roark, or when the Roark MCP is connected. Covers the remote connector's
-  named tools, when the local code-execution server is the one that runs SDK
-  snippets, how to authenticate, the core testing loop (register agent ->
-  personas and flows -> run plan -> run -> metrics -> results), and which
-  companion skill to use for each step. Read this first.
+  Use when working with Roark and you are not sure which Roark skill to load:
+  a one-page map from the job someone wants done (run a simulation, write test
+  conversations, connect an agent, decide how calls are graded, grade real
+  production calls, automate in CI) to the skill that does it. For the actual
+  create-and-run path, go straight to simulate-quickstart.
 ---
 
-# Roark: testing voice AI agents
+# Which Roark skill should I use?
 
-Roark stress-tests a voice or chat agent with simulated calls before launch, then
-grades every call against a suite of metrics. This skill orients you;
-`simulate-quickstart` is the default entry point for creating and running a
-simulation, and the companion skills (`build-run-plan`, `configure-metrics`) do
-the detailed work.
+Roark is a voice and chat agent observability and simulation platform. It tests
+an agent with simulated phone calls before launch, and grades real calls after
+launch. Each skill below does one job. Find the job, load that skill.
 
-## How the Roark MCP works (read this)
+## Use this when
 
-The Claude Code plugin connects to the remote Roark connector at
-`https://mcp.api.roark.ai/mcp`. Sign-in happens in the browser. That server
-exposes named tools. It does not run TypeScript snippets, and it has no
-`execute` tool.
+- You have a Roark task and do not know which skill covers it.
+- You need the one rule about cost before doing anything that places calls.
 
-Read tools: `list_projects`, `list_agents`, `list_agent_endpoints`,
-`list_calls`, `get_call`, `get_call_transcript`, `list_call_metrics`,
-`list_metric_definitions`, `get_simulation_results`, `list_personas`,
-`list_customer_flows`, `list_simulation_environments`, and `search_docs`.
+## Use a different skill when
 
-`list_calls` filters and sorts with the same parameters as `GET /v1/call`:
+- You want to create and run a simulation: go straight to
+  **`simulate-quickstart`**. It is the start-here path.
+- You need to know what a Roark object *is* (persona, flow, run plan, metric):
+  read **`roark-concepts`**.
 
-- `agentId` — one agent UUID, or up to 100 comma-separated UUIDs with no spaces.
-  Every entry is a UUID.
-- `properties` — an object keyed by property name, at most 20. Each value sets
-  one operator. `eq` is a case-insensitive exact match, sent as
-  `properties[<name>][eq]=<value>`. `exists` checks whether the property is set,
-  sent as `properties[<name>][exists]=true` or `false`. Built-in `agent_name`
-  (alias `agentName`) matches any participating agent's current name. Built-in
-  `agent_id` takes one UUID. Any other name is a custom property.
-- `sortBy` — `createdAt` (default), `startedAt`, `endedAt`, `duration`, `title`,
-  or `status`. `sortDirection` is `desc` (default) or `asc`. The sort combines
-  with the filters.
+## You will have
 
-Write tools: `create_agent`, `create_agent_endpoint` (phone numbers),
-`create_persona`, `create_customer_flow`, and `run_simulation`.
+The name of the one skill to load next.
 
-`https://mcp.api.roark.ai/mcp` is not pinned to one project. Pass `project`
-on each tool that acts inside a project. `list_projects` returns the ids.
-A URL of the form `https://mcp.api.roark.ai/mcp/<projectId>` is already
-pinned, so `project` can be omitted.
+## The map
 
-`search_docs` searches SDK documentation for method and payload details that
-a tool schema does not list.
+### 1. Run a simulation
 
-The TypeScript snippets in the other skills are the underlying Roark API.
-They run on the local code-execution server, which is a separate install
-(see the repository README) and is not what this plugin connects to. That
-server has two tools: a code tool that runs an `async function run(client)`
-against `@roarkanalytics/sdk`, and `search_docs`. Workflows with no named
-tool need it: scripted flow graphs, metric policies, webhooks, config as
-code, and importing a recording.
+- **`simulate-quickstart`** - start here: from "test my agent" to a created,
+  previewed, and confirmed run, end to end.
+- **`flows-*` playbooks** - what to test for an industry: personas, flows, and
+  metrics for `flows-customer-support`, `flows-healthcare`,
+  `flows-car-dealership`, `flows-home-services`, `flows-finance`,
+  `flows-car-insurance`, and `flows-debt-collection`.
+- **`simulate-load-testing`** - high-volume runs only: concurrency, iterations,
+  staged ramp-up.
+- **`build-run-plan`** - the detailed how-to for assembling a plan, previewing its
+  call count, and starting it.
+- **`manage-run-plans`** - work with a suite that is already saved: find, edit,
+  re-run, promote, delete.
+- **`read-results`** - find out how a run went: pass/fail checks, scores,
+  transcripts.
 
-On that local server, one snippet can chain several calls. If a snippet
-fails schema validation, the error names the offending field. Fix that field
-and run it again.
+### 2. Write the test conversations
 
-## Auth
+- **`author-personas-flows`** - create the caller (persona) and a natural,
+  improvised conversation (IMPROV flow).
+- **`author-scripted-flows`** - create an exact conversation: IVR menus, keypad
+  (DTMF) entry, silence, voicemail, fixed turn order.
 
-On the remote connector, sign in with the Roark account in the browser. There
-is no API key to paste into Claude.
+### 3. Connect the agent
 
-On the local code-execution server, the MCP authenticates with a bearer token
-from the `ROARK_API_BEARER_TOKEN` environment variable against
-`https://api.roark.ai`. A project API key is scoped to one project. The
-remote connector's user credential can reach every project the person belongs
-to, which is why those tools take `project`. If calls return 401, the sign-in
-expired or the local token is missing. Tell the user to sign in again, or to
-set a Roark API key on the local server. Never read a token out of a
-checked-in file.
+- **`register-agent`** - give Roark the agent under test and the phone number it
+  calls. Skip it if the agent already has an endpoint.
+- **`configure-outbound-dial`** - only when Roark must call your platform's API
+  to make the agent dial out. Inbound agents skip it.
 
-## The core loop
+### 4. Decide what "good" means
 
-```
-  agent + endpoint     who + how Roark reaches the agent under test
-        |
-  personas + flows     who calls (persona) and what they do (customer flow)
-        |
-  run plan             the test matrix: endpoints x flows x personas x metrics
-        |
-  run                  places the simulated calls
-        |
-  metrics              each finished call is graded pass/fail and scored
-        |
-  results              read scores, reasoning, and transcripts
-```
+- **`configure-metrics`** - pick the built-in metrics and pass/fail checks that
+  grade each call, or write a custom one.
 
-You rarely build all of this from scratch. Most projects already have an agent,
-some flows, and the system persona library. The common request is **"assemble
-the right run plan and metrics and run it"**, which is `build-run-plan` +
-`configure-metrics`.
+### 5. Grade real production calls
 
-The full object model - every primitive, what it references, and which ones you can
-actually create through the SDK - is in
-[references/primitives.md](references/primitives.md). Read it before inventing a
-method name.
+- **`ingest-calls`** - import a recording of a call that already happened, and
+  read calls back.
+- **`monitor-live-calls`** - grade production traffic automatically from now on,
+  or backfill scores over past calls.
 
-## Where the definitions live
+### 6. Automate
 
-The **`roark-concepts`** skill holds what each domain object *is*: personas,
-flows, scripted graphs, run plans, metrics, templates, config-as-code. It is
-generated from Roark's own corpus and shared with the in-product assistant, so
-the two cannot describe the product differently, and it is the thing to trust
-when a skill and your memory disagree.
+- **`gate-ci`** - fail a deploy when a simulation's checks fail.
+- **`subscribe-webhooks`** - get an HTTP callback when a run or analysis finishes,
+  instead of polling.
+- **`manage-config-as-code`** - keep agents, personas, flows, metrics, and
+  collectors in a repo and sync them with diff and apply.
 
-The split is worth keeping straight: a **concept** says what a thing is and which
-choice is right; a **skill** says which call to make and what the API will
-reject. When you need a definition, read the concept file rather than
-reconstructing it from a skill: the nine of them sit alongside
-[personas](../roark-concepts/personas.md) in that directory, and
-[references/primitives.md](references/primitives.md) routes to the right one.
+### 7. Reference
 
-## Which skill to use
+- **`roark-concepts`** - what each Roark object is and which choice is right.
+  Generated from Roark's own product docs; trust it over memory.
+- [references/primitives.md](references/primitives.md) - the object graph, and
+  which objects the SDK can create.
+- [references/conventions.md](references/conventions.md) - permissions,
+  pagination, response envelopes, errors.
 
-**Start with `simulate-quickstart`** when someone wants to create and run a
-simulation, is new to Roark, or is not sure which skill applies. It runs the
-whole path in order and routes to the matching industry playbook.
+## Typical orders
 
-Industry flow playbooks (personas, a copy-ready improv flow catalog, templates
-and metrics for the industry):
-
-- **`flows-customer-support`** - billing, account access, troubleshooting,
-  cancellation, escalation.
-- **`flows-healthcare`** - appointments, prescription refills, insurance
-  verification, after-hours.
-- **`flows-car-dealership`** - sales, service scheduling, parts, financing,
-  test-drive follow-up.
-- **`flows-home-services`** - booking, rescheduling, technician ETA, billing,
-  emergency vs routine triage.
-- **`flows-finance`** - account inquiries, fraud and card issues, transfers,
-  disputes.
-- **`flows-car-insurance`** - first notice of loss, policy questions, claims
-  status, billing, coverage.
-- **`flows-debt-collection`** - payment arrangements, hardship, disputes,
-  disclosures, staying inside the customer's collection policy.
-- **`simulate-load-testing`** - the Load testing template: concurrency,
-  iterations, staged ramp-up, what to watch.
-
-The detailed skills:
-
-- **`build-run-plan`** - configure and start a simulation: pick a testing goal,
-  choose flows and how much of each to run, set iteration and concurrency, attach
-  metrics, preview the call count, and run. This is the main skill.
-- **`configure-metrics`** - choose the built-in metrics for a goal, add pass/fail
-  checks, or author a custom metric (LLM judge, formula, temporal pattern).
-- **`register-agent`** - create the agent under test and a phone endpoint Roark
-  can reach. Use when the agent is new.
-- **`author-personas-flows`** - define who calls (personas) and what they do
-  (improv customer flows) when a run needs one that does not exist yet.
-- **`author-scripted-flows`** - author a SCRIPTED flow: an IVR/phone-tree, DTMF
-  keypad entry, silence/voicemail, and exact turn-by-turn routing (a conversation
-  graph). Use when a test needs deterministic routing or key presses.
-- **`configure-outbound-dial`** - define the HTTP request Roark sends to your
-  platform to place an OUTBOUND call (`httpRequestDefinition`). Only for outbound
-  runs where Roark must trigger the dial.
-- **`manage-run-plans`** - manage saved test suites: find, read, update, re-run,
-  promote a one-off into a saved plan, delete. Use for "our nightly suite" or
-  "change what the billing tests cover".
-- **`read-results`** - poll a run, list its calls, and read metric scores
-  (pass/fail) and transcripts.
-- **`monitor-live-calls`** - grade real production calls/chats (not simulations):
-  a standing metric policy over live traffic, or a collection job to backfill
-  metrics over existing calls.
-- **`ingest-calls`** - import an already-happened real call from a recording URL
-  for analysis, and read calls/transcripts/sentiment back.
-- **`subscribe-webhooks`** - get notified on events (run finished, analysis
-  complete, issue opened) instead of polling.
-- **`manage-config-as-code`** - manage agents, personas, flows, metrics, and
-  collectors declaratively from a repo (diff then apply), instead of imperative
-  create/update. Reach for this when the user wants Roark config in git.
-- **`gate-ci`** - gate a deploy or CI pipeline on a run (start -> wait -> assert
-  the pass/fail metrics -> exit code).
-
-Cross-cutting rules every skill relies on (auth, project scoping, pagination,
-idempotency, cost, error handling) are in
-[references/conventions.md](references/conventions.md).
-
-**Not driven through this SDK.** Several Roark surfaces are configured in-product,
-over raw HTTP, or via provider integrations, so do not invent client methods for
-them: **chat** (real chats can be ingested and graded, but only via
-`POST /v1/chat`; there is no `client.chat.*`, and **chat cannot be simulated at
-all**), **knowledge-base grounding**, **datasets** (regression curation is
-in-product only), **issues**, **provider call imports**
-(Vapi/Retell/LiveKit/Pipecat send webhooks to Roark; to bring a call in via code use
-`ingest-calls`' `call.create`), and **metric update/delete/thresholds**. The
-complete list is in [references/primitives.md](references/primitives.md). If unsure
-whether a method exists, use docs search rather than guessing a name.
-
-A typical first-time setup runs them in order: `simulate-quickstart` -> the
-matching `flows-*` playbook -> `build-run-plan` (+ `configure-metrics`) ->
-`read-results`, with `register-agent` and `author-personas-flows` pulled in when
-the agent, personas, or flows do not exist yet. Most repeat runs are just
-`build-run-plan` -> `read-results`.
+- **First run:** `simulate-quickstart` -> the matching `flows-*` playbook ->
+  `build-run-plan` -> `read-results`. It pulls in `register-agent` and
+  `author-personas-flows` only when the agent, personas, or flows do not exist.
+- **Repeat run:** `manage-run-plans` (re-run by id) -> `read-results`.
+- **Release gate:** `manage-run-plans` (a saved suite) -> `gate-ci`.
 
 ## The one rule that costs money
 
-**Every simulated call is a real call that bills.** The number of calls a run
-places is `flows and variants x personas x endpoints x iterationCount`, and it is
-easy to make it explode (selecting `edgeCases: 'ALL'` across several flows, or a
-large `iterationCount`). Before starting any run that could be large, **create
-the plan, read back `testCaseCount`, state it to the user, and only then start
-the run.** `build-run-plan` shows exactly how.
+**Every simulated call is a real call that bills.** A run places
+`flows and variants x personas x endpoints x iterationCount` calls, and that
+multiplies fast (`edgeCases: 'ALL'` across several flows, or a large
+`iterationCount`). Before any run starts: **create the plan, read back
+`testCaseCount`, tell the user the number, and wait for a yes.**
+`build-run-plan` shows exactly how.
+
+Simulations are voice calls. Chat cannot be simulated through the SDK; real
+chats can only be imported and graded (`ingest-calls`, `monitor-live-calls`).
+
+## Not available through the SDK
+
+Do not invent client methods for these. They live in the product, on raw HTTP,
+or in provider integrations: chat (`POST /v1/chat` only, no `client.chat.*`),
+knowledge-base grounding, datasets, issues, provider call imports (Vapi, Retell,
+LiveKit, Pipecat send webhooks to Roark), and metric update, delete, and
+thresholds. The full list is in
+[references/primitives.md](references/primitives.md). If unsure a method exists,
+search the SDK docs rather than guessing a name.
+
+## Next
+
+- Creating and running a simulation: `simulate-quickstart`.
+- Anything else: the skill named in the map above.
+
+## How the tools connect (MCP note)
+
+The skills' TypeScript examples are `@roarkanalytics/sdk` calls.
+
+- **Claude Code plugin (default).** Connects to Roark's hosted MCP at
+  `https://mcp.api.roark.ai/mcp` and signs in through the browser. It exposes
+  named tools: `list_projects`, `list_agents`, `list_agent_endpoints`,
+  `list_calls`, `get_call`, `get_call_transcript`, `list_call_metrics`,
+  `list_metric_definitions`, `get_simulation_results`, `list_personas`,
+  `list_customer_flows`, `list_simulation_environments`, `search_docs`, and the
+  writes `create_agent`, `create_agent_endpoint`, `create_persona`,
+  `create_customer_flow`, `run_simulation`. Pass `project` on each call
+  (`list_projects` returns ids), unless the URL is pinned as `/mcp/<projectId>`.
+  It does not run TypeScript.
+- **Local code-execution server** (separate install, see the repository README).
+  Runs an `async function run(client)` against the SDK with a
+  `ROARK_API_BEARER_TOKEN` API key. Needed for anything the named tools do not
+  cover: scripted flow graphs, run plan create and update, metric policies,
+  webhooks, config as code, importing a recording.
+
+On a 401, the sign-in expired or the token is missing: tell the user to sign in
+again or set the key. Never read a token from a checked-in file. Permissions,
+pagination, and error handling are in
+[references/conventions.md](references/conventions.md).

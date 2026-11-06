@@ -20,6 +20,29 @@ troubleshooting, cancellation, and handing off to a human. This is the playbook
 Run order: `simulate-quickstart` (the path) -> this skill (what to author) ->
 `build-run-plan` (plan, preview, run) -> `read-results`.
 
+## Use this when
+
+- You are testing a support line: billing, account access, troubleshooting,
+  cancellation, or escalation to a human.
+- You want ready-to-use support personas, flows, and edge cases rather than
+  writing them from scratch.
+
+## Use a different skill when
+
+- The call opens with an IVR menu or keypad entry, or a script must be recited
+  verbatim: `author-scripted-flows` for that part.
+- You need the field-by-field API for personas and flows: `author-personas-flows`.
+- The agent is in another industry: `simulate-quickstart` routes to the right
+  playbook.
+- The flows already exist and you want to run or re-run them: `build-run-plan` or
+  `manage-run-plans`.
+
+## You will have
+
+Personas for calm, frustrated, confused, and repeat callers, five IMPROV flows
+with expectations, a metric list, and a run plan whose `testCaseCount` the user
+has confirmed.
+
 ## Before you author
 
 Ask the user for:
@@ -286,7 +309,7 @@ step 5).
 
 ## Next
 
-- `simulate-quickstart`: the full path and the remote-connector variant.
+- `simulate-quickstart`: the full path, including the MCP tool variant.
 - `author-personas-flows`: persona fields and edge case operations.
 - `build-run-plan`: flow selection, preview, start.
 - `configure-metrics`: custom LLM judges for policy checks.

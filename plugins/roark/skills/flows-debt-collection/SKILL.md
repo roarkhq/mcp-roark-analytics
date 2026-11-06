@@ -17,6 +17,29 @@ reciting required disclosures, arranging payment, and handling hardship and
 disputes. Run order: `simulate-quickstart` -> this skill -> `build-run-plan` ->
 `read-results`.
 
+## Use this when
+
+- You are testing a collections agent: payment arrangements, hardship,
+  disputes, disclosures, wrong-party calls.
+- You need checks that the agent stays inside the customer's own collection
+  policy.
+
+## Use a different skill when
+
+- The call opens with an IVR menu or keypad entry, or a script must be recited
+  verbatim: `author-scripted-flows` for that part.
+- You need the field-by-field API for personas and flows: `author-personas-flows`.
+- The agent is in another industry: `simulate-quickstart` routes to the right
+  playbook.
+- The flows already exist and you want to run or re-run them: `build-run-plan` or
+  `manage-run-plans`.
+
+## You will have
+
+Personas (including a third party who answers), four IMPROV flows on synthetic
+data with expectations from the customer's policy, an optional custom judge, and
+a run plan whose `testCaseCount` the user has confirmed.
+
 ## Ground rules
 
 - **The customer's collection policy is the spec.** The required disclosure

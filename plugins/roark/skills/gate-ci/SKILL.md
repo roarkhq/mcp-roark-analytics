@@ -1,169 +1,161 @@
 ---
 name: gate-ci
 description: >-
-  Use to gate a deploy or CI pipeline on a Roark simulation: start a run, wait
-  for it to finish, check whether the pass/fail metrics passed, and turn that
-  into a green/red result (exit code). Use when someone wants Roark to block a
-  release, run in CI, or answer "did this build pass its voice tests".
+  Use when a deploy or CI pipeline should pass or fail on a Roark simulation:
+  run a saved plan, wait for it to finish, check every pass/fail metric, and exit
+  non-zero if any failed, with a CI credential that is narrowly scoped and never
+  printed. Use for "block the release if the voice tests fail" or "did this build
+  pass". Not for a one-off look at results; that is read-results.
 ---
 
-# Gate CI/CD on a Roark run
+# Block a release on simulation results
 
-Roark's headline use is gating a deploy: run the simulation, and fail the
-pipeline if the agent does not meet the bar. There is no single "gate" call, so
-compose three steps: **start -> wait -> assert**.
+There is no single "gate" call. A gate is three steps: **start -> wait ->
+assert**, plus a credential CI can run as.
 
-**The gate is the checks, not the run.** `../roark-concepts/metrics.md`: a check
-is a threshold metric that turns a score into a boolean, and it is free, because
-thresholds are computed from values that already exist and reach no model. A
-pipeline wired to a plan with no checks attached goes green forever without ever
-having tested the bar.
+## Use this when
 
-## The credential CI runs as
+- A pipeline should go red when the agent fails its simulation checks.
+- Someone asks "did this build pass its voice tests" in an automated way.
 
-CI needs its own credential, not a developer's. Default to having the **user**
-create it: the New credential dialog in the dashboard, or
-`roark credential create --name "CI deploy gate"` in their own terminal. They
-paste the value into the CI secret store. That is one human step, and it keeps a
-live key out of this conversation.
+## Use a different skill when
 
-If you do mint it programmatically, `client.me.createAPIKey` returns the key
-**exactly once**, inside the `data` envelope every response has:
+- You want to look at one run's results by hand: `read-results`.
+- The suite does not exist yet: build it with `build-run-plan` and save it
+  (`manage-run-plans`), then gate on its id.
+- You want CI to wait on a callback instead of polling: add `subscribe-webhooks`.
+
+## You will have
+
+A script (for example `roark-gate.mjs`) that runs a saved plan by id, waits with a
+time cap, fails if any `_check` is false or if no checks ran, prints why, and
+exits `0` or `1`. Plus a CI secret holding a narrowly scoped Roark key.
+
+**The gate is the checks, not the run.** A check is a threshold metric that turns
+a score into a boolean (`../roark-concepts/metrics.md`). A plan with no checks
+attached goes green forever without testing anything.
+
+## 1. The credential CI runs as
+
+Default to having the **user** create it: the New credential dialog in the
+dashboard, or `roark credential create --name "CI deploy gate"` in their own
+terminal. They paste it into the CI secret store. One human step keeps a live key
+out of this conversation.
+
+If you mint it in code, `client.me.createAPIKey` returns the key **exactly once**:
 
 ```ts
 const ninetyDays = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
 const { data: cred } = await client.me.createAPIKey({
   name: 'CI deploy gate',
-  projectId, // name it explicitly; you must be an ADMIN of whichever project is used
+  projectId, // pass it explicitly; you must be an ADMIN of this project
   scopes: ['WRITE'], // the gate starts a run; READ alone cannot
   permissions: ['simulation:run', 'simulation:read', 'metric:read'],
-  expiresAt: ninetyDays, // capped by the minting credential's own expiry
+  expiresAt: ninetyDays, // capped by the minting credential's expiry
 })
 console.log(cred.id, cred.name) // never cred.key
 ```
 
-The rules matter more than the call:
+- **Never print the key.** Snippet output lands in the transcript. Print `cred.id`
+  and `cred.name` only, never `cred.key` or the whole response (the docs-search
+  example ends with `console.log(response)`; do not copy it). Send the value to
+  the secret store (`gh secret set ROARK_API_BEARER_TOKEN`), never into a repo
+  file.
+- **Two different 403s.** A project API key gets "these endpoints describe a
+  person" (this needs a personal credential). A non-admin gets "only project
+  admins can create a personal credential for this project". Read which one it
+  was; do not retry either. Omitting `projectId` without a default project is a
+  400.
+- **Narrow it.** Omitted fields copy the calling credential, so an unnarrowed mint
+  clones your token. The three permissions above are what the gate calls; the full
+  table is in `../roark-overview/references/conventions.md`.
+- **One credential per pipeline**, so revoking is surgical:
+  `client.me.listAPIKeys()` shows `lastUsedAt`, `client.me.revokeAPIKey(id)`
+  revokes.
 
-- **Never echo the key.** This MCP runs your snippet and its output lands in the
-  transcript. Destructure `data` as above and print `cred.id` / `cred.name`,
-  never `cred.key` and never the whole response. The generated docs-search entry
-  for this method ends with `console.log(response)`, which dumps the envelope
-  including the key - do not copy that line. Send the value straight to the
-  secret store (`gh secret set ROARK_API_BEARER_TOKEN`) and never into a file in
-  the repo: the workflow references the secret, it does not contain it.
-- **Two preconditions, two different refusals.** It needs a **personal**
-  credential: a project API key is a 403 saying "these endpoints describe a
-  person". And it needs you to be an **ADMIN of the project** the credential
-  defaults to: a non-admin is a different 403, "only project admins can create a
-  personal credential for this project". Read which one you got before
-  explaining it, and do not retry either. (If the calling credential has no
-  default project, omitting `projectId` is a 400 asking for it - which is why CI
-  should pass it explicitly rather than inherit.)
-- **Narrow it.** Every omitted field copies the calling credential's value, so an
-  unnarrowed mint is a clone of your own token. Ask for the smallest `scopes` and
-  `permissions` the gate needs (those three are what this skill's three steps
-  call; the full catalog is the table in
-  `../roark-overview/references/conventions.md`) and set an `expiresAt`. None of
-  the three can ever exceed the credential that minted it, so narrowing is the
-  only direction available.
-- **One credential per pipeline**, named for it, so revoking is surgical.
-  `client.me.listAPIKeys()` lists them with `lastUsedAt`, and
-  `client.me.revokeAPIKey(id)` kills one.
+## 2. The gate script
 
-## 1. Start the run
-
-Use `build-run-plan` to configure and start. In CI you usually run a saved plan
-by id so the test suite is version-controlled and stable:
+Worked example: the three steps as one script.
 
 ```ts
-// Every response is wrapped in `data`; destructure it or every field reads undefined.
-const { data: started } = await client.simulation.run({ planId }) // or { plan: {...} }
-const jobId = started.simulationRunPlanJobId
-// started.simulationJobCount = calls this will place (log it; it bills)
-```
-
-Use `simulation.run`, not the deprecated `simulationRunPlanJob.start` - the latter
-returns no `simulationJobCount`, so CI cannot log what it is about to spend.
-
-## 2. Wait for it to finish
-
-Poll `simulationRunPlanJob.getByID` until the run reaches a terminal status.
-Terminal = `COMPLETED | FAILED | TIMED_OUT | CANCELLED`; the other eight statuses
-(including `CANCELLING` and `ENDING_SIMULATIONS`) are still in flight. Back off
-between polls and cap total wait so CI cannot hang forever.
-
-```ts
+// roark-gate.mjs: start -> wait -> assert
+import Roark from '@roarkanalytics/sdk'
+const client = new Roark() // reads ROARK_API_BEARER_TOKEN
+const planId = process.env.ROARK_PLAN_ID // a saved plan id kept in the repo
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// 1. Start. The plan's size was agreed when it was saved; log what this spends.
+const { data: started } = await client.simulation.run({ planId })
+const jobId = started.simulationRunPlanJobId
+console.log(`Run ${jobId}: ${started.simulationJobCount} billable calls`)
+
+// 2. Wait, with a cap so a hung run fails the job instead of the runner.
 const TERMINAL = new Set(['COMPLETED', 'FAILED', 'TIMED_OUT', 'CANCELLED'])
-const fetchRun = async () => (await client.simulationRunPlanJob.getByID(jobId)).data
-let run = await fetchRun()
+const deadline = Date.now() + 30 * 60 * 1000
+let { data: run } = await client.simulationRunPlanJob.getByID(jobId)
 while (!TERMINAL.has(run.status)) {
-  await sleep(15_000) // poll interval
-  run = await fetchRun()
+  if (Date.now() > deadline) {
+    console.error(`Gate timed out with run in ${run.status}`)
+    process.exit(1)
+  }
+  await sleep(15_000)
+  ;({ data: run } = await client.simulationRunPlanJob.getByID(jobId))
 }
 if (run.status !== 'COMPLETED') {
-  // the run itself failed to execute — fail the gate and report run.status.
-  // There is no error field on the run or its jobs; report the status as-is.
+  console.error(`Run ended ${run.status}`) // there is no error field; report the status
+  process.exit(1)
 }
-```
 
-For a long suite, prefer a **webhook** over long polling: subscribe with
-`client.webhook.create` to `SIMULATION_RUN_PLAN_JOB_COMPLETED`,
-`SIMULATION_RUN_PLAN_JOB_FAILED`, and `SIMULATION_RUN_PLAN_JOB_CANCELLED`, and let
-CI resume on the callback. See `subscribe-webhooks` for the full event list.
-
-## 3. Assert the pass/fail metrics
-
-A completed run is not automatically a pass. Read each call's `_check` metrics
-(the boolean gates, see `configure-metrics` and `read-results`) and fail if any
-is `false`.
-
-```ts
-let failures = []
+// 3. Assert every check. flatten: 'true' is required; the default nests values[].
+const failures = []
 let checksSeen = 0
 for (const job of run.simulationJobs) {
-  if (!job.callId) continue
-  // flatten: 'true' is REQUIRED — the default response nests values[] per metric.
+  if (!job.callId) {
+    failures.push({ job: job.simulationJobId, check: 'no call', reason: job.processingStatus })
+    continue
+  }
   const { data: rows } = await client.call.listMetrics(job.callId, { flatten: 'true' })
   for (const r of rows) {
     if (!r.slug.endsWith('_check')) continue
     checksSeen++
-    if (r.captureStatus !== 'SUCCESS') continue // only SUCCESS carries a value
-    if (r.value === false) {
-      failures.push({ callId: job.callId, check: r.slug, reason: r.valueReasoning })
-    }
+    if (r.captureStatus !== 'SUCCESS') continue
+    if (r.value === false) failures.push({ callId: job.callId, check: r.slug, reason: r.valueReasoning })
   }
 }
-
-// Guard against a vacuous pass: no checks attached means nothing was gated.
-if (checksSeen === 0) throw new Error('No _check metrics on this plan — the gate would always pass')
-
-const passed = failures.length === 0
-// In CI: process.exit(passed ? 0 : 1), and print `failures` so the log explains why.
+if (checksSeen === 0) {
+  console.error('No _check metrics on this plan: the gate would always pass')
+  process.exit(1)
+}
+console.log(failures.length ? failures : 'All checks passed')
+process.exit(failures.length ? 1 : 0)
 ```
 
-## Turning it into a gate
-
-- **Exit code is the contract.** `0` = pass, non-zero = fail. Print a summary
-  (run id, call count, failed checks with reasons) so the CI log is actionable.
-- **Decide what "fail" means** with the user: any failed check, or a threshold
-  (e.g. pass rate >= 95%). Default to "any `_check` false fails the build" unless
-  they say otherwise.
-- **Budget the wait.** A hung run must time the job out, not the CI runner. Cap
-  total poll time and treat exceeding it as a fail with a clear message.
-- **Cost awareness carries over.** Each run places real calls; a per-commit gate
-  multiplies that. Suggest a small, fast plan (see the `health-check` /
-  `load-testing` recipes) for per-commit gates and the full suite for
-  pre-release.
-
-## GitHub Actions shape (illustrative)
-
 ```yaml
+# GitHub Actions (illustrative)
 - name: Roark gate
   env:
     ROARK_API_BEARER_TOKEN: ${{ secrets.ROARK_API_BEARER_TOKEN }}
-  run: node roark-gate.mjs # start -> wait -> assert, exit non-zero on failure
+    ROARK_PLAN_ID: <saved plan id>
+  run: node roark-gate.mjs
 ```
 
-The script is the three steps above against `@roarkanalytics/sdk`. Keep the plan
-id and the pass rule in the repo so the gate is reviewable.
+Use `simulation.run`, not the deprecated `simulationRunPlanJob.start`, which
+returns no `simulationJobCount`.
+
+## 3. Decide the rules with the user
+
+- **What fails the build:** default to "any `_check` false fails". If they want a
+  pass rate (for example 95% of calls), make it explicit in the script.
+- **Cost per pipeline run:** every gate run places real billable calls, and a
+  per-commit gate multiplies that. Confirm the plan's `testCaseCount` with the
+  user when saving it, then prefer a small plan (the health-check or a
+  happy-path-only suite) per commit and the full suite before release.
+- **Keep the plan id and the pass rule in the repo** so the gate is reviewable.
+- **Long suites:** replace the poll loop with a `SIMULATION_RUN_PLAN_JOB_*`
+  webhook (`subscribe-webhooks`). The assert step is unchanged.
+
+## Next
+
+- `manage-run-plans` to save and maintain the suite the gate runs.
+- `configure-metrics` to make sure the plan carries checks.
+- `read-results` to dig into a failed gate.

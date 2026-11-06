@@ -1,141 +1,137 @@
 ---
 name: ingest-calls
 description: >-
-  Use to import an already-happened real call into Roark for analysis, and to
-  read calls back: create a call from a recording URL (plus optional transcript,
-  tool invocations, agent and customer linkage), then list, fetch, and read its
-  transcript, metrics, and sentiment. Use when someone wants to analyze existing
-  production recordings, bring calls from another platform into Roark, or query
-  calls that already exist.
+  Use when you have a recording of a real call that already happened and want it
+  in Roark for analysis: import it from a recording URL with call.create (plus an
+  optional transcript, tool calls, agent and customer details), then list,
+  fetch, and read calls back with their transcript, metrics, and sentiment. Not
+  for grading production traffic automatically or backfilling scores; that is
+  monitor-live-calls. Not for simulations; that is read-results.
 ---
 
-# Ingest and read real calls
+# Import a real recording into Roark
 
-Roark can analyze calls that already happened, not just ones it simulates. This
-skill covers importing a recording for analysis and reading calls back. (To
-*grade* imported calls with metrics, see `monitor-live-calls`; to poll a
-*simulation* run, see `read-results`.)
+Roark analyzes real calls as well as simulated ones. This skill puts a finished
+call into Roark from its recording, and reads calls back.
 
-## Import a call from a recording
+**The split:** `ingest-calls` brings a call **in** (one recording at a time, or a
+batch you loop over) and reads it. `monitor-live-calls` decides which calls get
+**graded** with which metrics, from now on or retroactively.
 
-`client.call.create(...)` ingests a finished call (Roark records it as ended and
-non-test, then analyzes it):
+## Use this when
+
+- You have recordings from another system (a call center, a CRM, your own
+  telephony) and want Roark to analyze them.
+- You want to look up existing calls: filter, fetch one, read its transcript,
+  metrics, or sentiment.
+
+## Use a different skill when
+
+- You want every production call graded automatically, or a new metric run over
+  past calls: `monitor-live-calls`.
+- Your calls come from Vapi, Retell, LiveKit, or Pipecat: those integrations send
+  calls to Roark by webhook (see the end of this skill), no import code needed.
+- The calls are simulations: `read-results`.
+
+## You will have
+
+A Roark call id for each recording (analysis runs asynchronously after import),
+and the calls readable with their transcript, metrics, and sentiment.
+
+## 1. Import a call
+
+Worked example: import one support call, keyed on your own id so re-imports are
+safe.
 
 ```ts
-const call = await client.call.create({
-  recordingUrl: 'https://.../call.mp3', // required; WAV/MP3/MP4/OGG, signed URL ok
-  startedAt: '2026-09-01T15:04:00Z',    // required, ISO 8601
-  interfaceType: 'PHONE',               // 'PHONE' | 'WEB'
-  callDirection: 'INBOUND',             // 'INBOUND' | 'OUTBOUND'
-  agent: { name: 'Frontdesk' },         // agent OR agents[]; see linkage below
-  externalId: 'crm-98765',              // optional, stable id from your system; unique per project
+const { data: call } = await client.call.create({
+  recordingUrl: 'https://storage.example.com/calls/98765.mp3', // required; WAV/MP3/MP4/OGG, signed URL ok
+  startedAt: '2026-09-01T15:04:00Z', // required, ISO 8601
+  interfaceType: 'PHONE', // 'PHONE' | 'WEB'
+  callDirection: 'INBOUND', // 'INBOUND' | 'OUTBOUND'
+  agent: { name: 'Frontdesk' }, // reuses an exact name match in the project, else creates
+  externalId: 'crm-98765', // optional; unique per project, a re-import returns 409
+  properties: { queue: 'billing' }, // optional; filterable, and matched by metric policies
 })
-// response is minimal (id, status, agents, customers, externalId, ...) - analysis runs async
+// minimal response (id, status, agents, customers, externalId); analysis continues async
 ```
 
 Optional fields worth knowing:
 
-- `stereoRecordingUrl` - a two-channel recording (better diarization).
-- `transcript` - supply your own turns instead of relying on transcription
-  (array of `{ role, startOffsetMs, endOffsetMs, text, ... }`; `role` is `AGENT`
-  or `CUSTOMER` with matching `agent` / `customer` metadata).
-- `toolInvocations` - tool/function calls the agent made
-  (`{ name, parameters, result, startOffsetMs, agent, ... }`) so tool-use metrics
-  can grade them.
-- `properties` - a free-form `Record<string, unknown>` of metadata; it is
-  filterable in `call.list` and is what `CALL_PROPERTY` policy conditions match.
-- `customer` / `customers[]` - `{ label?, phoneNumberE164? }`.
-- `endedStatus` - how the call ended (e.g. `CUSTOMER_ENDED_CALL`,
-  `VOICE_MAIL_REACHED`, `AGENT_TRANSFERRED_CALL`, ...); confirm the enum with docs
-  search if you need a specific value.
-- OTEL trace linkage: `vapiCallId` **xor** `livekitRoomId`, to stitch the call to
-  an existing trace.
+- `stereoRecordingUrl`: a two-channel recording, for better speaker separation.
+- `transcript`: your own turns instead of Roark's transcription, as
+  `{ role, startOffsetMs, endOffsetMs, text, ... }` with `role` `AGENT` or
+  `CUSTOMER`.
+- `toolInvocations`: the agent's tool calls (`{ name, parameters, result,
+  startOffsetMs, agent, ... }`) so tool metrics can grade them.
+- `customer` / `customers[]`: `{ label?, phoneNumberE164? }`.
+- `endedStatus`: how the call ended (for example `CUSTOMER_ENDED_CALL`,
+  `VOICE_MAIL_REACHED`, `AGENT_TRANSFERRED_CALL`); confirm the enum with SDK
+  docs search.
+- `vapiCallId` **or** `livekitRoomId` (never both): links the call to an existing
+  trace.
+- Agent linkage: `agent` or `agents[]`, never both. Each is `{ roarkId }`,
+  `{ customId }`, or `{ name, description?, customId? }`. Optionally an
+  `endpoint` and the `prompt.resolvedPrompt` used on that call.
 
-Agent linkage (`agent` single or `agents[]`, never both) identifies or creates
-the agent: `{ roarkId }`, or `{ customId }`, or `{ name, description?, customId? }`
-(reuses an exact project-name match before creating). Optionally attach an
-`endpoint` and the `prompt.resolvedPrompt` used on that call.
+Importing with agent attribution also needs the `agent:create` permission, or the
+whole request is rejected (403).
 
-`externalId` is unique per project - re-importing the same call id returns **409**,
-which makes imports idempotent if you key on your own id.
-
-## Reading calls back
-
-On the remote connector this is the `list_calls` tool, with the same filters as
-`GET /v1/call`. On the local code-execution server it is `client.call.list`.
+## 2. Read calls back
 
 ```ts
-// List with filters and sorting. The remote tool takes the same fields.
-const { data, pagination } = await client.call.list({
-  limit: 50,                 // 1-100
+const { data: calls, pagination } = await client.call.list({
+  limit: 50, // 1-100
   status: 'ENDED',
-  searchText: 'refund',      // matches title / summary / transcript
-  agentId,                   // one UUID, or comma-separated UUIDs, no spaces, max 100
-  properties: {
-    agent_name: { eq: 'Frontdesk' }, // alias agentName; any participating agent's current name
-    // agent_id: { eq: agentId },    // one UUID
-    // plan_tier: { eq: 'gold' },    // any other name is a custom property
-    // plan_tier: { exists: true },  // one operator per property
-  },
-  sortBy: 'startedAt',       // createdAt | startedAt | endedAt | duration | title | status
-  sortDirection: 'desc',     // default desc; combines with the filters
-  simulationRunPlanJobId,    // optional: only calls from a given run
+  searchText: 'refund', // title, summary, transcript
+  sortBy: 'startedAt', // createdAt (default) | startedAt | endedAt | duration | title | status
+  sortDirection: 'desc', // default desc
+  properties: { queue: { exists: true } }, // one operator per property
+  simulationRunPlanJobId, // optional: only calls from one simulation run
 })
+
+const { data: one } = await client.call.getByID(callId)
+// title, summary, status, durationMs, endedStatus, recordingUrl (pre-signed, about 1h),
+// recordingUrlAccess, properties, policyIds, agents, customers
+const { data: transcript } = await client.call.getTranscript(callId)
+const { data: metrics } = await client.call.listMetrics(callId, { flatten: 'true' }) // branch on captureStatus, see read-results
+const { data: sentiment } = await client.call.listSentimentRuns(callId)
+// each: status, averageSentiment (0-1), averageCategoricalSentiment, commonEmotion
 ```
 
-`eq` is a case-insensitive exact match (`properties[<name>][eq]=<value>`).
-`exists` is `properties[<name>][exists]=true` or `false`. `sortBy` defaults to
-`createdAt`.
+`recordingUrlAccess` is `AVAILABLE`, `NOT_AVAILABLE`, or `RESTRICTED`.
+`RESTRICTED` means the credential lacks `recording:read`, not that the recording
+is missing.
 
-The published SDK type for `call.list` declares `sortBy`, `sortDirection`, and
-`properties.<name>.exists`. `agentId` and `properties.<name>.eq` are accepted by
-`list_calls` now and are forwarded on `client.call.list` once that type is
-regenerated; until then a snippet that passes `eq` fails the code tool's
-typecheck. Use `list_calls` for those filters.
-
-```ts
-const call = await client.call.getByID(callId)
-// title, summary (auto-generated), status, durationMs, endedStatus,
-// recordingUrl (pre-signed, ~1h), recordingUrlAccess, properties, policyIds, agents, customers
-
-const transcript = await client.call.getTranscript(callId)
-const metrics = await client.call.listMetrics(callId, { flatten: 'true' }) // branch on captureStatus - see read-results
-```
-
-`recordingUrlAccess` can be `AVAILABLE` | `NOT_AVAILABLE` | `RESTRICTED`;
-`RESTRICTED` means the API key lacks the `recording:read` permission.
-
-## Sentiment
-
-```ts
-const runs = await client.call.listSentimentRuns(callId)
-// each: status, averageSentiment (0-1), averageCategoricalSentiment
-//       (POSITIVE | NEUTRAL | NEGATIVE), commonEmotion
-```
+**Filter by agent or property value.** `GET /v1/call` also accepts `agentId`
+(one UUID, or up to 100 comma-separated with no spaces) and
+`properties[<name>][eq]=<value>` (case-insensitive exact match; built-in
+`agent_name` / `agentName` and `agent_id` work too). The plugin's `list_calls`
+tool accepts both today. The published SDK type for `call.list` declares
+`sortBy`, `sortDirection`, and `properties.<name>.exists`, but not yet `agentId`
+or `eq`, so a snippet passing those fails the code tool's typecheck until the
+type is regenerated. Use `list_calls` for them.
 
 ## Chats (real, but not in the SDK)
 
-Roark models text conversations as **chats**, the mirror of calls: same
-participants/transcript/metrics model, no audio, and messages carry absolute
-timestamps instead of offsets.
+Chats are the text mirror of calls: same participants, transcript, and metrics
+model, no audio. Ingest with `POST /v1/chat` (`startTimestamp`, `endTimestamp`,
+`messages[]` with `role: 'AGENT' | 'CUSTOMER'`, plus `agent`/`agents`, optional
+`toolInvocations`, `properties`, `externalId`; needs `chat:create`), and read
+with `GET /v1/chat`, `/v1/chat/{id}`, `/v1/chat/{id}/transcript`,
+`/v1/chat/{id}/metrics`. **There is no `client.chat.*`**: call the REST endpoint
+directly. Chats cannot be simulated; grade them with a `modality: 'chat'` policy
+in `monitor-live-calls`.
 
-`POST /v1/chat` ingests one (`startTimestamp`, `endTimestamp`, `messages[]` with
-`role: 'AGENT' | 'CUSTOMER'`, plus `agent`/`agents`, optional `toolInvocations`,
-`properties`, `externalId`), and `GET /v1/chat`, `/v1/chat/{id}`,
-`/v1/chat/{id}/transcript`, `/v1/chat/{id}/metrics` read them back. It needs
-`chat:create` (plus `agent:create` when attributing agents).
+## Calls from Vapi, Retell, LiveKit, Pipecat
 
-**None of this is in the SDK client** - there is no `client.chat.*`. Tell the user
-to call the REST endpoint directly rather than writing a client method that does not
-exist. And note **chats cannot be simulated**: simulation is voice/telephony only,
-so the only way to grade chat quality is to ingest real chats and point a
-`modality: 'chat'` metric policy at them (see `monitor-live-calls`).
+These arrive by the provider's end-of-call webhook pointed at Roark, not through
+an SDK method. There is no `client.vapi.*` or `client.retell.*`. Alternatively,
+record the call yourself and import it with `call.create`, linking the trace with
+`vapiCallId` or `livekitRoomId`.
 
-## Importing from Vapi / Retell (not via this SDK)
+## Next
 
-Roark imports calls from Vapi, Retell, LiveKit, and Pipecat by **receiving their
-webhooks**, not through an SDK method. Point the provider's end-of-call webhook at
-Roark's provider ingestion endpoint, or record the call yourself and pass its
-recording URL to `call.create` (using `vapiCallId` / `livekitRoomId` to link the
-trace). There is no `client.vapi.*` / `client.retell.*` in the SDK - do not invent
-one; use `call.create` or the webhook integration.
+- `monitor-live-calls` to grade imported or production calls with metrics.
+- `configure-metrics` to choose or create those metrics.
+- `read-results` for how to read metric rows safely (`captureStatus`).

@@ -21,6 +21,29 @@ the caller the way the customer's script says, and refuse when verification
 fails), and **social engineering** (does it hold when the caller pushes). Every
 flow below carries both.
 
+## Use this when
+
+- You are testing a bank, card issuer, credit union, or fintech servicing line:
+  balances, fraud and lost cards, transfers, disputes.
+- You need identity-check and social-engineering tests written against the
+  customer's own verification script.
+
+## Use a different skill when
+
+- The call opens with an IVR menu or keypad entry, or a script must be recited
+  verbatim: `author-scripted-flows` for that part.
+- You need the field-by-field API for personas and flows: `author-personas-flows`.
+- The agent is in another industry: `simulate-quickstart` routes to the right
+  playbook.
+- The flows already exist and you want to run or re-run them: `build-run-plan` or
+  `manage-run-plans`.
+
+## You will have
+
+Personas (including a custom social engineer), four IMPROV flows on synthetic
+data with expectations, a metric list, and a run plan whose `testCaseCount` the
+user has confirmed.
+
 ## Ground rules
 
 - **The customer's verification script is the spec.** Ask for it: which

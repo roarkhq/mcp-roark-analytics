@@ -1,93 +1,88 @@
 ---
 name: author-scripted-flows
 description: >-
-  Use to author a SCRIPTED Roark customer flow: a conversation graph that walks
-  an agent through an exact sequence, including IVR menu navigation and DTMF
-  keypad entry (touch tones like "1w2w3#"), silence, voicemail, and branch/merge
-  routing. Use whenever a test needs deterministic routing, an IVR/phone-tree,
-  pressing digits, or a precise turn-by-turn script rather than an improvised
-  conversation.
+  Use when a Roark test call must follow an exact path rather than an improvised
+  conversation: IVR phone-tree menus, keypad (DTMF) entry like "1w2w3#",
+  silence, voicemail, a verbatim script, or branch-and-merge routing. Creates a
+  SCRIPTED customer flow from a step graph and edits it with replaceGraph. When a
+  natural conversation is enough, use author-personas-flows plus a flows-*
+  playbook instead.
 ---
 
-# Author scripted flows (IVR, DTMF, exact routing)
+# Write a scripted or IVR conversation
 
-An **IMPROV** flow lets the simulated caller improvise from a brief (see
-`author-personas-flows`, which is where you should start for open-ended
-conversation). A **SCRIPTED** flow is different: it is a **conversation graph**
-the call follows step by step. Reach for scripted only when the test needs it:
+A **SCRIPTED** flow is a conversation graph the call follows step by step: who
+speaks, what they say, which digits they press, and where the path branches.
+Each path through the graph becomes its own test case.
 
-- **IVR / phone trees** - navigate a menu ("Press 1 for billing").
-- **DTMF entry** - the caller keys in digits (account number, PIN, menu choice).
-- **Deterministic routing** - assert the agent takes an exact path.
-- **Silence / voicemail** - model the caller going quiet, or a voicemail beep.
+## Use this when
 
-Scripted graphs are more work than improv and easy to get subtly wrong, so keep
-the MCP docs search tool open and re-read the flow with `getByID` after every
-write to confirm the graph you intended.
+- The call starts with a phone tree ("Press 1 for billing") or the caller keys
+  in digits (account number, PIN, menu choice).
+- You must assert an exact route or a fixed turn order, such as a disclosure
+  recited at a specific point.
+- You need the caller to go silent, or the call to hit a voicemail beep.
 
-**Read first:** `../roark-concepts/scripted-flows.md` for the two structural
-rules (it is a DAG; roles alternate), what each step type means, and why the
-branching mode is a cost decision. This skill is the payloads and the errors.
+## Use a different skill when
 
-## The shape in one look
+- A natural, improvised conversation is enough (most tests): use
+  `author-personas-flows`, with content from a `flows-*` playbook.
+- You need personas: `author-personas-flows` creates them; scripted flows use the
+  same personas.
+- The flow exists and you want to run it: `build-run-plan`.
+
+## You will have
+
+A SCRIPTED flow id whose graph produces the paths you intended (confirmed by
+reading it back), and a known path count, ready to attach in `build-run-plan`.
+
+**Read first:** `../roark-concepts/scripted-flows.md` for the two structural rules
+(the graph is acyclic; agent and customer turns alternate), what each step type
+means, and why the branching mode is a cost decision. Re-read the flow with
+`getByID` after every write; scripted graphs are easy to get subtly wrong.
+
+## 1. Create the graph
+
+Worked example: a billing IVR where the caller presses 1, then enters an account
+number.
 
 ```ts
-const flow = await client.customerFlow.create({
+const { data: flow } = await client.customerFlow.create({
   type: 'SCRIPTED',
   title: 'Billing IVR - pay by phone',
   description: 'Caller navigates the phone tree and pays a bill by keypad',
-  agentIds: [agentId],           // optional for scripted; defaults to []
-  branchingMode: 'DETERMINISTIC', // or 'ADAPTIVE' (see below)
+  agentIds: [agentId], // optional for scripted; defaults to []
+  branchingMode: 'DETERMINISTIC', // or 'ADAPTIVE', see step 3
   graph: [
     { type: 'CUSTOMER_FIRST_MESSAGE', content: 'Hi, I need to pay my bill' },
-    { type: 'AGENT_TURN', content: 'Sure. Press 1 for billing, 2 for support.',
+    {
+      type: 'AGENT_TURN',
+      content: 'Sure. Press 1 for billing, 2 for support.',
       steps: [
-        { type: 'CUSTOMER_DTMF', dtmfDigits: '1',
+        {
+          type: 'CUSTOMER_DTMF',
+          dtmfDigits: '1',
           steps: [
-            { type: 'AGENT_TURN', content: 'Enter your account number.',
-              steps: [
-                { type: 'CUSTOMER_DTMF', dtmfDigits: '4483#' },
-              ] },
-          ] },
-      ] },
+            {
+              type: 'AGENT_TURN',
+              content: 'Enter your account number.',
+              steps: [{ type: 'CUSTOMER_DTMF', dtmfDigits: '4483#' }],
+            },
+          ],
+        },
+      ],
+    },
   ],
 })
+
+const { data: full } = await client.customerFlow.getByID(flow.id) // confirm the derived paths
 ```
 
-`graph` is required and must have at least one step. **Variants are derived from
-the graph** (one per path through it): you do NOT send `happyPath` / `edgeCases`
-for a scripted flow, and you cannot add edge cases to it with
-`customerFlowEdgeCase.add` (that is improv-only). To change a scripted flow's
-variants, edit the graph.
+`graph` is required and needs at least one step. **Variants come from the
+graph**, one per path. Do not send `happyPath` / `edgeCases`, and do not use
+`customerFlowEdgeCase.add` (IMPROV only). To change the variants, edit the graph.
 
-## DTMF and IVR
-
-DTMF lives on the two DTMF steps - `CUSTOMER_DTMF` for the caller, `AGENT_DTMF`
-for the agent under test - in the `dtmfDigits` string:
-
-- Valid characters: `0-9`, `*`, `#`, and `w`/`W` for a short pause.
-- Example: `"1w2w3#"` presses 1, pause, 2, pause, 3, then #.
-- A `CUSTOMER_DTMF` step with empty/missing `dtmfDigits` is rejected
-  (`MISSING_DTMF_DIGITS`).
-
-Model an IVR by alternating the agent's menu prompt (`AGENT_TURN`) with the
-caller's key press (`CUSTOMER_DTMF`), branching on the digit where the tree
-branches. To cover several menu choices, give the `AGENT_TURN` multiple child
-`steps` (one `CUSTOMER_DTMF` per choice) - that is a branch point, and each path
-becomes its own variant / billable call.
-
-## Branching mode
-
-`../roark-concepts/scripted-flows.md` covers what the two modes do, the cost
-difference that makes the choice matter, and what the field is called over the
-API. In the product they are labelled "Simulate every path" (`DETERMINISTIC`)
-and "Adapt to your agent" (`ADAPTIVE`), and `ADAPTIVE` requires `SCRIPTED`.
-
-## Step types
-
-Every step is one of these (all except `START`, which Roark synthesizes from the
-title). Full field-by-field detail and the graph rules are in
-[references/step-graph.md](references/step-graph.md).
+## 2. Steps, DTMF, and IVR
 
 | type | role | carries |
 | --- | --- | --- |
@@ -100,31 +95,55 @@ title). Full field-by-field detail and the graph rules are in
 | `VOICEMAIL` | customer | (nothing) |
 | `SCENARIO_LINK` | customer | `linkedCustomerFlowId?`, `linkedCustomerFlowVariantId?` |
 
-The alternation rule is in the concept; the part you need here is which types
-count as which role and what a violation returns. `AGENT_TURN` and `AGENT_DTMF`
-are the agent roles, every other type counts as a customer turn, and breaking the
-alternation returns `ROLE_ALTERNATION`.
+`START` is synthesized by Roark from the title; do not send it. `AGENT_TURN` and
+`AGENT_DTMF` count as agent turns; every other type counts as a customer turn.
+Breaking the alternation returns `ROLE_ALTERNATION`.
 
-## Editing an existing graph
+**DTMF digits:** `0-9`, `*`, `#`, and `w`/`W` for a short pause. `"1w2w3#"`
+presses 1, pause, 2, pause, 3, then #. A `CUSTOMER_DTMF` with no digits is
+rejected (`MISSING_DTMF_DIGITS`).
 
-`replaceGraph` replaces the whole graph (a step you omit is removed):
+**Modelling an IVR:** alternate the agent's menu prompt (`AGENT_TURN`) with the
+caller's key press (`CUSTOMER_DTMF`). To cover several menu choices, give the
+`AGENT_TURN` several child `steps`, one `CUSTOMER_DTMF` per choice. That is a
+branch point, and each branch is its own variant and billable call.
+
+Field-by-field detail, branch and merge (`nodeId`, `ref`, `mergeIntoNodeIds`), and
+the 100-step / 25-path limits are in
+[references/step-graph.md](references/step-graph.md).
+
+## 3. Choose the branching mode
+
+`branchingMode` is the cost decision:
+
+- `DETERMINISTIC` ("Simulate every path" in the product): one call per path, each
+  following its path exactly.
+- `ADAPTIVE` ("Adapt to your agent"): one call per persona, where the simulated
+  caller picks a branch from what the agent actually said. Requires `SCRIPTED`.
+
+`../roark-concepts/scripted-flows.md` explains when each is right.
+
+## 4. Edit an existing graph
+
+`replaceGraph` replaces the whole graph; a step you leave out is removed.
 
 ```ts
-const full = await client.customerFlow.getByID(flowId) // read current graph
-// ...edit full.graph, preserving nodeId on steps you keep...
-const res = await client.customerFlow.replaceGraph(flowId, { graph: edited })
-// res.variantsReshaped === true means the path set changed and variant ids were re-seeded
+const { data: current } = await client.customerFlow.getByID(flowId)
+// edit current.graph, keeping nodeId on every step you keep
+const { data: res } = await client.customerFlow.replaceGraph(flowId, { graph: edited })
+// res.variantsReshaped === true: the path set changed and variant ids were re-seeded
 ```
 
-Keep each step's `nodeId` when you read-modify-write so Roark updates in place
-instead of recreating (and so held variant ids survive). The branch/merge rules,
-the `ref` / `mergeIntoNodeIds` convergence mechanics, the `allowUnmerge` guard,
-and the 100-step / 25-path limits are all in
-[references/step-graph.md](references/step-graph.md).
+Keep each step's `nodeId` in a read-modify-write so Roark updates in place and
+held variant ids survive. Flow-level fields (`title`, `agentIds`,
+`agentExpectations`, `branchingMode`) change with `customerFlow.update`.
+
+**MCP note:** the plugin's `create_customer_flow` tool creates IMPROV flows only.
+Scripted graphs need the local code-execution server.
 
 ## Next
 
-A scripted flow is attached to a run the same way as any flow: hand off to
-`build-run-plan`. Because each graph path is a separate variant and therefore a
-separate billable call, watch the path count (`getByID` shows the derived
-variants) before running.
+- `build-run-plan` to attach the flow. Count the paths first (each is a billable
+  call in `DETERMINISTIC` mode), then preview `testCaseCount`.
+- `author-personas-flows` for the improvised part of a call, after the menu.
+- `configure-metrics` for the checks that grade it.

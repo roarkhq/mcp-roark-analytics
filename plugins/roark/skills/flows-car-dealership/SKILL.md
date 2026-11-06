@@ -15,6 +15,27 @@ For an agent that answers a dealership's main line, or its sales, service, or
 parts desk, or that places test-drive follow-up calls. Run order:
 `simulate-quickstart` -> this skill -> `build-run-plan` -> `read-results`.
 
+## Use this when
+
+- You are testing a dealership's sales, service, parts, or finance line.
+- You are testing outbound test-drive follow-up calls.
+
+## Use a different skill when
+
+- The call opens with an IVR menu or keypad entry, or a script must be recited
+  verbatim: `author-scripted-flows` for that part.
+- You need the field-by-field API for personas and flows: `author-personas-flows`.
+- The agent is in another industry: `simulate-quickstart` routes to the right
+  playbook.
+- The flows already exist and you want to run or re-run them: `build-run-plan` or
+  `manage-run-plans`.
+
+## You will have
+
+Personas, four inbound IMPROV flows plus one outbound flow with expectations, a
+metric list, and separate inbound and outbound run plans whose `testCaseCount`
+the user has confirmed.
+
 ## Before you author
 
 Ask for:

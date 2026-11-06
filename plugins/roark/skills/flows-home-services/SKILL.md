@@ -19,6 +19,27 @@ that the company's own policy treats as an emergency (a burst pipe, a gas smell,
 no heat in freezing weather) must be routed the way that policy says, not booked
 into next Tuesday. Build that flow first.
 
+## Use this when
+
+- You are testing booking, rescheduling, ETA, or billing calls for plumbing,
+  HVAC, electrical, cleaning, pest control, or appliance repair.
+- You need to check emergency versus routine triage against the company's rule.
+
+## Use a different skill when
+
+- The call opens with an IVR menu or keypad entry, or a script must be recited
+  verbatim: `author-scripted-flows` for that part.
+- You need the field-by-field API for personas and flows: `author-personas-flows`.
+- The agent is in another industry: `simulate-quickstart` routes to the right
+  playbook.
+- The flows already exist and you want to run or re-run them: `build-run-plan` or
+  `manage-run-plans`.
+
+## You will have
+
+Personas, five IMPROV flows (triage first) with expectations, a metric list, and
+a run plan whose `testCaseCount` the user has confirmed.
+
 ## Before you author
 
 Ask for:

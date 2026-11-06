@@ -19,32 +19,68 @@ variants without accidentally placing hundreds of calls.
 
 ## Skills
 
-| Skill                 | Use it to                                                        |
-| --------------------- | ---------------------------------------------------------------- |
-| `roark-overview`      | Understand how the Roark MCP works, learn the primitives, and route to the right skill. |
+Each skill does one job and opens with when to use it, when to use a different
+skill, and what you will have at the end. Not sure where to start? Load
+`roark-overview` (the map) or `simulate-quickstart` (the start-here path).
+
+**Start here: run a simulation**
+
+| Skill | Use it to |
+| --- | --- |
 | `simulate-quickstart` | **Start here.** Go from "test my agent" to a created, previewed, confirmed run. |
-| `flows-customer-support`| Playbook: billing, account access, troubleshooting, cancellation, escalation. |
-| `flows-healthcare`    | Playbook: appointments, refills, insurance verification, after-hours, disclosures. |
-| `flows-car-dealership`| Playbook: sales, service scheduling, parts, financing, test-drive follow-up. |
+| `flows-customer-support` | Playbook: billing, account access, troubleshooting, cancellation, escalation. |
+| `flows-healthcare` | Playbook: appointments, refills, insurance verification, after-hours, disclosures. |
+| `flows-car-dealership` | Playbook: sales, service scheduling, parts, financing, test-drive follow-up. |
 | `flows-home-services` | Playbook: booking, rescheduling, technician ETA, billing, emergency triage. |
-| `flows-finance`       | Playbook: account inquiries, fraud and cards, transfers, disputes, identity checks. |
+| `flows-finance` | Playbook: account inquiries, fraud and cards, transfers, disputes, identity checks. |
 | `flows-car-insurance` | Playbook: first notice of loss, policy, claims status, billing, coverage. |
-| `flows-debt-collection`| Playbook: payment plans, hardship, disputes, disclosures, collection policy. |
-| `simulate-load-testing`| Run the Load testing template: concurrency, iterations, staged ramp-up. |
-| `register-agent`      | Create the agent under test and a phone endpoint Roark reaches.  |
-| `author-personas-flows`| Define who calls (personas) and what they do (improv flows).    |
-| `author-scripted-flows`| Author IVR/DTMF/scripted conversation graphs (exact routing).   |
-| `configure-outbound-dial`| Define the HTTP request Roark sends to place OUTBOUND calls.   |
-| `build-run-plan`      | Configure and start a simulation (the main workflow).            |
-| `manage-run-plans`    | Manage saved test suites: find, edit, re-run, delete plans.      |
-| `configure-metrics`   | Choose built-in metrics, add pass/fail checks, or author custom. |
-| `read-results`        | Poll a run and read metric scores (pass/fail) and transcripts.   |
-| `monitor-live-calls`  | Grade real production calls/chats: policies and backfill jobs.   |
-| `ingest-calls`        | Import a real recording for analysis; read calls and sentiment.  |
-| `subscribe-webhooks`  | Get event notifications (run done, issue opened) instead of polling. |
-| `manage-config-as-code`| Manage agents/personas/flows/metrics/collectors declaratively.  |
-| `gate-ci`             | Gate a deploy/CI pipeline on a run (start, wait, assert).        |
-| `roark-concepts`      | What each domain object *is*. The shared definitions the others reference. |
+| `flows-debt-collection` | Playbook: payment plans, hardship, disputes, disclosures, collection policy. |
+| `simulate-load-testing` | Load test a voice agent: concurrency, iterations, staged ramp-up. |
+| `build-run-plan` | Design and start a simulation: flow selection, metrics, preview the call count, confirm, run. |
+| `manage-run-plans` | Reuse or update a saved test suite: find, edit, re-run, promote, delete. |
+| `read-results` | Read how a simulation went: checks, scores, reasoning, transcripts. |
+
+**Write the conversations**
+
+| Skill | Use it to |
+| --- | --- |
+| `author-personas-flows` | Write an improvised test conversation: personas and IMPROV flows. |
+| `author-scripted-flows` | Write a scripted or IVR conversation: menus, keypad (DTMF), exact turns. |
+
+**Connect the agent**
+
+| Skill | Use it to |
+| --- | --- |
+| `register-agent` | Connect your agent to Roark: the agent and the phone endpoint Roark calls. |
+| `configure-outbound-dial` | Trigger outbound simulated calls through your platform's API. Inbound agents skip it. |
+
+**Grade**
+
+| Skill | Use it to |
+| --- | --- |
+| `configure-metrics` | Choose how calls are graded: built-in metrics, pass/fail checks, custom judges. |
+
+**Production calls**
+
+| Skill | Use it to |
+| --- | --- |
+| `ingest-calls` | Import a real recording into Roark and read calls back. |
+| `monitor-live-calls` | Grade live production calls going forward, or backfill scores over past calls. |
+
+**Automate**
+
+| Skill | Use it to |
+| --- | --- |
+| `gate-ci` | Block a release on simulation results. |
+| `subscribe-webhooks` | Get notified when a run or analysis finishes. |
+| `manage-config-as-code` | Manage Roark resources from a repo with diff and apply. |
+
+**Reference**
+
+| Skill | Use it to |
+| --- | --- |
+| `roark-overview` | Which Roark skill should I use? A one-page map, plus the cost rule. |
+| `roark-concepts` | What each Roark object *is*. The shared definitions the others reference. |
 
 `roark-concepts` is generated, not hand-written: it is synced from
 `src/packages/roark-concepts` in `roarkhq/app-roark-analytics` by a workflow

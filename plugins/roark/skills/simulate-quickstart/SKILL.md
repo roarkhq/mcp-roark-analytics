@@ -16,12 +16,30 @@ is the default entry point for simulation work. It does not replace the detailed
 skills; it runs them in the right order and tells you which one owns each step.
 
 Simulations through this package are **voice calls**. Chat cannot be simulated
-through the SDK or the connector (see `roark-overview`), so if the agent under
-test is chat-only, say so and stop before step 2.
+through the SDK (see `roark-overview`), so if the agent under test is chat-only,
+say so and stop before step 2.
 
 **Every simulated call is a real call that bills.** This skill never starts a run
 until the user has seen the call count and said yes. That is step 7, and it is
 not optional.
+
+## Use this when
+
+- Someone wants to create and run a simulation, or says "test my agent".
+- This is the first run in a project, or you do not know which skill to load.
+
+## Use a different skill when
+
+- The plan already exists and you only need to re-run it: `manage-run-plans`.
+- You need every plan field, override, and variable: `build-run-plan`.
+- The goal is volume and concurrency: `simulate-load-testing`.
+- You want to grade real production calls, not simulations: `monitor-live-calls`.
+
+## You will have
+
+A registered agent and endpoint, personas and IMPROV flows from the matching
+playbook, a metric list with checks, a saved run plan whose `testCaseCount` the
+user has confirmed, and, after that yes, a started run with its results.
 
 ## The path
 
@@ -208,7 +226,7 @@ await client.customerFlowEdgeCase.add(flow.id, {
 })
 ```
 
-**On the remote connector** (the plugin's default MCP), the same flow is one
+**MCP note:** with the plugin's named tools, the same flow is one
 `create_customer_flow` call with `title`, `agentIds`, `happyPath` (`title`,
 `prompt`, `personaOverrideId`, `environmentId`) and `edgeCases`. Ids come from
 `list_personas`, `list_simulation_environments`, and `list_agents`. That tool
@@ -292,7 +310,7 @@ const { data: run } = await client.simulation.run({ planId: plan.id })
 // run.simulationRunPlanJobId, run.simulationJobCount
 ```
 
-**On the remote connector** there is no create-without-running tool:
+**MCP note:** the plugin's named tools have no create-without-running tool:
 `run_simulation` starts calls immediately. Work the count out from the formula,
 tell the user, wait for a yes, and only then call `run_simulation`. Its response's
 `simulationJobCount` confirms what was placed. When a preview from the API itself

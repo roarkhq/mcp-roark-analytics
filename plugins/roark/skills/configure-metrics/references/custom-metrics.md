@@ -64,7 +64,7 @@ Rules:
 
 - **`sources` requires at least two entries.** A formula comparing one metric to a
   literal (`'{{id:X}} <= 2000'`) is **rejected** - that is a THRESHOLD, not a
-  formula. See the custom-gates section of the parent skill.
+  formula. See step 4 of the parent skill (custom pass/fail gates).
 - Every id referenced in `formula` must appear in `sources`, and every source must
   be referenced (both directions are validated, with a named 400).
 - Each source may pin a variant with `sourceVariantId`.

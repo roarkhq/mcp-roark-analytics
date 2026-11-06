@@ -17,6 +17,26 @@ First notice of loss (FNOL) is the flow to build first: the caller is often
 shaken, sometimes still at the scene, and the agent must collect a lot of detail
 accurately without making promises about the claim.
 
+## Use this when
+
+- You are testing an auto insurer's or agency's line: first notice of loss,
+  claims status, policy changes, billing, coverage questions.
+
+## Use a different skill when
+
+- The call opens with an IVR menu or keypad entry, or a script must be recited
+  verbatim: `author-scripted-flows` for that part.
+- You need the field-by-field API for personas and flows: `author-personas-flows`.
+- The agent is in another industry: `simulate-quickstart` routes to the right
+  playbook.
+- The flows already exist and you want to run or re-run them: `build-run-plan` or
+  `manage-run-plans`.
+
+## You will have
+
+Personas, five IMPROV flows (FNOL first) on synthetic data with expectations, a
+metric list, and a run plan whose `testCaseCount` the user has confirmed.
+
 ## Before you author
 
 Ask for:

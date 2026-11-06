@@ -1,128 +1,123 @@
 ---
 name: manage-config-as-code
 description: >-
-  Use to manage Roark resources declaratively from a repo instead of imperative
-  create/update calls: define agents, personas, flows, custom metrics, and
-  collectors as a bundle, preview changes with config.diff, and reconcile with
-  config.apply. Use when someone wants Roark config in version control, a
-  repeatable/idempotent setup, or to sync a whole project's resources at once.
+  Use when someone wants their Roark setup kept in a repo and synced, instead of
+  one-off create and update calls: declare agents (with endpoints), personas,
+  flows, custom metrics, and live-call collectors as one bundle, preview with
+  config.diff, then reconcile with config.apply. Not for starting runs; runs stay
+  imperative in build-run-plan.
 ---
 
-# Manage Roark as config-as-code
+# Manage Roark resources from a repo
 
-Roark supports a declarative path: submit the **full desired set** of resources
-as a bundle; the server diffs it against what exists and reconciles. This is the
-repo-native alternative to the imperative `create`/`update` calls in the other
-skills. Prefer it when the user wants their Roark setup **in git**, reproducible,
-and idempotent.
+Config as code submits the **full desired set** of resources; Roark diffs it
+against what exists and reconciles. It is the repo-native alternative to the
+imperative calls in the other skills.
 
-## The model
+## Use this when
 
-`../roark-concepts/config-as-code.md` covers identity-by-name (and why renaming
-is not renaming), what reconciliation prunes, what config cannot express, and why
-its field vocabulary diverges from the imperative API. The field-by-field mapping
-between the two is generated from the code that performs it:
-`../roark-concepts/metric-config-mapping.md`.
+- The user wants Roark config in git, reviewed in pull requests, reproducible
+  across projects.
+- A request is "make Roark match this repo" or "sync all our personas and flows".
+- Setup must be idempotent: re-running it should never duplicate anything.
 
-The mechanics you need here:
+## Use a different skill when
 
-- The server keys each resource by `<kind>/<name>` (its "configKey"). Your bundle
-  carries no UUIDs.
+- It is a one-off tweak or exploration: the imperative skills
+  (`register-agent`, `author-personas-flows`, `configure-metrics`,
+  `monitor-live-calls`) are quicker, and do not lock the resource in the UI.
+- You want to run a simulation: `build-run-plan`. Run plans are not a config kind.
+- You need threshold, formula, or pattern metrics: `configure-metrics`. Config
+  authors custom LLM-judge metrics only.
+
+## You will have
+
+A bundle in the repo, a reviewed diff (with any deletes called out and
+confirmed), and an apply report where every change is `applied`, or the `failed`
+ones reported with their errors.
+
+**Read first:** `../roark-concepts/config-as-code.md` (identity by name, why
+renaming is not renaming, what reconciliation prunes, what config cannot express).
+Field mapping to the imperative API: `../roark-concepts/metric-config-mapping.md`.
+
+## How it behaves
+
+- Each resource is keyed `<kind>/<name>` (its configKey). No UUIDs in the bundle.
 - **`prune` defaults to `true`**: a config-managed resource missing from the
-  bundle is **deleted**. Set `prune: false` for additive-only syncs.
-- Applying is **idempotent**: re-submitting unchanged config updates in place and
-  never duplicates.
-- Config-managed resources become **read-only in the product UI** (a "managed by
-  config" badge). They are edited in config and re-applied, or detached to hand
-  ownership back to the UI.
+  bundle is **deleted**. Use `prune: false` for additive-only syncs.
+- Applying is idempotent: unchanged config updates in place, never duplicates.
+- Config-managed resources become **read-only in the product UI** ("managed by
+  config"). Edit them in config and re-apply.
+- Both `diff` and `apply` need the `config:apply` permission.
 
-## Always diff before apply
+## 1. Write the bundle, diff it, then apply
 
-`config.diff` is a dry run: it returns the projected changes and a summary, and
-writes nothing. Show the diff (and call out deletes) before applying.
+The request body **is** the bundle: top-level `resources` and `prune` only. No
+`bundle` wrapper, no `dryRun`, no `version`.
 
-**The request body *is* the bundle.** Its only top-level fields are `resources` and
-`prune`: there is no `bundle` wrapper, no `dryRun`, and no `version`.
+Worked example: an agent with its phone endpoint and one persona.
 
 ```ts
 const bundle = {
   resources: [
-    { kind: 'agent', name: 'frontdesk', description: 'Inbound reception line' },
-    // ... personas, flows, metrics, collectors
+    {
+      kind: 'agent',
+      name: 'frontdesk', // lowercase, matches /^[a-z0-9][a-z0-9-_.]*$/
+      description: 'Inbound reception line',
+      endpoints: [
+        { name: 'main-line', value: '+15551234567', direction: 'INCOMING', environment: 'production' },
+      ],
+    },
+    { kind: 'persona', name: 'calm-caller', language: 'EN', accent: 'US', gender: 'FEMALE' },
   ],
-  prune: true,
+  prune: false, // additive while you are getting started
 }
 
-const diff = await client.config.diff(bundle)
+const { data: diff } = await client.config.diff(bundle) // writes nothing
 // diff.summary => { create, update, delete, noop }
-// diff.changes => [{ configKey, kind, name, op }]   op is lowercase
-// Surface this to the user. If delete > 0, confirm it is intended.
+// diff.changes => [{ configKey, kind, name, op }]  op is lowercase
+// Show this to the user. If summary.delete > 0, confirm before applying.
 
-const applied = await client.config.apply(bundle)
-// applied.changes => [{ ..., status: 'applied'|'failed', id?, error? }]
-// applied.summary => diff summary + `failed`
+const { data: applied } = await client.config.apply(bundle)
+// applied.changes => [{ ..., status: 'applied' | 'failed', id?, error? }]
 ```
 
-What the response actually does, versus what the enums suggest:
+What the response really does:
 
-- **`op` values are lowercase**: `'create'`, `'update'`, `'delete'`, `'noop'`.
-- **`noop` is never returned.** The diff classifies purely on existence: a resource
-  already config-managed is `update`, otherwise `create`. There is no content
-  comparison, so `summary.noop` is always `0` and "everything shows as update" is
-  normal, not a bug.
-- **`status: 'skipped'` and the `detail` field are never populated** either. Apply
-  emits only `applied` or `failed`.
-- **`apply` is not atomic.** It applies changes in a loop, catching per-change
-  errors, so a mid-run failure leaves earlier changes committed. Treat `changes[]`
-  as a partial-success report.
-- Deletes run **last**, and among deletes flows are removed before the agents and
-  personas they reference.
+- **`noop` is never returned.** The diff classifies by existence only: managed
+  already means `update`, otherwise `create`. "Everything shows as update" is
+  normal.
+- **`apply` is not atomic.** A failure partway leaves earlier changes committed;
+  treat `changes[]` as a partial-success report and report each `error`. Do not
+  retry blindly.
+- Deletes run last; flows are deleted before the agents and personas they use.
+- Usual `failed` causes: changing a collector's `modality`, changing an immutable
+  metric field (`name`/slug, `type`, `scope`), or naming an environment that does
+  not exist (`unknown environment "X"`). The first two mean "make a new resource".
 
-**Both `diff` and `apply` require the `config:apply` permission.** `diff` is
-read-only in effect, not in authorization. If `apply` returns any `failed` change,
-report its `error`; do not retry blindly.
+## 2. Resource kinds
 
-The changes most likely to come back `failed`: changing a collector's `modality`, or
-changing an immutable metric field (`name`/slug, `type`, `scope`). Both mean "make a
-new resource" rather than "edit this one". Referencing an environment that does not
-exist also fails, with `unknown environment "X"`.
+`agent` (with `endpoints`), `persona`, `flow` (improv or scripted), `metric`
+(custom LLM judge), and `collector` (a live-call metric policy, by filter).
+Shapes: [references/resource-kinds.md](references/resource-kinds.md).
 
-## Resource kinds
-
-`agent`, `persona`, `flow` (improv or scripted), `metric` (custom LLM-judged),
-`collector`. Field shapes are in
-[references/resource-kinds.md](references/resource-kinds.md). The important
-boundaries:
-
-- **System metrics are not defined here.** They are Roark-managed; reference them
-  by slug inside a `collector`. Only custom LLM-judge metrics are authored as
-  `metric` resources (derived threshold/formula/pattern metrics are out of scope
-  for config-as-code; author those with `configure-metrics`).
-- **Collectors are live-call metric policies:** which metrics get collected on
-  real calls/chats, by filter. This is how config-as-code touches production
-  monitoring, distinct from simulation grading.
-- **Run plans are not a config kind.** Config manages the resources a run
-  references (agents, personas, flows, metrics); *triggering runs* stays
-  imperative via `build-run-plan` (`simulation.run`). Keep the two separate:
-  reconcile config, then start runs.
-- **Environments are not a config kind either**, and cannot be created at all
-  (they are read-only everywhere in the API). A flow referencing an environment
-  name that does not already exist fails the apply.
-- **Agent endpoints are declared inside the `agent` resource** (`endpoints: [...]`),
-  which is the only way config creates the phone endpoints a run plan targets.
-
-## When to use this vs imperative calls
-
-- **Config-as-code** when: managing many resources, wanting them in git,
-  reproducible environments, or a "make Roark match this repo" request.
-- **Imperative** (`register-agent`, `author-personas-flows`, `configure-metrics`)
-  when: a one-off tweak, exploring, or working with resources the user does not
-  want config to own (and thus lock in the UI).
+- **System metrics are referenced, not defined**: name them by slug inside a
+  `collector`.
+- **Collectors use their own vocabulary** (`filters` with `type` / `key` /
+  `operator` / `value`, metrics by slug), different from the SDK's
+  `metricPolicy` shape in `monitor-live-calls`. Do not mix the two.
+- **Environments are not a kind** and cannot be created anywhere in the API.
+- **Run plans are not a kind.** Reconcile config, then start runs with
+  `build-run-plan`.
 
 ## CLI alternative
 
-For a directory of YAML files, Roark's CLI does the globbing, `file://` prompt
-inlining, and diff/apply for you: `roark config diff ./roark` then
-`roark config apply ./roark`. It is the same wire contract as `config.diff` /
-`config.apply`; suggest it when the user already keeps YAML rather than building
-the bundle in code.
+For a directory of YAML files, the Roark CLI does the globbing, `file://` prompt
+inlining, and diff and apply: `roark config diff ./roark` then
+`roark config apply ./roark`. Same contract as `config.diff` / `config.apply`.
+
+## Next
+
+- `build-run-plan` to run simulations against the reconciled resources.
+- `gate-ci` to apply config and gate on a run in the same pipeline.
+- `monitor-live-calls` for the imperative equivalent of collectors.

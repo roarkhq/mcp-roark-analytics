@@ -1,20 +1,40 @@
 ---
 name: simulate-load-testing
 description: >-
-  Use to run Roark's Load testing simulation template against a voice agent:
-  choose one flow, set iterationCount and maxConcurrentJobs, attach the load
-  metrics, preview the (large, billable) call count, ramp up in stages, and read
-  latency, dropped calls, and failures from the results. Use when someone asks
-  whether their agent holds up under volume, concurrency, or a traffic spike.
+  Use when the question is whether a voice agent holds up under volume: run
+  Roark's Load testing template on one simple flow, set iterationCount and
+  maxConcurrentJobs, attach the load metrics, preview the large billable call
+  count, ramp up in confirmed stages, and read latency, dropped calls, and
+  failures. Not for checking conversation quality; that is simulate-quickstart
+  with a flows-* playbook.
 ---
 
-# Load testing a voice agent
+# Load test a voice agent
 
 The **Load testing** template runs many simulations in parallel to surface
 latency, dropped calls, and concurrency limits (see
 `../roark-concepts/templates-catalogue.md`). This skill is how to set it up
 safely. The plan mechanics are `build-run-plan`; read its step 5 before starting
 anything.
+
+## Use this when
+
+- The question is "does the agent hold up under volume": many concurrent calls,
+  a traffic spike, provider or telephony limits.
+
+## Use a different skill when
+
+- You want to know whether the agent handles conversations correctly: a
+  `flows-*` playbook with `simulate-quickstart`.
+- You want a cheap scheduled "is it up" probe: the health-check recipe in
+  `build-run-plan`.
+- You want to re-run a stage plan you already saved: `manage-run-plans`.
+
+## You will have
+
+A staged series of plans (smoke, baseline, target), each started only after the
+user confirmed its `testCaseCount`, and a per-stage report of failed and timed-out
+calls and the latency spread.
 
 ## Read this first: volume is the whole point, and every call bills
 
@@ -118,7 +138,7 @@ const { data: run } = await client.simulation.run({ planId: plan.id })
 To move to the next stage, update the saved plan (`manage-run-plans`) or create a
 new one, and confirm the new `testCaseCount` again.
 
-On the remote connector, `run_simulation` starts immediately and has no preview.
+**MCP note:** the plugin's `run_simulation` tool starts immediately and has no preview.
 Compute the count (here, `iterationCount`), state it, wait for a yes, then call it.
 For large stages prefer the local code-execution server so the API's own
 `testCaseCount` is what you show the user.

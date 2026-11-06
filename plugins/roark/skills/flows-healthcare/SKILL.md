@@ -20,6 +20,29 @@ place. Run order: `simulate-quickstart` -> this skill -> `build-run-plan` ->
 Roark has completed SOC 2 Type I and Type II and HIPAA Type I and Type II
 reports. That covers Roark; it does not make test data safe to use carelessly.
 
+## Use this when
+
+- You are testing a clinic, practice, pharmacy, or health system line:
+  scheduling, refills, insurance questions, after-hours calls.
+- You need checks that the agent follows the customer's own disclosure and
+  privacy script.
+
+## Use a different skill when
+
+- The call opens with an IVR menu or keypad entry, or a script must be recited
+  verbatim: `author-scripted-flows` for that part.
+- You need the field-by-field API for personas and flows: `author-personas-flows`.
+- The agent is in another industry: `simulate-quickstart` routes to the right
+  playbook.
+- The flows already exist and you want to run or re-run them: `build-run-plan` or
+  `manage-run-plans`.
+
+## You will have
+
+Personas (including a caregiver), four IMPROV flows built on synthetic patient
+data with expectations from the customer's script, a metric list, and a run plan
+whose `testCaseCount` the user has confirmed.
+
 ## Ground rules for healthcare tests
 
 - **Synthetic data only.** Every name, date of birth, member id, medication, and

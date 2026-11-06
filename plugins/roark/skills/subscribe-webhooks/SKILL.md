@@ -1,74 +1,94 @@
 ---
 name: subscribe-webhooks
 description: >-
-  Use to subscribe to Roark events over HTTP webhooks instead of polling: get
-  notified when a simulation run or job finishes, a call or chat analysis
-  completes, a metric collection job finishes, or an issue opens/resolves.
-  Register, list, and delete webhook subscriptions, and verify their signatures.
-  Use when someone wants event-driven notifications, to react to a run finishing,
-  or to avoid long polling in CI.
+  Use when you want Roark to call your HTTP endpoint when something finishes,
+  instead of polling: a simulation run or single simulated call completes or
+  fails, a call or chat analysis completes, a metric collection job finishes, or
+  an issue opens or resolves. Create, list, and delete subscriptions and verify
+  their signatures. Not for making your agent dial out; that is
+  configure-outbound-dial.
 ---
 
-# Subscribe to Roark webhooks
+# Get notified when a run or analysis finishes
 
-Most workflows poll (`simulationRunPlanJob.getByID`, `metricCollectionJob.getByID`).
-For long-running work - a big simulation, a backfill, CI that should not sit in a
-poll loop - subscribe to a webhook and let Roark call you when it finishes.
+Most skills poll (`simulationRunPlanJob.getByID`, `metricCollectionJob.getByID`).
+For long work, such as a big run, a backfill, or CI that should not sit in a loop,
+subscribe once and let Roark call you.
 
-## Register a subscription
+## Use this when
+
+- A pipeline or app should react the moment a run, analysis, or backfill ends.
+- Polling is too slow or too long for the job at hand.
+- You want an alert when Roark opens or resolves an issue.
+
+## Use a different skill when
+
+- Roark must send a request that makes your agent place an outbound call:
+  `configure-outbound-dial`.
+- You only need to check a run once: `read-results` polls it.
+- You want a pass/fail gate: `gate-ci` (it can use these webhooks instead of
+  polling).
+
+## You will have
+
+A webhook subscription id for the events you chose, its signing secret stored on
+your side, and an endpoint that verifies each delivery.
+
+## 1. Create the subscription
+
+Worked example: tell CI when a run ends, in any terminal way.
 
 ```ts
-const sub = await client.webhook.create({
-  url: 'https://your-app.example.com/hooks/roark', // required
-  events: ['SIMULATION_RUN_PLAN_JOB_COMPLETED', 'SIMULATION_RUN_PLAN_JOB_FAILED'], // >= 1
-  description: 'Notify CI when a run finishes',
-  headers: { Authorization: 'Bearer ...' }, // optional; sent on every delivery
+const { data: sub } = await client.webhook.create({
+  url: 'https://ci.example.com/hooks/roark', // required
+  events: [
+    'SIMULATION_RUN_PLAN_JOB_COMPLETED',
+    'SIMULATION_RUN_PLAN_JOB_FAILED',
+    'SIMULATION_RUN_PLAN_JOB_CANCELLED',
+  ], // at least one
+  description: 'Resume CI when a Roark run ends',
+  headers: { Authorization: 'Bearer <your token>' }, // optional; sent on every delivery
 })
-// sub.signingSecret is returned ONLY here, on create. Store it now; you cannot fetch it later.
+// sub.signingSecret is returned ONLY here. Store it now; it cannot be fetched later.
 ```
 
-## Event types
+## 2. Pick the events
 
-Pass one or more of these in `events`:
-
-- **Simulation run plan job**: `SIMULATION_RUN_PLAN_JOB_STARTED`,
+- **Run (the batch):** `SIMULATION_RUN_PLAN_JOB_STARTED`,
   `SIMULATION_RUN_PLAN_JOB_COMPLETED`, `SIMULATION_RUN_PLAN_JOB_FAILED`,
   `SIMULATION_RUN_PLAN_JOB_CANCELLED`.
-- **Per-call simulation job**: `SIMULATION_JOB_STARTED`, `SIMULATION_JOB_COMPLETED`,
+- **One simulated call:** `SIMULATION_JOB_STARTED`, `SIMULATION_JOB_COMPLETED`,
   `SIMULATION_JOB_FAILED`, `SIMULATION_JOB_CANCELLED`.
-- **Call analysis**: `CALL_ANALYSIS_COMPLETED`, `CALL_ANALYSIS_FAILED`,
+- **Call analysis:** `CALL_ANALYSIS_COMPLETED`, `CALL_ANALYSIS_FAILED`,
   `CALL_ANALYSIS_CANCELLED`.
-- **Chat analysis**: `CHAT_ANALYSIS_COMPLETED`, `CHAT_ANALYSIS_FAILED`.
-- **Metric collection job**: `METRIC_COLLECTION_JOB_COMPLETED`,
+- **Chat analysis:** `CHAT_ANALYSIS_COMPLETED`, `CHAT_ANALYSIS_FAILED`.
+- **Metric collection job:** `METRIC_COLLECTION_JOB_COMPLETED`,
   `METRIC_COLLECTION_JOB_FAILED`.
-- **Issues**: `ISSUE_OPENED`, `ISSUE_RESOLVED`.
+- **Issues:** `ISSUE_OPENED`, `ISSUE_RESOLVED`.
 
-Do not use `CALL_EVALUATION_COMPLETED` / `CALL_EVALUATION_FAILED` - they are
-deprecated legacy events, not routed. If you need an event that is not listed,
-confirm the current set with the MCP docs search tool rather than guessing a
-string.
+Do not use `CALL_EVALUATION_COMPLETED` / `CALL_EVALUATION_FAILED`: they are
+deprecated and not routed. For an event not listed here, confirm the current set
+with SDK docs search rather than guessing a string.
 
-## Verify deliveries
+## 3. Verify every delivery
 
-Every delivery is signed with the `signingSecret` from create. Verify the
-signature on your endpoint before trusting the payload, and (if you set custom
-`headers`) check those too. Confirm the exact signature header and scheme with
-docs search; do not skip verification on a public endpoint.
+Each delivery is signed with the `signingSecret`. Verify it on your endpoint
+before trusting the payload, and check your custom `headers` too. Confirm the
+exact signature header and scheme with docs search. Do not skip verification on a
+public endpoint.
 
-## List and delete
+## 4. List and delete
 
 ```ts
-const { data } = await client.webhook.list({ limit: 50 }) // no signingSecret on reads
-const one = await client.webhook.getByID(sub.id)
+const { data: subs } = await client.webhook.list({ limit: 50 }) // reads never include the secret
+const { data: one } = await client.webhook.getByID(sub.id)
 await client.webhook.delete(sub.id) // -> { success: true }
 ```
 
-Reads never return the signing secret. If you lose it, delete the subscription
-and create a new one to get a fresh secret.
+Lost the secret? Delete the subscription and create a new one.
 
-## Using it in CI
+## Next
 
-`gate-ci` polls by default because it is simplest. For a long suite, swap the
-poll loop for: register a `SIMULATION_RUN_PLAN_JOB_COMPLETED` (and `...FAILED`)
-webhook, start the run, and let the pipeline resume on the callback. The assert
-step (read each call's `_check` metrics) is unchanged.
+- `gate-ci` to resume a pipeline on the callback, then assert the checks.
+- `read-results` to read the run the event points at.
+- `monitor-live-calls` for the backfill jobs behind the metric collection events.
