@@ -41,13 +41,13 @@ it does not clutter the suite list.
 Read one back in full (flows, metrics, endpoints, settings, `testCaseCount`):
 
 ```ts
-const plan = await client.simulationRunPlan.getByID(planId)
+const { data: plan } = await client.simulationRunPlan.getByID(planId)
 ```
 
 ## Re-run a plan
 
 ```ts
-const run = await client.simulation.run({ planId })
+const { data: run } = await client.simulation.run({ planId })
 // run.simulationRunPlanJobId, run.simulationJobCount (calls it will place)
 ```
 
@@ -92,7 +92,7 @@ rebuilding it. The run response gives you `simulationRunPlanId` even for an unsa
 run:
 
 ```ts
-const run = await client.simulation.run({ plan: { /* ... */ } })
+const { data: run } = await client.simulation.run({ plan: { /* ... */ } })
 // later: "actually, save that as our smoke suite"
 await client.simulationRunPlan.update(run.simulationRunPlanId, {
   name: 'Smoke suite',
@@ -106,7 +106,7 @@ which requires `plan.name`.
 ## Delete a plan
 
 ```ts
-await client.simulationRunPlan.delete(planId) // -> { deleted: true }
+await client.simulationRunPlan.delete(planId) // -> { data: { deleted: true } }
 ```
 
 This is a **soft delete** and needs the `simulation:delete` permission. Past runs

@@ -24,6 +24,43 @@ const description =
   'Returns the function result and any console output. ' +
   'The function can read or change data in the Roark account, including placing simulated calls.';
 
+/** The raw-request helpers the SDK client exposes alongside its resource methods. */
+const RAW_REQUEST_VERBS = ['get', 'post', 'put', 'patch', 'delete', 'request'] as const;
+
+/**
+ * Finds raw requests made on the SDK client, as `client.post` and friends.
+ *
+ * Only calls on the client binding count. `run`'s first parameter is that binding, so
+ * it is read off the signature rather than assumed to be `client`, and nothing else is
+ * matched: a real resource method such as `client.metricPolicy.delete(...)` ends in a
+ * raw-request verb too, and refusing it would block the very allowlist it belongs to.
+ *
+ * WARNING: like the blocked-method check that calls this, it is string matching and is
+ * not secure against obfuscation - `const p = client.post` defeats it. Restrict the
+ * credential the server runs with for a boundary that holds.
+ */
+export function rawRequestsInCode(code: string): string[] {
+  // `async function run(client)`, `const run = async function (client)`,
+  // `const run = async (client) =>`, `let run = client => ...`. A `run` that declares no
+  // parameter has no binding to match, and so nothing here to find.
+  const signatures = [
+    /\bfunction\s+run\s*\(\s*([A-Za-z_$][\w$]*)/,
+    /\brun\s*=\s*(?:async\s+)?function\s*\*?\s*\(\s*([A-Za-z_$][\w$]*)/,
+    /\brun\s*=\s*(?:async\s+)?\(?\s*([A-Za-z_$][\w$]*)\s*(?:[,)]|=>)/,
+  ];
+  const binding = signatures.reduce<string | undefined>(
+    (found, pattern) => found ?? pattern.exec(code)?.[1],
+    undefined,
+  );
+  if (!binding) {
+    return [];
+  }
+
+  const calls = new RegExp(`\\b${binding}\\s*\\.\\s*(${RAW_REQUEST_VERBS.join('|')})\\s*\\(`, 'g');
+
+  return Array.from(new Set(Array.from(code.matchAll(calls), (match) => `${binding}.${match[1]}`)));
+}
+
 /**
  * A tool that runs code against a copy of the SDK.
  *
@@ -90,6 +127,24 @@ export function codeTool({
             .map((m) => m.fullyQualifiedName)
             .join(', ')}`,
         );
+      }
+
+      // The check above is the whole of the allowlist, and it only ever looks for a
+      // method's fully qualified name. The client also takes a raw request -
+      // `client.post('/v1/metric/definitions/x/thresholds', { body })` - which names a
+      // route rather than a method, so a snippet built that way contains none of the
+      // names above and reaches any blocked route with the server's own credential.
+      // Once an operator has blocked anything, refuse raw requests instead: there is
+      // nothing for a list of method names to check them against.
+      if (blockedMethods.length > 0) {
+        const rawRequests = rawRequestsInCode(code);
+        if (rawRequests.length > 0) {
+          return asErrorResult(
+            `This MCP server restricts which SDK methods code execution may call. A raw request (${rawRequests.join(
+              ', ',
+            )}) addresses a route rather than a method, so it cannot be checked against that restriction and is not allowed. Call the operation through its SDK method, or run it outside this server.`,
+          );
+        }
       }
     }
 

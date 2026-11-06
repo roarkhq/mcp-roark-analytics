@@ -33,7 +33,7 @@ behavior you need. A minimal create needs identity, language, accent, and gender
 everything else has a sensible default:
 
 ```ts
-const persona = await client.simulationPersona.create({
+const { data: persona } = await client.simulationPersona.create({
   name: 'Maria',
   language: 'ES', // ISO 639-1; primary language
   accent: 'MX', // ISO 3166-1 accent code
@@ -60,7 +60,7 @@ Reuse existing flows first:
 
 ```ts
 const { data: flows } = await client.customerFlow.list()
-const flow = await client.customerFlow.getByID(flowId) // see its happy path + edge cases
+const { data: flow } = await client.customerFlow.getByID(flowId) // see its happy path + edge cases
 ```
 
 ### Create an IMPROV flow
@@ -70,7 +70,7 @@ happy path **requires a persona and an environment**; edge cases inherit them
 unless they name their own:
 
 ```ts
-const flow = await client.customerFlow.create({
+const { data: flow } = await client.customerFlow.create({
   type: 'IMPROV',
   title: 'Reschedule an appointment',
   agentIds: [agentId], // required for improv, at least one
@@ -103,8 +103,9 @@ input, or an exact turn-by-turn script.
 The happy path's `environmentId` names the conditions the call runs under (its
 main knob today is `backgroundNoise`, one of `NONE`, `AIRPORT`,
 `CHILDREN_PLAYING`, `CITY`, `COFFEE_SHOP`, `DRIVING`, `OFFICE`, `THUNDERSTORM`).
-The catalogue is **read-only** via the API - list it and reference an id, you do
-not create environments here:
+List the existing environments and reference an id. If none fits, create one
+with `client.simulationEnvironment.create({ name, backgroundNoise,
+backgroundNoiseVolume })` (the volume is a gain from 0 to 1, default 0.1):
 
 ```ts
 const { data: envs } = await client.simulationEnvironment.list()
