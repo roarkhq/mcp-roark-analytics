@@ -503,6 +503,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/plan/jobs',
   },
   {
+    clientCallName: 'client.simulationRunPlanJob.delete',
+    fullyQualifiedName: 'simulationRunPlanJob.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/simulation/plan/job/{jobId}',
+  },
+  {
     clientCallName: 'client.simulationRunPlanJob.cancel',
     fullyQualifiedName: 'simulationRunPlanJob.cancel',
     httpMethod: 'post',
