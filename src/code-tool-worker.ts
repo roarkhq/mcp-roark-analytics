@@ -191,6 +191,7 @@ const fuse = new Fuse(
     'client.simulationRunPlan.update',
     'client.simulationRunPlanJob.cancel',
     'client.simulationRunPlanJob.createDebrief',
+    'client.simulationRunPlanJob.delete',
     'client.simulationRunPlanJob.getByID',
     'client.simulationRunPlanJob.getCost',
     'client.simulationRunPlanJob.getResults',
