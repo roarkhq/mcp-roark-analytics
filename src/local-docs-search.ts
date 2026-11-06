@@ -2882,6 +2882,36 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'delete',
+    endpoint: '/v1/simulation/plan/job/{jobId}',
+    httpMethod: 'delete',
+    summary: 'Delete a simulation plan job',
+    description:
+      'Removes a finished run from the run history (a soft delete). The run stops appearing in run lists,\ncounts and plan run histories, and reading it by ID returns 404.\n\nA run that is still in progress is refused with 409: cancel it first.',
+    stainlessPath: '(resource) simulationRunPlanJob > (method) delete',
+    qualified: 'client.simulationRunPlanJob.delete',
+    params: ['jobId: string;'],
+    response: '{ data: { deleted: boolean; simulationRunPlanJobId: string; }; }',
+    markdown:
+      "## delete\n\n`client.simulationRunPlanJob.delete(jobId: string): { data: object; }`\n\n**delete** `/v1/simulation/plan/job/{jobId}`\n\nRemoves a finished run from the run history (a soft delete). The run stops appearing in run lists,\ncounts and plan run histories, and reading it by ID returns 404.\n\nA run that is still in progress is refused with 409: cancel it first.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { deleted: boolean; simulationRunPlanJobId: string; }; }`\n\n  - `data: { deleted: boolean; simulationRunPlanJobId: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst simulationRunPlanJob = await client.simulationRunPlanJob.delete(\n  '7f3e4d2c-8a91-4b5c-9e6f-1a2b3c4d5e6f',\n);\n\nconsole.log(simulationRunPlanJob);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunPlanJob.delete',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst simulationRunPlanJob = await client.simulationRunPlanJob.delete(\n  '7f3e4d2c-8a91-4b5c-9e6f-1a2b3c4d5e6f',\n);\n\nconsole.log(simulationRunPlanJob.data);",
+      },
+      python: {
+        method: 'simulation_run_plan_job.delete',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nsimulation_run_plan_job = client.simulation_run_plan_job.delete(\n    "7f3e4d2c-8a91-4b5c-9e6f-1a2b3c4d5e6f",\n)\nprint(simulation_run_plan_job.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/plan/job/$JOB_ID \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'getResults',
     endpoint: '/v1/simulation/plan/job/{jobId}/results',
     httpMethod: 'get',
