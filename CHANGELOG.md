@@ -1,5 +1,114 @@
 # Changelog
 
+## [5.12.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.11.0...v5.12.0) (2026-11-06)
+
+
+### Features
+
+* **mcp:** mcp update ([#259](https://github.com/roarkhq/mcp-roark-analytics/issues/259)) ([25d4c3f](https://github.com/roarkhq/mcp-roark-analytics/commit/25d4c3f1c9148408f4425ddb862810f75911f695))
+
+## [5.11.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.10.0...v5.11.0) (2026-11-06)
+
+
+### Features
+
+* **mcp:** mcp update ([#257](https://github.com/roarkhq/mcp-roark-analytics/issues/257)) ([b276fd2](https://github.com/roarkhq/mcp-roark-analytics/commit/b276fd25f66013637a4eab083975e4524d134ce7))
+
+## [5.10.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.9.1...v5.10.0) (2026-11-05)
+
+
+### Features
+
+* **mcp:** mcp update ([#255](https://github.com/roarkhq/mcp-roark-analytics/issues/255)) ([e6034da](https://github.com/roarkhq/mcp-roark-analytics/commit/e6034dadc6ef6127c79164a9106e814dd918c030))
+
+## [5.9.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.9.0...v5.9.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **deps:** raise the SDK floor to 7.0.0, which carries the tools the table names ([#253](https://github.com/roarkhq/mcp-roark-analytics/issues/253)) ([b773ba6](https://github.com/roarkhq/mcp-roark-analytics/commit/b773ba678221e3cdd131b686ab7cd5f9a9c9e7e9))
+
+## [5.9.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.8.0...v5.9.0) (2026-11-04)
+
+
+### Features
+
+* **mcp:** mcp update ([#251](https://github.com/roarkhq/mcp-roark-analytics/issues/251)) ([347efc1](https://github.com/roarkhq/mcp-roark-analytics/commit/347efc11449def82307cd1d14cabd9075d8595d1))
+
+## [5.8.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.7.0...v5.8.0) (2026-11-04)
+
+
+### Features
+
+* **mcp:** mcp update ([#248](https://github.com/roarkhq/mcp-roark-analytics/issues/248)) ([30c13e3](https://github.com/roarkhq/mcp-roark-analytics/commit/30c13e373ff317badc303052cf5385a2b8e5f6f5))
+
+## [5.7.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.6.0...v5.7.0) (2026-11-04)
+
+
+### Features
+
+* **mcp:** mcp update ([#246](https://github.com/roarkhq/mcp-roark-analytics/issues/246)) ([982d153](https://github.com/roarkhq/mcp-roark-analytics/commit/982d15357c537a21408a21822ed9fb0b61777417))
+
+## [5.6.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.5.0...v5.6.0) (2026-11-04)
+
+
+### Features
+
+* **mcp:** mcp update ([#244](https://github.com/roarkhq/mcp-roark-analytics/issues/244)) ([cc593bb](https://github.com/roarkhq/mcp-roark-analytics/commit/cc593bb097e67c881fa6ae4ec956732d4dd71ddf))
+
+## [5.5.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.4.0...v5.5.0) (2026-11-04)
+
+
+### Features
+
+* **mcp:** mcp update ([#242](https://github.com/roarkhq/mcp-roark-analytics/issues/242)) ([54d56b5](https://github.com/roarkhq/mcp-roark-analytics/commit/54d56b58989743e7b21d1b5336348ca65fbddff0))
+
+## [5.4.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.3.0...v5.4.0) (2026-11-03)
+
+
+### Features
+
+* **mcp:** mcp update ([#239](https://github.com/roarkhq/mcp-roark-analytics/issues/239)) ([73c6acc](https://github.com/roarkhq/mcp-roark-analytics/commit/73c6acc82b0de4de20a7dd42cacb2d58d2ee9ed0))
+
+## [5.3.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.2.0...v5.3.0) (2026-11-03)
+
+
+### Features
+
+* **mcp:** mcp update ([#236](https://github.com/roarkhq/mcp-roark-analytics/issues/236)) ([7d1b2a8](https://github.com/roarkhq/mcp-roark-analytics/commit/7d1b2a8f59bab80ca5f2c6fb745bf079d05b3ddd))
+
+## [5.2.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.1.1...v5.2.0) (2026-11-03)
+
+
+### Features
+
+* **mcp:** mcp update ([#234](https://github.com/roarkhq/mcp-roark-analytics/issues/234)) ([7f323c1](https://github.com/roarkhq/mcp-roark-analytics/commit/7f323c14d398b48f6043d308897c686d3aee6681))
+
+## [5.1.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.1.0...v5.1.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **deps:** raise the @roarkanalytics/sdk floor to 6.2.0 ([#232](https://github.com/roarkhq/mcp-roark-analytics/issues/232)) ([26c897e](https://github.com/roarkhq/mcp-roark-analytics/commit/26c897eb06eb0a299ada1626cbd6425395b25acb))
+
+## [5.1.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.0.0...v5.1.0) (2026-11-02)
+
+
+### Features
+
+* **mcp:** mcp update ([#230](https://github.com/roarkhq/mcp-roark-analytics/issues/230)) ([36358e0](https://github.com/roarkhq/mcp-roark-analytics/commit/36358e06d9a91df7bba75ab3b6df2a332f8d37c0))
+
+## [5.0.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.1...v5.0.0) (2026-11-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mcp:** removes or renames tools. Agents and prompts naming the old tools will fail.
+
+### Features
+
+* **mcp:** mcp update ([#218](https://github.com/roarkhq/mcp-roark-analytics/issues/218)) ([ed921b9](https://github.com/roarkhq/mcp-roark-analytics/commit/ed921b971baf54e7ecfb4c9b8d89b5d80e0717fe))
+
 ## [4.44.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.0...v4.44.1) (2026-11-01)
 
 

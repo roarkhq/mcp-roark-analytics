@@ -191,6 +191,54 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/dashboard/{dashboardId}/widget/{widgetId}',
   },
   {
+    clientCallName: 'client.liveReport.create',
+    fullyQualifiedName: 'liveReport.create',
+    httpMethod: 'post',
+    httpPath: '/v1/live-report',
+  },
+  {
+    clientCallName: 'client.liveReport.update',
+    fullyQualifiedName: 'liveReport.update',
+    httpMethod: 'patch',
+    httpPath: '/v1/live-report/{reportId}',
+  },
+  {
+    clientCallName: 'client.liveReport.list',
+    fullyQualifiedName: 'liveReport.list',
+    httpMethod: 'get',
+    httpPath: '/v1/live-report',
+  },
+  {
+    clientCallName: 'client.liveReport.delete',
+    fullyQualifiedName: 'liveReport.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/live-report/{reportId}',
+  },
+  {
+    clientCallName: 'client.liveReport.getByID',
+    fullyQualifiedName: 'liveReport.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/live-report/{reportId}',
+  },
+  {
+    clientCallName: 'client.liveReport.getDocument',
+    fullyQualifiedName: 'liveReport.getDocument',
+    httpMethod: 'get',
+    httpPath: '/v1/live-report/{reportId}/document/{documentId}',
+  },
+  {
+    clientCallName: 'client.liveReport.listDocuments',
+    fullyQualifiedName: 'liveReport.listDocuments',
+    httpMethod: 'get',
+    httpPath: '/v1/live-report/{reportId}/document',
+  },
+  {
+    clientCallName: 'client.liveReport.run',
+    fullyQualifiedName: 'liveReport.run',
+    httpMethod: 'post',
+    httpPath: '/v1/live-report/{reportId}/generate',
+  },
+  {
     clientCallName: 'client.metric.createDefinition',
     fullyQualifiedName: 'metric.createDefinition',
     httpMethod: 'post',
@@ -321,6 +369,12 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'simulationJobToolMock.list',
     httpMethod: 'get',
     httpPath: '/v1/simulation/job/{jobId}/tool-mock',
+  },
+  {
+    clientCallName: 'client.simulationAudioClip.list',
+    fullyQualifiedName: 'simulationAudioClip.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/audio-clip',
   },
   {
     clientCallName: 'client.simulationToolFixture.create',
@@ -821,10 +875,10 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/agent/{agentId}/versions/{versionId}',
   },
   {
-    clientCallName: 'client.agentVersion.restore',
-    fullyQualifiedName: 'agentVersion.restore',
+    clientCallName: 'client.agentVersion.rollback',
+    fullyQualifiedName: 'agentVersion.rollback',
     httpMethod: 'post',
-    httpPath: '/v1/agent/{agentId}/versions/{versionId}/restore',
+    httpPath: '/v1/agent/{agentId}/versions/{versionId}/rollback',
   },
   {
     clientCallName: 'client.agentDraft.create',
@@ -835,7 +889,7 @@ export const sdkMethods: SdkMethod[] = [
   {
     clientCallName: 'client.agentDraft.update',
     fullyQualifiedName: 'agentDraft.update',
-    httpMethod: 'patch',
+    httpMethod: 'put',
     httpPath: '/v1/agent/{agentId}/draft',
   },
   {
@@ -855,6 +909,36 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'agentDraft.publish',
     httpMethod: 'post',
     httpPath: '/v1/agent/{agentId}/draft/publish',
+  },
+  {
+    clientCallName: 'client.tool.create',
+    fullyQualifiedName: 'tool.create',
+    httpMethod: 'post',
+    httpPath: '/v1/tool',
+  },
+  {
+    clientCallName: 'client.tool.update',
+    fullyQualifiedName: 'tool.update',
+    httpMethod: 'put',
+    httpPath: '/v1/tool/{toolId}',
+  },
+  {
+    clientCallName: 'client.tool.list',
+    fullyQualifiedName: 'tool.list',
+    httpMethod: 'get',
+    httpPath: '/v1/tool',
+  },
+  {
+    clientCallName: 'client.tool.delete',
+    fullyQualifiedName: 'tool.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/tool/{toolId}',
+  },
+  {
+    clientCallName: 'client.tool.getByID',
+    fullyQualifiedName: 'tool.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/tool/{toolId}',
   },
   {
     clientCallName: 'client.httpRequestDefinition.create',
@@ -879,6 +963,54 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'httpRequestDefinition.getByID',
     httpMethod: 'get',
     httpPath: '/v1/http-request-definition/{definitionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.create',
+    fullyQualifiedName: 'calendarConnection.create',
+    httpMethod: 'post',
+    httpPath: '/v1/calendar-connection',
+  },
+  {
+    clientCallName: 'client.calendarConnection.update',
+    fullyQualifiedName: 'calendarConnection.update',
+    httpMethod: 'patch',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.list',
+    fullyQualifiedName: 'calendarConnection.list',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection',
+  },
+  {
+    clientCallName: 'client.calendarConnection.delete',
+    fullyQualifiedName: 'calendarConnection.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.check',
+    fullyQualifiedName: 'calendarConnection.check',
+    httpMethod: 'post',
+    httpPath: '/v1/calendar-connection/{connectionId}/check',
+  },
+  {
+    clientCallName: 'client.calendarConnection.getByID',
+    fullyQualifiedName: 'calendarConnection.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.getTarget',
+    fullyQualifiedName: 'calendarConnection.getTarget',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}/targets/{targetId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.listTargets',
+    fullyQualifiedName: 'calendarConnection.listTargets',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}/targets',
   },
   {
     clientCallName: 'client.webhook.create',
