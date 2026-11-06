@@ -371,6 +371,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/job/{jobId}/tool-mock',
   },
   {
+    clientCallName: 'client.simulationAudioClip.list',
+    fullyQualifiedName: 'simulationAudioClip.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/audio-clip',
+  },
+  {
     clientCallName: 'client.simulationToolFixture.create',
     fullyQualifiedName: 'simulationToolFixture.create',
     httpMethod: 'post',
@@ -957,6 +963,54 @@ export const sdkMethods: SdkMethod[] = [
     fullyQualifiedName: 'httpRequestDefinition.getByID',
     httpMethod: 'get',
     httpPath: '/v1/http-request-definition/{definitionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.create',
+    fullyQualifiedName: 'calendarConnection.create',
+    httpMethod: 'post',
+    httpPath: '/v1/calendar-connection',
+  },
+  {
+    clientCallName: 'client.calendarConnection.update',
+    fullyQualifiedName: 'calendarConnection.update',
+    httpMethod: 'patch',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.list',
+    fullyQualifiedName: 'calendarConnection.list',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection',
+  },
+  {
+    clientCallName: 'client.calendarConnection.delete',
+    fullyQualifiedName: 'calendarConnection.delete',
+    httpMethod: 'delete',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.check',
+    fullyQualifiedName: 'calendarConnection.check',
+    httpMethod: 'post',
+    httpPath: '/v1/calendar-connection/{connectionId}/check',
+  },
+  {
+    clientCallName: 'client.calendarConnection.getByID',
+    fullyQualifiedName: 'calendarConnection.getByID',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.getTarget',
+    fullyQualifiedName: 'calendarConnection.getTarget',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}/targets/{targetId}',
+  },
+  {
+    clientCallName: 'client.calendarConnection.listTargets',
+    fullyQualifiedName: 'calendarConnection.listTargets',
+    httpMethod: 'get',
+    httpPath: '/v1/calendar-connection/{connectionId}/targets',
   },
   {
     clientCallName: 'client.webhook.create',
