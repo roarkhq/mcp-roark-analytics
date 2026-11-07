@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.15.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.14.0...v5.15.0) (2026-11-07)
+
+
+### Features
+
+* **skills:** simulate-quickstart, industry flow playbooks, and load testing ([#263](https://github.com/roarkhq/mcp-roark-analytics/issues/263)) ([ff67ac4](https://github.com/roarkhq/mcp-roark-analytics/commit/ff67ac4573b435e5b9db1268e694752eea01e7d3))
+
 ## [5.14.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.13.1...v5.14.0) (2026-11-06)
 
 
