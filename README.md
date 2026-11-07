@@ -86,7 +86,10 @@ A project-pinned URL, `https://mcp.api.roark.ai/mcp/<projectId>`, is available w
 The [`roark` plugin](./plugins/roark) bundles this MCP server with skills for
 testing voice and chat AI agents. The MCP supplies access to the Roark API; the
 skills provide the workflow for registering agents, authoring personas and
-flows, building simulation run plans, configuring metrics, and reading results.
+flows, building simulation run plans, configuring metrics, and reading results,
+plus industry flow playbooks (support, healthcare, dealerships, home services,
+finance, car insurance, collections) and a `simulate-quickstart` skill that
+takes you from "test my agent" to a previewed, confirmed run.
 
 After adding the Roark marketplace once, install both together in Claude Code:
 

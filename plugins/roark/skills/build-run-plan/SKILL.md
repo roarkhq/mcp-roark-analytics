@@ -1,184 +1,185 @@
 ---
 name: build-run-plan
 description: >-
-  Use to configure and start a Roark simulation that tests a voice or chat
-  agent: choose a testing goal (benchmark, flow adherence, red-teaming,
-  knowledge grounding, tool-call accuracy, voicemail, load, health check),
-  select which customer flows and how much of each to run, set iteration and
-  concurrency, attach the metrics that grade it, preview the call count, and run.
-  Use whenever someone asks to run a simulation, test their agent, or set up a
-  run plan in Roark.
+  Use when you have an agent endpoint and flows and need to design and start a
+  Roark simulation in detail: map the testing goal (flow adherence, red teaming,
+  conversation quality, multilingual, tool calls, voicemail, health check) to a
+  recipe, select which flows and edge cases to run, set iterations and
+  concurrency, attach metrics, create the plan, preview testCaseCount, confirm
+  with the user, and start. For the end-to-end first run use
+  simulate-quickstart; for an already-saved suite use manage-run-plans.
 ---
 
-# Build a Roark simulation run plan
+# Design and start a simulation
 
-A **run plan** is the test matrix: which agent endpoints to call, which customer
-flows to run and how much of each, with which personas, graded by which metrics.
-A **run** executes a plan and places one simulated call per test case.
+A **run plan** is the test matrix: which endpoints to call, which flows and how
+much of each, with which personas, graded by which metrics. A **run** executes a
+plan and places one simulated voice call per test case. Every call bills.
 
-**Read first:** `../roark-concepts/run-plans.md` for what a plan must bind, why
-variant selection is never defaulted, the multiplication that decides what a run
-costs, and what a run snapshots when it starts. `../roark-concepts/templates.md`
-covers choosing a template by the question being asked. This skill is the order
-of operations and the payloads.
+## Use this when
 
-Work in this order. Do not skip step 5 (the call-count preview).
+- The agent, endpoint, personas, and flows exist, and you need to assemble the
+  plan and start it.
+- You need the details: which flow parts to select, overrides, variables,
+  iteration and concurrency, every plan field.
 
-## 1. Pin down the goal
+## Use a different skill when
 
-Ask (or infer) what the user is testing. Map it to a recipe in
-[references/templates.md](references/templates.md). Each recipe lists the metric
-slugs and the flow-sourcing that Roark's own templates use for that goal, for
-example:
+- This is the first run and things may not exist yet: `simulate-quickstart`
+  walks the whole path and calls into this skill.
+- The plan is already saved and you want to re-run, edit, or delete it:
+  `manage-run-plans`.
+- The point is volume (hundreds of calls, concurrency limits):
+  `simulate-load-testing`.
+- The run has started and you want results: `read-results`.
 
-- "benchmark my agent" -> **live-bench** recipe
-- "make sure it can't be jailbroken / leak PII" -> **red-teaming**
-- "check it stays faithful to the knowledge base" -> **knowledge-base-grounding**
-- "does it call the right tools" -> **tool-call-accuracy**
-- "does it handle voicemail" -> **voicemail-testing**
-- "will it hold up under load" -> **load-testing**
+## You will have
 
-The public API has no `templateKey` parameter. A template is knowledge, not a
-field: you assemble the same metrics and flows yourself. `configure-metrics`
-turns a recipe's slugs into the `metrics` array.
+A saved run plan with a known `testCaseCount`, a user who has said yes to that
+number, and a started run with its `simulationRunPlanJobId`.
 
-## 2. Resolve the ids you will reference
+**Read first:** `../roark-concepts/run-plans.md` (what a plan must bind, why
+variant selection is never defaulted, what a run snapshots) and
+`../roark-concepts/templates.md` (choosing a template by the question asked).
 
-A plan references endpoints, flows, and metrics by id or slug. Discover them:
+Work in this order. Do not skip step 5.
+
+## 1. Map the goal to a recipe
+
+| The user asks... | Recipe in [references/templates.md](references/templates.md) |
+| --- | --- |
+| "does it follow the flows we wrote" | flow-adherence |
+| "does it sound natural and helpful" | conversation-quality |
+| "can it be jailbroken, leak PII" | red-teaming |
+| "does it work across languages" | multilingual |
+| "does it call the right tools" | tool-call-accuracy |
+| "does it stay faithful to the knowledge base" | knowledge-base-grounding |
+| "does it handle voicemail" | voicemail-testing |
+| "is it up" | health-check |
+| "how good is it overall" | live-bench |
+| "will it hold up under load" | load-testing, see `simulate-load-testing` |
+
+There is no `templateKey` field to send. Assemble the recipe yourself: its metric
+slugs go in `metrics` (via `configure-metrics`), its flows in `flows`. The
+generated list of templates is `../roark-concepts/templates-catalogue.md`.
+
+## 2. Resolve the ids
 
 ```ts
-// Agent endpoints (Roark dials/connects to these).
-const endpoints = await client.agentEndpoint.list({ agentId })
-// Customer flows already authored in the project.
-const { data: flows } = await client.customerFlow.list()
-// One flow's edge cases, when you want to name specific ones.
-const flow = await client.customerFlow.getByID(flowId)
-// Metrics available to attach (returns id, slug, name, type, calculationType).
-const metrics = await client.metric.listDefinitions()
+const { data: endpoints } = await client.agentEndpoint.list({ agentId })
+const { data: flows } = await client.customerFlow.list({ searchText: 'Billing' })
+const { data: flow } = await client.customerFlow.getByID(flowId) // edge case ids
+const { data: defs } = await client.metric.listDefinitions() // confirm slugs
 ```
 
-If the user has no flows yet, author one with `client.customerFlow.create(...)`
-(confirm the shape with docs search) or run the happy path of a system flow.
+Inbound runs need an endpoint accepting `INCOMING`; outbound need `OUTGOING`. No
+flows yet? Use `author-personas-flows` (or a `flows-*` playbook), or run the happy
+path of a system flow (`customerFlow.list({ includeSystem: true })`).
 
-## 3. Choose what to run for each flow
+## 3. Choose what runs for each flow
 
-Selection is never defaulted, and `../roark-concepts/run-plans.md` explains why
-an omission would otherwise spend money quietly. Mechanically, for each attached
-flow you set:
-
-- `happyPath: true` to run its happy path, and/or
-- `edgeCases: 'ALL'` (every edge case the flow has at run time) or an array of
-  specific ones: `edgeCases: [{ id, personaOverrideId?, variables? }]`.
-
-You must specify at least one of the two, or the API rejects the plan. Full
-rules, overrides, and how to fan one flow across personas or languages are in
-[references/flow-selection.md](references/flow-selection.md).
+Nothing is defaulted, because each part you select is a billable call. Per flow
+entry, set `happyPath: true`, `edgeCases: 'ALL'` (every edge case at run time),
+`edgeCases: [{ id }]` (named ones), or a combination. An entry with neither is
+rejected.
 
 ```ts
 flows: [
-  { id: flowId, happyPath: true, edgeCases: 'ALL' },
-  { id: otherFlowId, happyPath: true }, // happy path only
+  { id: billingFlowId, happyPath: true, edgeCases: 'ALL' },
+  { id: cancelFlowId, happyPath: true }, // happy path only
 ]
 ```
 
-## 4. Assemble the plan config
+Fanning one flow across personas or languages (attach it once per
+`personaOverrideId`), per-edge-case overrides, and `{{variables}}` are in
+[references/flow-selection.md](references/flow-selection.md).
 
-The config (shared by `simulation.run` and `simulationRunPlan.create`) is:
+## 4. Fill in the plan
 
-| field                          | required | default      | notes                                            |
-| ------------------------------ | -------- | ------------ | ------------------------------------------------ |
-| `name`                         | yes\*\*  |              | required on `simulationRunPlan.create`            |
-| `description`                  | no       |              | free text                                        |
-| `direction`                    | yes      |              | `INBOUND` or `OUTBOUND`                           |
-| `agentEndpoints`               | yes      |              | `[{ id }]`, at least one                          |
-| `metrics`                      | yes      |              | `[{ slug }]` or `[{ id }]`, at least one          |
-| `flows`                        | yes\*    |              | `[{ id, happyPath?, edgeCases?, personaOverrideId?, variables? }]` |
-| `maxSimulationDurationSeconds` | yes      |              | per-call cap, e.g. `300`                          |
-| `iterationCount`               | no       | `1`          | 1-10000; repeats every test case, multiplies cost |
-| `maxConcurrentJobs`            | no       | `5`          | parallelism, capped by your account quota        |
-| `executionMode`                | no       | `PARALLEL`   | `PARALLEL`, `SEQUENTIAL_SAME_RUN_PLAN`, or `SEQUENTIAL_PROJECT` |
-| `silenceTimeoutSeconds`        | no       | `30`         |                                                  |
-| `endCallPhrases`               | no       | `['goodbye']`| empty array disables                             |
-| `endCallReasons`               | no       | `[]`         | LLM-evaluated end conditions                     |
+| field | required | default | notes |
+| --- | --- | --- | --- |
+| `name` | on create | | required by `simulationRunPlan.create` |
+| `direction` | yes | | `INBOUND` or `OUTBOUND` |
+| `agentEndpoints` | yes | | `[{ id }]`, at least one |
+| `metrics` | yes | | `[{ slug }]` or `[{ id }]`, at least one |
+| `flows` | yes | | see step 3 |
+| `maxSimulationDurationSeconds` | yes | | per-call cap, e.g. `300` |
+| `iterationCount` | no | `1` | 1-10000; repeats every test case, multiplies cost |
+| `maxConcurrentJobs` | no | `5` | parallel calls, capped by the account quota |
+| `executionMode` | no | `PARALLEL` | or `SEQUENTIAL_SAME_RUN_PLAN`, `SEQUENTIAL_PROJECT` |
+| `silenceTimeoutSeconds` | no | `30` | |
+| `endCallPhrases` | no | `['goodbye']` | empty array disables |
+| `endCallReasons` | no | `[]` | LLM-evaluated end conditions |
 
-There is **no plain `SEQUENTIAL`** value: pick which sequencing you mean. There is
-also no plan-level `variables` (they go on each `flows[]` entry or at run time), no
-scheduling/cron, and no tags.
+There is no plain `SEQUENTIAL`, no plan-level `variables`, no schedule, and no
+tags. Do not use the deprecated `scenarios` + `personas` shape for new plans; a
+plan sends `flows` or `scenarios`, never both. Every field:
+[references/run-plan-fields.md](references/run-plan-fields.md).
 
-\* `flows` is the modern path. `scenarios` (+ a required `personas`) is the
-deprecated alternative: you must send one or the other, **never both**, and a plan
-with neither is rejected. Do not use `scenarios` for new work.
-\*\* `name` is required by `simulationRunPlan.create`, and optional on an inline
-`simulation.run({ plan })` unless you set `saveAsPlan: true`. Full field
-reference: [references/run-plan-fields.md](references/run-plan-fields.md).
+## 5. Create, preview, confirm, start
 
-## 5. Preview the call count, then run (do not skip)
-
-**Always show the user how many calls the run will place before spending.** The
-safe pattern is create-then-start: creating a plan does not run it, and the
-response carries `testCaseCount`.
+Worked example: a billing regression on one inbound endpoint.
 
 ```ts
-const created = await client.simulationRunPlan.create({
+const { data: created } = await client.simulationRunPlan.create({
   name: 'Billing regression',
-  direction: 'OUTBOUND',
+  direction: 'INBOUND',
   maxSimulationDurationSeconds: 300,
   agentEndpoints: [{ id: endpointId }],
-  metrics: [{ slug: 'call_outcome' }, { slug: 'instruction_follow' }],
-  flows: [{ id: flowId, happyPath: true, edgeCases: 'ALL' }],
+  metrics: [
+    { slug: 'agent_expectations_check' },
+    { slug: 'scenario_adherence_check' },
+    { slug: 'instruction_follow_check' },
+  ],
+  flows: [{ id: billingFlowId, happyPath: true, edgeCases: 'ALL' }],
   iterationCount: 1,
 })
+const plan = created.runPlan // create returns { runPlan, runPlanJob }; creating never runs it
 
-// NOTE the nesting: create returns { runPlan, runPlanJob }, not the plan itself.
-const plan = created.runPlan
-
-// Tell the user: "This will place <testCaseCount> calls." Wait for go-ahead
-// if the number is large or the user has not already approved it.
+// Stop. Tell the user, for example:
+// "This plan places 5 simulated calls to +1 555 555 1234. Each is billable. Start it?"
 console.log(`This run will place ${plan.testCaseCount} calls.`)
-
-// Then start it. Prefer simulation.run({ planId }) - simulationRunPlanJob.start
-// is the deprecated twin and returns a smaller payload (no simulationJobCount).
-const started = await client.simulation.run({ planId: plan.id })
 ```
 
-For a quick one-off where the user has already accepted the cost, you can
-configure and start in a single call. The response's `simulationJobCount` is the
-number of calls placed:
+Check `testCaseCount` against your own arithmetic (the formula is in
+[references/flow-selection.md](references/flow-selection.md)). If they differ,
+find out why before going on. **Only after the user says yes:**
 
 ```ts
-const run = await client.simulation.run({
-  plan: {
-    name: 'Smoke test',
-    direction: 'INBOUND',
-    maxSimulationDurationSeconds: 300,
-    agentEndpoints: [{ id: endpointId }],
-    metrics: [{ slug: 'agent_spoke' }, { slug: 'time_to_first_word' }],
-    flows: [{ id: flowId, happyPath: true }],
-  },
-  saveAsPlan: false, // true keeps it as a reusable plan; then plan.name is required
-})
-// run.simulationRunPlanJobId, run.simulationJobCount, run.simulationRunPlanId
+const { data: run } = await client.simulation.run({ planId: plan.id })
+// run.simulationRunPlanJobId, run.simulationJobCount (calls placed)
 ```
 
-To re-run an existing plan, pass its id: `client.simulation.run({ planId })`.
-Runtime `variables` can override `{{placeholders}}` for this run only; see
-flow-selection.md.
+Use `simulation.run({ planId })`, not the deprecated `simulationRunPlanJob.start`,
+which returns no `simulationJobCount`.
+
+**One-off runs.** `simulation.run({ plan: {...}, saveAsPlan: false })` configures
+and starts in one call, so it has no preview. Use it only when the user has
+already accepted a count you computed. It still creates a hidden plan
+(`run.simulationRunPlanId`), which `manage-run-plans` can promote later.
+
+**MCP note:** the plugin's `run_simulation` tool starts calls immediately and the
+plugin has no create-without-running tool. Work the count out, state it, wait for
+a yes, then call it; its `simulationJobCount` confirms what was placed. For an
+API-computed preview, create the plan on the local code-execution server and run
+it by `planId`.
 
 ## 6. Report back
 
 Give the user the run id (`simulationRunPlanJobId`), the call count, and how to
-watch it. Poll with `client.simulationRunPlanJob.getByID(jobId)`: it returns the
-run `status` and a `simulationJobs` array, each entry a call with its own
-`status`, `processingStatus`, and `callId` once created. Reading per-call metrics
-and transcripts (`client.call.listMetrics`, `client.call.getTranscript`) is
-covered by the results workflow.
+watch it. Polling and reading scores is `read-results`.
 
 ## Common mistakes
 
-- **Omitting flow selection.** `{ id: flowId }` with neither `happyPath` nor
-  `edgeCases` is rejected. Say what to run.
-- **Mixing `flows` and `scenarios`.** A plan runs one or the other, not both.
-- **Guessing metric slugs.** Confirm against `client.metric.listDefinitions()`;
-  a slug that is not collected cannot grade anything.
-- **Starting a large run without a count.** Create first, read `testCaseCount`,
-  confirm, then start.
+- **No selection on a flow entry.** `{ id }` alone is rejected.
+- **Mixing `flows` and `scenarios`.**
+- **Guessing metric slugs.** Confirm with `listDefinitions()`.
+- **No checks attached.** The run cannot fail; see `configure-metrics`.
+- **Expectations without `agent_expectations_check`.** They are never graded.
+- **Starting without a count.** Create, read `testCaseCount`, confirm, then start.
+
+## Next
+
+- `read-results` to poll the run and read checks and transcripts.
+- `manage-run-plans` to re-run or edit this plan later.
+- `gate-ci` to block a release on it.

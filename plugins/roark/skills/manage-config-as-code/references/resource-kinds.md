@@ -162,7 +162,7 @@ Which metrics get collected on real calls/chats, and on which conversations.
   `INTEGRATION` (integration id). Operators: `EQUALS`, `NOT_EQUALS`, `CONTAINS`,
   `STARTS_WITH`, `GREATER_THAN`, `LESS_THAN`, `GREATER_THAN_OR_EQUALS`,
   `LESS_THAN_OR_EQUALS`. This is the **config-sync DSL**, translated
-  server-side — it is not the imperative SDK shape (`conditions` with
+  server-side, and it is not the imperative SDK shape (`conditions` with
   `conditionType` / `conditionKey` / `conditionOperator` / `conditionValue`,
   metrics by id) documented in `monitor-live-calls`.
 

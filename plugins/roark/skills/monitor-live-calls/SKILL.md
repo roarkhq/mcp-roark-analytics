@@ -1,146 +1,143 @@
 ---
 name: monitor-live-calls
 description: >-
-  Use to grade REAL production calls and chats with Roark metrics (not
-  simulations): create a metric policy that auto-evaluates matching live
-  conversations, or run a one-off collection job to backfill metrics over a set
-  of existing calls/chats. Use when someone wants continuous quality monitoring
-  of production traffic, to score live calls, to backfill a new metric over past
-  conversations, or to filter which live calls get evaluated.
+  Use when you want real production calls or chats graded with Roark metrics:
+  a metric policy that automatically scores matching live conversations from now
+  on, or a metric collection job that backfills scores over existing calls (for
+  example after writing a new metric). Not for importing recordings; that is
+  ingest-calls. Not for testing before launch; that is simulate-quickstart.
 ---
 
-# Monitor live calls and chats
+# Grade live production calls
 
-Simulations test an agent *before* it ships (see `build-run-plan`). This skill is
-the other half: grading the **real production conversations** an agent has after
-it ships.
+Simulations test an agent before it ships. This skill grades the real
+conversations it has after it ships.
 
-**Read first:** the collectors section of `../roark-concepts/metrics.md`,
-especially that **collectors only score forward**. A collector attached today
-says nothing about last month, so a new metric plus a new collector plus a new
-chart correctly shows an empty chart, and scoring the past is a separate
-backfill. That surprise is most of the support load on this workflow.
+**The split:** `ingest-calls` brings a recording **in**. This skill decides which
+real calls get **graded**, with which metrics: going forward (a policy) or
+looking back (a collection job).
 
-Two resources do this, and they reference metrics **by id, not slug** (unlike run
-plans):
+## Use this when
 
-- **metric policy** - a standing rule: "when a live call/chat matches these
-  conditions, automatically collect these metrics." Fires on new production
-  traffic going forward.
-- **metric collection job** - a one-off batch: "compute these metrics over this
-  explicit list of existing calls/chats." Use to backfill a new metric over past
-  conversations, or grade a specific set on demand.
+- "Score every production call from now on" or "monitor quality on live
+  traffic": a **metric policy**.
+- "I wrote a new metric, grade last week's calls with it" or "grade these 50
+  calls now": a **metric collection job**.
+- You need to narrow which live calls are graded (one agent, one source, one
+  property value).
 
-Metric definitions themselves are created with `configure-metrics`; this skill
-decides *where and when* they run on live data.
+## Use a different skill when
 
-## Resolve metric ids first
+- The call is not in Roark yet: `ingest-calls` imports it (provider
+  integrations send calls automatically).
+- You want to test before launch: `simulate-quickstart` or `build-run-plan`.
+- You need to choose or create the metrics themselves: `configure-metrics`.
+- You want collectors declared in a repo: `manage-config-as-code`.
 
-Policies and jobs take `metrics: [{ id }]` (definition **uuids**), so look them
-up:
+## You will have
+
+Either an `ACTIVE` policy that grades new matching conversations as they arrive,
+or a finished collection job whose scores you can read per call.
+
+**Read first:** the collectors section of `../roark-concepts/metrics.md`.
+Policies **only score forward**. A policy created today says nothing about last
+month, so a new metric plus a new policy correctly shows an empty chart until
+new calls arrive. Scoring the past is a collection job.
+
+## 1. Resolve metric ids
+
+Policies and jobs take metrics **by id**, not slug (unlike run plans):
 
 ```ts
-const defs = await client.metric.listDefinitions()
-const ids = defs
-  .filter((d) => ['call_outcome', 'sentiment_score'].includes(d.slug))
+const { data: defs } = await client.metric.listDefinitions()
+const metrics = defs
+  .filter((d) => ['call_outcome', 'sentiment_score', 'compliance_pii_handling_check'].includes(d.slug))
   .map((d) => ({ id: d.id }))
 ```
 
-## Metric policy: continuous grading of production traffic
+## 2. Grade new production calls: a metric policy
+
+Worked example: grade every call handled by one agent that arrived through
+Vapi.
 
 ```ts
-const policy = await client.metricPolicy.create({
-  name: 'Evaluate all inbound support calls',
-  modality: 'call', // 'call' | 'chat' - REQUIRED and immutable (see below)
-  status: 'ACTIVE', // 'ACTIVE' | 'INACTIVE'; default ACTIVE
-  metrics: ids, // [{ id }], at least one; must support this modality
+const { data: policy } = await client.metricPolicy.create({
+  name: 'Support agent: live quality',
+  modality: 'call', // 'call' | 'chat'; required and immutable
+  status: 'ACTIVE', // default ACTIVE; INACTIVE pauses without deleting
+  metrics, // [{ id }], at least one, all supporting this modality
   conditions: [
-    // groups are OR'd together; conditions inside a group are AND'd
-    { conditions: [
-      { conditionType: 'AGENT', conditionKey: agentId },
-      { conditionType: 'CALL_SOURCE', conditionKey: 'VAPI' },
-    ] },
+    // groups are OR'd; conditions inside a group are AND'd
+    {
+      conditions: [
+        { conditionType: 'AGENT', conditionKey: agentId },
+        { conditionType: 'CALL_SOURCE', conditionKey: 'VAPI' },
+      ],
+    },
   ],
 })
 ```
 
-- **`modality`** (`call` | `chat`, lowercase) is **required and immutable** -
-  changing it means creating a new policy. A policy may only reference metrics
-  that support its modality.
-- **`conditions`** is optional; **omit it to match every conversation.** Its shape
-  is an array of groups OR'd together, each group `{ conditions: [...] }` whose
-  entries are AND'd. Condition fields:
-  - `conditionType`: `AGENT` (match an agent id) | `CALL_SOURCE` (source name,
-    e.g. `VAPI`, `RETELL`, `API`) | `CALL_PROPERTY` (a `properties` key) |
-    `INTEGRATION` (integration id).
-  - `conditionKey`: the id / source / property key to match.
-  - `conditionOperator` + `conditionValue`: **required for `CALL_PROPERTY`**,
-    optional otherwise. Operators: `EQUALS`, `NOT_EQUALS`, `CONTAINS`,
-    `STARTS_WITH`, `GREATER_THAN`, `LESS_THAN`, `GREATER_THAN_OR_EQUALS`,
-    `LESS_THAN_OR_EQUALS`.
-- These field names (`conditionType` / `conditionKey` / …, `metrics: [{ id }]`)
-  are the **imperative SDK** shape. Config-as-code collectors use a different
-  DSL for the same idea (`filters` with `type` / `key` / `operator` / `value`,
-  metrics by slug) — see `manage-config-as-code`. Do not mix the two.
-- **`status: 'INACTIVE'`** disables a policy without deleting it.
+- **Omit `conditions` to match every conversation.**
+- `conditionType`: `AGENT` (an agent id), `CALL_SOURCE` (for example `VAPI`,
+  `RETELL`, `API`), `CALL_PROPERTY` (a `properties` key), or `INTEGRATION` (an
+  integration id).
+- `CALL_PROPERTY` also needs `conditionOperator` and `conditionValue`.
+  Operators: `EQUALS`, `NOT_EQUALS`, `CONTAINS`, `STARTS_WITH`, `GREATER_THAN`,
+  `LESS_THAN`, `GREATER_THAN_OR_EQUALS`, `LESS_THAN_OR_EQUALS`.
+- `modality` cannot change; a chat policy is a new policy.
+- These field names are the SDK shape. Config-as-code collectors express the same
+  idea with a different vocabulary (`filters` with `type` / `key` / `operator` /
+  `value`, metrics by slug). Do not mix them; see `manage-config-as-code`.
 
-Update / list / delete:
+Maintain:
 
 ```ts
 await client.metricPolicy.update(policy.id, { status: 'INACTIVE' })
-// conditions: omit = keep existing; [] = clear all conditions (match everything)
-const { data } = await client.metricPolicy.list() // includes SYSTEM policies
-await client.metricPolicy.delete(policy.id) // soft delete -> { deleted }
+// conditions: omit = keep; [] = clear (match everything)
+const { data: policies } = await client.metricPolicy.list() // includes SYSTEM policies
+await client.metricPolicy.delete(policy.id) // soft delete
 ```
 
-`type: 'SYSTEM'` policies are Roark-managed and **cannot be updated or deleted**
-(400); only your `USER` policies are editable.
+`type: 'SYSTEM'` policies are managed by Roark and cannot be updated or deleted
+(400). Only your `USER` policies are editable.
 
-## Metric collection job: backfill over existing conversations
+## 3. Grade calls that already happened: a collection job
 
-Names the conversations explicitly by id (there is no date-range selector):
+Name the conversations by id; there is no date-range selector, so gather ids
+with `client.call.list` first (see `ingest-calls`).
 
 ```ts
-const job = await client.metricCollectionJob.create({
-  callIds: [callIdA, callIdB], // OR chatIds - exactly one of the two, never both
-  metrics: ids, // [{ id }], 1-20
+const { data: job } = await client.metricCollectionJob.create({
+  callIds: [callIdA, callIdB], // or chatIds; exactly one of the two
+  metrics, // [{ id }], 1-20
 })
 ```
 
-Caps, enforced server-side:
-
-- exactly one of `callIds` / `chatIds`, each 1-500 ids;
-- `metrics` 1-20;
-- `conversations x metrics <= 5000` per job - split a larger backfill into several
-  jobs.
-
-It runs immediately and is credit-gated (can return **402** if the account is out
-of credits). Poll it to completion:
+Limits: 1-500 ids, 1-20 metrics, and `conversations x metrics <= 5000` per job.
+Split larger backfills. It starts immediately and uses credits (a **402** means
+the account is out). Poll it:
 
 ```ts
-const TERMINAL = new Set(['COMPLETED', 'FAILED', 'CANCELED'])
-let j = await client.metricCollectionJob.getByID(job.id)
-while (!TERMINAL.has(j.status)) {        // PENDING | PROCESSING | COMPLETED | FAILED | CANCELED
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const TERMINAL = new Set(['COMPLETED', 'FAILED', 'CANCELED']) // note: CANCELED, one L
+let { data: j } = await client.metricCollectionJob.getByID(job.id)
+while (!TERMINAL.has(j.status)) {
   await sleep(10_000)
-  j = await client.metricCollectionJob.getByID(job.id)
+  ;({ data: j } = await client.metricCollectionJob.getByID(job.id))
 }
-// j.totalItems / completedItems / failedItems are call-metric pairs
+// j.totalItems, j.completedItems, j.failedItems count call-metric pairs
 ```
 
-Then read the resulting scores per call with `client.call.listMetrics(callId, { flatten: 'true' })`
-(see `read-results`), branching on `captureStatus` before reading `value`. The
-default (grouped) response nests those fields under `values[]` per metric.
+Then read each call's scores with
+`client.call.listMetrics(callId, { flatten: 'true' })`, branching on
+`captureStatus` before `value` (see `read-results`).
 
-## Which resource for which ask
+The API also has `POST /metric/collection-jobs/{id}/retry` and a per-job
+metric-values route, but neither is in the SDK client.
 
-- "Score every production call from now on" / "monitor quality live" -> **policy**
-  (leave `conditions` off, or scope it to an agent / source).
-- "I just wrote a new metric, grade the last N calls with it" -> **collection
-  job** over those `callIds`.
-- "Grade a specific handful of calls right now" -> **collection job**.
-- "Test the agent before launch" -> not this skill; use `build-run-plan`.
+## Next
 
-> The customer API also exposes `POST /metric/collection-jobs/{id}/retry` and a
-> per-job `metric-values` endpoint, but these are not in the SDK client - poll
-> `getByID` and read per-call metrics as above. Confirm any additional surface
-> with the MCP docs search tool.
+- `configure-metrics` to create a metric worth monitoring.
+- `ingest-calls` to bring calls in and list them.
+- `subscribe-webhooks` for `METRIC_COLLECTION_JOB_COMPLETED` instead of polling.

@@ -1,145 +1,151 @@
 ---
 name: configure-metrics
 description: >-
-  Use to choose or create the metrics that grade a Roark simulation or live
-  calls: attach built-in metrics by slug, add pass/fail checks to gate a run,
-  or author a custom metric (LLM judge, formula, or temporal pattern) with
-  client.metric.createDefinition. Use whenever someone asks what to measure, how
-  to score their voice agent, how to add a threshold, or how to write a custom
-  Roark metric.
+  Use when deciding how Roark grades calls: which built-in metrics to attach to
+  a simulation, which pass/fail checks make a run pass or fail, or how to write
+  a custom metric (an LLM judge, a formula, or a temporal pattern) with
+  client.metric.createDefinition. Works for simulations and live calls. Not for
+  choosing which production calls get graded; that is monitor-live-calls.
 ---
 
-# Configure Roark metrics
+# Choose how the simulation is graded
 
-Metrics grade each finished call. A run plan attaches them by id or slug (see
-`build-run-plan`). This skill covers choosing them and creating new ones.
+Metrics grade each finished call. A **check** (a `_check` slug) turns a score
+into pass or fail. A run plan attaches both by slug; this skill picks them and,
+when nothing built-in fits, creates a custom one.
 
-**Read first:** `../roark-concepts/metrics.md`. It carries what a definition
-says, why a check is what turns a completed run into a pass or a fail, which
-calculation types are billed and which are free, and the chain from a question to
-a chart. The single rule worth internalising before you start: a run that
-completes is not a run that passed, and a gate built without checks passes
-vacuously forever.
+## Use this when
 
-## First: prefer built-in metrics
+- You are building a run plan and need the `metrics` array.
+- Someone asks "what should we measure", "how do we know it passed", or "add a
+  threshold".
+- No built-in metric answers the question and you need a custom judge.
 
-Roark ships a large library of audio-native and conversational metrics. Before
-authoring anything, list what exists and match it to the goal:
+## Use a different skill when
+
+- You want metrics applied to production traffic automatically, or backfilled
+  over past calls: `monitor-live-calls` (it uses the metrics chosen here).
+- You want to read the scores after a run: `read-results`.
+- You want metrics declared in a repo: `manage-config-as-code`.
+
+## You will have
+
+A `metrics: [{ slug }]` array where every slug exists in the project, with at
+least one `_check` so the run can actually fail. Or a new custom metric whose
+slug you can attach.
+
+**Read first:** `../roark-concepts/metrics.md`. The rule to absorb: a run that
+completes is not a run that passed. Without a check attached, there is nothing
+to fail, and a gate passes forever.
+
+## 1. Start from the testing goal
+
+Each Roark template already maps a goal to metrics and checks. The recipes are in
+[../build-run-plan/references/templates.md](../build-run-plan/references/templates.md),
+and the `flows-*` playbooks add industry picks. Families and every system slug are
+in [references/metric-catalogue.md](references/metric-catalogue.md).
+
+## 2. Confirm the slugs exist, then build the array
+
+`listDefinitions` takes **no arguments** and returns every metric visible to the
+project (system, organization, project) in one array. Filter client-side.
+
+Worked example: grading a support flow that carries expectations.
 
 ```ts
-const metrics = await client.metric.listDefinitions()
-// each: { id, slug, metricId, variantId, versionId, name, description,
-//         type (output type), calculationType, scope, supportedContexts, unit? }
+const { data: defs } = await client.metric.listDefinitions()
+// each: { id, slug, name, description, type, calculationType, scope, supportedContexts, ... }
+const have = new Set(defs.map((d) => d.slug))
+
+const wanted = [
+  'agent_expectations_check', // required whenever flows carry expectations
+  'scenario_adherence_check',
+  'instruction_follow_check',
+  'user_effort_score_check',
+  'frustration_score', // reported only, no gate
+]
+const missing = wanted.filter((s) => !have.has(s))
+if (missing.length) console.log('Not in this project:', missing)
+
+const metrics = wanted.filter((s) => have.has(s)).map((slug) => ({ slug }))
+// -> pass to the run plan's `metrics`
 ```
 
-`listDefinitions` takes **no arguments**: no search, no filter, no pagination. It
-returns every metric visible to the project (system + org + project) in one array,
-so filter client-side.
+## 3. Checks: what makes a run pass or fail
 
-The [templates recipe](../build-run-plan/references/templates.md) maps common
-goals to built-in slugs. Attach a metric by putting `{ slug }` in the plan's
-`metrics` array. Metric families and output types are in
-[references/metric-catalogue.md](references/metric-catalogue.md).
+A check is a `THRESHOLD` metric that compares a base metric against a line and
+emits a boolean. Roark ships **32 curated checks**, identical in every project.
 
-## Add pass/fail checks (gating a run)
+- **Attach the check alone.** Its source metric is pulled in automatically.
+  Attach the base too only if you also want its raw score listed.
+- **Names are curated, not mechanical.** Most are `<base>_check`, but
+  `transcription_meaning_changing_check` sources `transcription_discrepancy` and
+  `transfer_failure_check` sources `transfer_failure_count`. Confirm a check
+  exists; do not append `_check` and hope.
+- Only about a third of base metrics have a shipped check. For the rest, build a
+  gate as in step 4.
 
-A **check** is a `THRESHOLD` metric: it compares a base metric against a line and
-emits a boolean, which is what lets a run gate a deploy. Roark ships **32 curated
-checks**, SYSTEM-owned and identical in every project, named with a `_check`
-suffix.
+## 4. When nothing built-in fits: a custom metric
 
-**Attach the check alone. Its source metric is auto-included.**
+In order of preference for a custom pass/fail gate:
 
-```ts
-metrics: [{ slug: 'instruction_follow_check' }]
-```
+1. **A threshold on an existing metric** via
+   `POST /v1/metric/definitions/{idOrSlug}/thresholds` with `{ operator, value }`.
+   **Not in the SDK client**: it needs a raw HTTP call with the same bearer
+   token. Say so rather than inventing a method.
+2. **`LLM_JUDGE` with `outputType: 'BOOLEAN'`**: fully supported by the SDK.
+3. **`PATTERN` with `operation: 'PATTERN_EXISTS'`**: boolean, for "X happened
+   after Y within a window".
+4. **`FORMULA` with `outputType: 'BOOLEAN'`**: needs two or more sources, so it
+   cannot express "metric X <= 2000".
 
-Roark pulls in the source metric automatically for any derived metric, so you do
-not need to attach the pair (attaching both is harmless but redundant). Attach the
-base metric too only when you also want its raw score reported.
-
-Two things to keep in mind:
-
-- The naming is **curated, not mechanical**. Most are `<base>_check`, but not all:
-  `transcription_meaning_changing_check` sources `transcription_discrepancy`, and
-  `transfer_failure_check` sources `transfer_failure_count`. Confirm a check exists
-  in `listDefinitions()` rather than appending `_check` to a slug and hoping.
-- Only ~32 of the ~100 base metrics have a shipped check. For anything else, make
-  your own gate (below).
-
-## Custom gates
-
-In preference order:
-
-1. **A threshold on any existing metric** - the first-class mechanism:
-   `POST /v1/metric/definitions/{idOrSlug}/thresholds` with
-   `{ operator, value }` (plus optional `aggregationMode`, `countThreshold`).
-   **This route is not in the SDK client**, so it needs a raw HTTP call with the
-   same bearer token; tell the user that rather than pretending a method exists.
-2. **`LLM_JUDGE` with `outputType: 'BOOLEAN'`** - fully supported by
-   `client.metric.createDefinition` (below). This is the practical choice from the
-   MCP.
-3. **`PATTERN` with `operation: 'PATTERN_EXISTS'`** - boolean, for temporal
-   conditions.
-4. **`FORMULA` with `outputType: 'BOOLEAN'`** - only valid with **two or more**
-   sources, so it cannot express "metric X <= 2000". Do not reach for it as a
-   simple threshold.
-
-## Author a custom metric
-
-Use `client.metric.createDefinition(...)`. Three kinds are creatable via the API,
-selected by `calculationType`:
-
-- **`LLM_JUDGE`** - an LLM grades each call against your prompt. The workhorse for
-  bespoke qualitative checks ("did the agent confirm the appointment date").
-- **`FORMULA`** - a numeric or boolean expression over other metrics. Use boolean
-  formulas for custom gates.
-- **`PATTERN`** - detects a trigger condition followed by an outcome within a time
-  window (temporal reasoning over the call).
-
-Minimal LLM judge:
+The everyday case, an LLM judge:
 
 ```ts
-const m = await client.metric.createDefinition({
+const { data: m } = await client.metric.createDefinition({
   calculationType: 'LLM_JUDGE',
   name: 'Confirmed appointment date',
   outputType: 'BOOLEAN',
   llmPrompt: 'Did the agent read back and confirm the appointment date with the caller?',
 })
-// attach it to a run by m.slug (auto-generated from the name) or m.id
+// attach with { slug: m.slug } (generated from the name) or { id: m.id }
 ```
 
-Output types, per-type required fields, per-participant scoping, and full
-`FORMULA` / `PATTERN` shapes are in
-[references/custom-metrics.md](references/custom-metrics.md).
+Output types, per-participant scoping, and the full `FORMULA` and `PATTERN`
+shapes are in [references/custom-metrics.md](references/custom-metrics.md).
 
 ## Rules that will bite you
 
-- **Create is the only write in the SDK.** `client.metric.createDefinition` and
-  `client.metric.listDefinitions` are the *only* two metric methods. Update,
-  delete, get-one, and thresholds exist as HTTP routes but **not** in the client -
-  do not write `client.metric.update(...)`, it does not exist.
-- **Many fields are immutable**, and an update naming one returns 400: `slug`,
-  `metricId`, `outputType`, `scope`, `participantRole`, `calculationType`,
-  `source`, `analysisPackageId`, `organizationId`, `projectId`,
-  `supportsMultipleVariants`. Pick the slug and output type deliberately.
-- **System metrics cannot be modified at all** (403). To vary one, create your own.
-- **`llmPrompt` is capped at 2000 characters**; `name` at 100, `slug` at 50. Keep
-  judge prompts tight and single-purpose. One metric = one question.
-- **Match `outputType` to the question.** BOOLEAN for pass/fail, SCALE for a
-  graded score (needs `scaleMin`/`scaleMax`), CLASSIFICATION for labels (needs
-  `classificationOptions`), NUMERIC/COUNT for counts, TEXT for free text. Sending
-  scale fields on a BOOLEAN metric is rejected.
-- **Per-participant metrics need a role.** `scope: 'PER_PARTICIPANT'` requires
-  `participantRole`, one of `AGENT`, `CUSTOMER`, `SIMULATED_CUSTOMER`,
-  `BACKGROUND_SPEAKER`. In a simulation the caller leg is `SIMULATED_CUSTOMER`,
-  in a live call it is `CUSTOMER` - a customer-scoped gate should account for both.
-- **Some metrics only apply to one kind of conversation.** Simulation-only metrics
-  (`agent_responsive`, `agent_spoke`, `scenario_adherence`, `agent_expectations`)
-  return nothing on live calls; live-only ones (the `tool_invocation_*` family,
-  `redundant_question_count`, the transcription-accuracy family) return nothing on
-  simulations. A metric that does not apply reports `NOT_APPLICABLE`, not a
-  failure. Metrics are also gated to `call` vs `chat`.
-- **Pass `slug` or `metricId`, never both** (400). `metricId` is a deprecated alias.
-- **A metric only grades what it is attached to.** Creating it does not add it to
-  any run; attach it in the run plan's `metrics` array.
+- **The SDK has two metric methods:** `createDefinition` and `listDefinitions`.
+  Update, delete, get-one, and thresholds exist only as HTTP routes. There is no
+  `client.metric.update`.
+- **Many fields are immutable** (`slug`, `outputType`, `scope`,
+  `participantRole`, `calculationType`, and more). Choose the name and output
+  type deliberately.
+- **System metrics cannot be modified** (403). Create your own to vary one.
+- **Limits:** `llmPrompt` 2000 characters, `name` 100, `slug` 50. One metric, one
+  question.
+- **Match `outputType` to the question:** BOOLEAN pass/fail, SCALE graded
+  (needs `scaleMin`/`scaleMax`), CLASSIFICATION labels (needs
+  `classificationOptions`), NUMERIC/COUNT, TEXT.
+- **Per-participant metrics need a role:** `scope: 'PER_PARTICIPANT'` requires
+  `participantRole` (`AGENT`, `CUSTOMER`, `SIMULATED_CUSTOMER`,
+  `BACKGROUND_SPEAKER`). The simulated caller is `SIMULATED_CUSTOMER`; a live
+  caller is `CUSTOMER`.
+- **Some metrics apply to one kind of conversation.** Simulation-only:
+  `agent_responsive`, `agent_spoke`, `scenario_adherence`, `agent_expectations`.
+  Live-only: the `tool_invocation_*` family, `redundant_question_count`, the
+  transcription-accuracy family. A metric that does not apply reports
+  `NOT_APPLICABLE`, not a failure. Metrics are also gated to call vs chat.
+- **Pass `slug` or `metricId`, never both** (400). `metricId` is deprecated.
+- **Creating a metric does not attach it.** Add it to a plan's `metrics`, or to a
+  policy in `monitor-live-calls`.
+
+**MCP note:** `list_metric_definitions` on the plugin returns the same list.
+Creating a metric needs the local code-execution server.
+
+## Next
+
+- `build-run-plan` to put the `metrics` array on a plan.
+- `read-results` to read the checks back.
+- `monitor-live-calls` to run the same metrics on production calls.
