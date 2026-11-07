@@ -33,7 +33,7 @@ export const newMcpServer = async ({
     {
       name: 'roarkanalytics_sdk_api',
       // A literal, not MCP_SERVER_VERSION: publish.yml checks dist/server.js for it.
-      version: '5.15.0', // x-release-please-version
+      version: '5.16.0', // x-release-please-version
     },
     {
       // Directory mode does not fetch instructions. The hosted document tells a
