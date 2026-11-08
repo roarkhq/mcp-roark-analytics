@@ -292,9 +292,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       "status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED';",
     ],
     response:
-      "{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }[]; pagination: { hasMore: boolean; nextCursor: string; total: number; }; }",
+      "{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }[]; pagination: { hasMore: boolean; nextCursor: string; total: number; }; }",
     markdown:
-      "## list\n\n`client.call.list(after?: string, agentId?: string, countedInResults?: 'true' | 'false', excludeHiddenRuns?: 'true' | 'false', limit?: number, properties?: object, searchText?: string, simulationRunPlanIds?: string, simulationRunPlanJobId?: string, simulationRunPlanJobIds?: string, sortBy?: 'createdAt' | 'startedAt' | 'endedAt' | 'duration' | 'title' | 'status', sortDirection?: 'asc' | 'desc', status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'): { data: object[]; pagination: object; }`\n\n**get** `/v1/call`\n\nReturns a paginated list of calls for the authenticated project. Pass agentId to keep calls for specific agents, or properties[agent_name][eq] when you only have the agent name. sortBy and sortDirection apply together with those filters.\n\n### Parameters\n\n- `after?: string`\n  Cursor for pagination - use the nextCursor value from a previous response\n\n- `agentId?: string`\n  Calls that include any of these agents. One id, or several separated by commas, at most 100. A call with more than one agent matches when any of them is listed. An id that is not an agent on a call in this project matches nothing. Combines with the other filters, including sortBy and sortDirection.\n\n- `countedInResults?: 'true' | 'false'`\n  true: only simulated calls their run's results count (not invalidated, for example because the agent never spoke). false: only the simulated calls the results leave out, each invalidated. Live calls, and calls removed from their run, match neither.\n\n- `excludeHiddenRuns?: 'true' | 'false'`\n  true: leave out calls from runs hidden from the runs list. Live calls stay in. false is the same as leaving it out.\n\n- `limit?: number`\n  Maximum number of calls to return (default: 20, max: 100)\n\n- `properties?: object`\n  Filter on properties, one entry per property name. properties[<name>][exists]=true keeps calls that have the property set (whatever the value), properties[<name>][exists]=false keeps calls missing it (never sent, sent as null, or removed). properties[<name>][eq]=<value> keeps calls whose value equals it, ignoring case. agent_name and agent_id are built in and read the agents linked to the call, not a stored snapshot: agent_name matches an agent name, agent_id matches an agent id (a UUID). A call with several agents matches when any of them does. A custom property the project has never stored matches no calls under eq. Names match the way properties are stored, so planTier and plan_tier are one property, and agentName is agent_name. At most 20 properties. A name taken by a built-in call filter, such as status, is rejected with 400. One operator per property.\n\n- `searchText?: string`\n  Search text to filter calls by title, summary, or transcript\n\n- `simulationRunPlanIds?: string`\n  Calls from every run of any of these run plans, comma-separated, at most 100\n\n- `simulationRunPlanJobId?: string`\n  Filter by simulation run plan job ID to get all calls from a specific simulation batch\n\n- `simulationRunPlanJobIds?: string`\n  Calls from any of these simulation runs (run plan job ids), comma-separated, at most 100\n\n- `sortBy?: 'createdAt' | 'startedAt' | 'endedAt' | 'duration' | 'title' | 'status'`\n  Field to sort by (default: createdAt)\n\n- `sortDirection?: 'asc' | 'desc'`\n  Sort direction (default: desc)\n\n- `status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'`\n  Filter by call status\n\n### Returns\n\n- `{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }[]; pagination: { hasMore: boolean; nextCursor: string; total: number; }; }`\n\n  - `data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: { id: string; environment: string; phoneNumberE164?: string; }; }[]; createdAt?: string; customers?: { label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }[]`\n  - `pagination: { hasMore: boolean; nextCursor: string; total: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calls = await client.call.list();\n\nconsole.log(calls);\n```",
+      "## list\n\n`client.call.list(after?: string, agentId?: string, countedInResults?: 'true' | 'false', excludeHiddenRuns?: 'true' | 'false', limit?: number, properties?: object, searchText?: string, simulationRunPlanIds?: string, simulationRunPlanJobId?: string, simulationRunPlanJobIds?: string, sortBy?: 'createdAt' | 'startedAt' | 'endedAt' | 'duration' | 'title' | 'status', sortDirection?: 'asc' | 'desc', status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'): { data: object[]; pagination: object; }`\n\n**get** `/v1/call`\n\nReturns a paginated list of calls for the authenticated project. Pass agentId to keep calls for specific agents, or properties[agent_name][eq] when you only have the agent name. sortBy and sortDirection apply together with those filters.\n\n### Parameters\n\n- `after?: string`\n  Cursor for pagination - use the nextCursor value from a previous response\n\n- `agentId?: string`\n  Calls that include any of these agents. One id, or several separated by commas, at most 100. A call with more than one agent matches when any of them is listed. An id that is not an agent on a call in this project matches nothing. Combines with the other filters, including sortBy and sortDirection.\n\n- `countedInResults?: 'true' | 'false'`\n  true: only simulated calls their run's results count (not invalidated, for example because the agent never spoke). false: only the simulated calls the results leave out, each invalidated. Live calls, and calls removed from their run, match neither.\n\n- `excludeHiddenRuns?: 'true' | 'false'`\n  true: leave out calls from runs hidden from the runs list. Live calls stay in. false is the same as leaving it out.\n\n- `limit?: number`\n  Maximum number of calls to return (default: 20, max: 100)\n\n- `properties?: object`\n  Filter on properties, one entry per property name. properties[<name>][exists]=true keeps calls that have the property set (whatever the value), properties[<name>][exists]=false keeps calls missing it (never sent, sent as null, or removed). properties[<name>][eq]=<value> keeps calls whose value equals it, ignoring case. agent_name and agent_id are built in and read the agents linked to the call, not a stored snapshot: agent_name matches an agent name, agent_id matches an agent id (a UUID). A call with several agents matches when any of them does. A custom property the project has never stored matches no calls under eq. Names match the way properties are stored, so planTier and plan_tier are one property, and agentName is agent_name. At most 20 properties. A name taken by a built-in call filter, such as status, is rejected with 400. One operator per property.\n\n- `searchText?: string`\n  Search text to filter calls by title, summary, or transcript\n\n- `simulationRunPlanIds?: string`\n  Calls from every run of any of these run plans, comma-separated, at most 100\n\n- `simulationRunPlanJobId?: string`\n  Filter by simulation run plan job ID to get all calls from a specific simulation batch\n\n- `simulationRunPlanJobIds?: string`\n  Calls from any of these simulation runs (run plan job ids), comma-separated, at most 100\n\n- `sortBy?: 'createdAt' | 'startedAt' | 'endedAt' | 'duration' | 'title' | 'status'`\n  Field to sort by (default: createdAt)\n\n- `sortDirection?: 'asc' | 'desc'`\n  Sort direction (default: desc)\n\n- `status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'`\n  Filter by call status\n\n### Returns\n\n- `{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }[]; pagination: { hasMore: boolean; nextCursor: string; total: number; }; }`\n\n  - `data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: { id: string; environment: string; phoneNumberE164?: string; }; }[]; createdAt?: string; customers?: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }[]`\n  - `pagination: { hasMore: boolean; nextCursor: string; total: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst calls = await client.call.list();\n\nconsole.log(calls);\n```",
     perLanguage: {
       typescript: {
         method: 'client.call.list',
@@ -327,8 +327,8 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       'startedAt: string;',
       'agent?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; };',
       'agents?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }[];',
-      'customer?: { phoneNumberE164: string; label?: string; };',
-      'customers?: { phoneNumberE164: string; label?: string; }[];',
+      'customer?: { phoneNumberE164: string; externalId?: string; label?: string; };',
+      'customers?: { phoneNumberE164: string; externalId?: string; label?: string; }[];',
       'endedStatus?: string;',
       'externalId?: string;',
       'livekitRoomId?: string;',
@@ -339,9 +339,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       'vapiCallId?: string;',
     ],
     response:
-      "{ data: { id: string; agents: { id: string; agentVersionId?: string; endpoint?: object; }[]; callDirection: 'INBOUND' | 'OUTBOUND'; createdAt: string; customers: { label?: string; phoneNumberE164?: string; }[]; externalId: string; projectId: string; startedAt: string; status: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; }; }",
+      "{ data: { id: string; agents: { id: string; agentVersionId?: string; endpoint?: object; }[]; callDirection: 'INBOUND' | 'OUTBOUND'; createdAt: string; customers: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; externalId: string; projectId: string; startedAt: string; status: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; }; }",
     markdown:
-      "## create\n\n`client.call.create(callDirection: 'INBOUND' | 'OUTBOUND', interfaceType: 'PHONE' | 'WEB', recordingUrl: string, startedAt: string, agent?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }, agents?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }[], customer?: { phoneNumberE164: string; label?: string; }, customers?: { phoneNumberE164: string; label?: string; }[], endedStatus?: string, externalId?: string, livekitRoomId?: string, properties?: object, stereoRecordingUrl?: string, toolInvocations?: { name: string; parameters: object; result: string | object; startOffsetMs: number; agent?: { customId?: string; roarkId?: string; }; description?: string; endOffsetMs?: number; }[], transcript?: { endOffsetMs: number; role: 'AGENT'; startOffsetMs: number; text: string; agent?: { customId?: string; roarkId?: string; }; languageCode?: string; payload?: object; } | { endOffsetMs: number; role: 'CUSTOMER'; startOffsetMs: number; text: string; customer?: { label?: string; phoneNumberE164?: string; }; languageCode?: string; payload?: object; }[], vapiCallId?: string): { data: object; }`\n\n**post** `/v1/call`\n\nCreate a new call with recording, transcript, agents, and customers\n\n### Parameters\n\n- `callDirection: 'INBOUND' | 'OUTBOUND'`\n  Direction of the call (INBOUND or OUTBOUND)\n\n- `interfaceType: 'PHONE' | 'WEB'`\n  Interface type of the call (PHONE or WEB)\n\n- `recordingUrl: string`\n  URL of source recording (must be an accessible WAV, MP3, MP4, or OGG file). Can be a signed URL.\n\n- `startedAt: string`\n  When the call started (ISO 8601 format)\n\n- `agent?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }`\n  Single agent participating in the call. Use this for simpler API when you have only one agent.\n\n- `agents?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }[]`\n  Agents participating in the call. Each agent requires identification and prompt information.\n\n- `customer?: { phoneNumberE164: string; label?: string; }`\n  Single customer participating in the call. Use this for simpler API when you have only one customer.\n\n- `customers?: { phoneNumberE164: string; label?: string; }[]`\n  Customers participating in the call.\n\n- `endedStatus?: string`\n  High-level call end status, indicating how the call terminated\n\n- `externalId?: string`\n  A stable identifier from your own system (e.g. session ID, conversation ID) used to correlate this call with OpenTelemetry traces. Set the same value as a `roark.external_id` span or resource attribute on your traces and the matching trace will be linked automatically. Must be unique within a project.\n\n- `livekitRoomId?: string`\n  The LiveKit Cloud room ID to link this call with OpenTelemetry trace data from LiveKit. Used for matching calls with OTEL traces.\n\n- `properties?: object`\n  Custom properties to include with the call. These can be used for filtering and will show in the call details page\n\n- `stereoRecordingUrl?: string`\n  URL of source stereo recording. Must be accessible. Can be a signed URL. Supported formats: WAV, MP3, MP4, OGG.\n\n- `toolInvocations?: { name: string; parameters: object; result: string | object; startOffsetMs: number; agent?: { customId?: string; roarkId?: string; }; description?: string; endOffsetMs?: number; }[]`\n  List of tool invocations made during the call\n\n- `transcript?: { endOffsetMs: number; role: 'AGENT'; startOffsetMs: number; text: string; agent?: { customId?: string; roarkId?: string; }; languageCode?: string; payload?: object; } | { endOffsetMs: number; role: 'CUSTOMER'; startOffsetMs: number; text: string; customer?: { label?: string; phoneNumberE164?: string; }; languageCode?: string; payload?: object; }[]`\n  List of transcript entries made during the call\n\n- `vapiCallId?: string`\n  The Vapi call ID (UUID) to link this call with OpenTelemetry trace data from Vapi. Used for matching calls with OTEL traces.\n\n### Returns\n\n- `{ data: { id: string; agents: { id: string; agentVersionId?: string; endpoint?: object; }[]; callDirection: 'INBOUND' | 'OUTBOUND'; createdAt: string; customers: { label?: string; phoneNumberE164?: string; }[]; externalId: string; projectId: string; startedAt: string; status: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; }; }`\n\n  - `data: { id: string; agents: { id: string; agentVersionId?: string; endpoint?: { id: string; environment: string; phoneNumberE164?: string; }; }[]; callDirection: 'INBOUND' | 'OUTBOUND'; createdAt: string; customers: { label?: string; phoneNumberE164?: string; }[]; externalId: string; projectId: string; startedAt: string; status: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst call = await client.call.create({\n  callDirection: 'INBOUND',\n  interfaceType: 'PHONE',\n  recordingUrl: 'https://example.com',\n  startedAt: 'startedAt',\n});\n\nconsole.log(call);\n```",
+      "## create\n\n`client.call.create(callDirection: 'INBOUND' | 'OUTBOUND', interfaceType: 'PHONE' | 'WEB', recordingUrl: string, startedAt: string, agent?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }, agents?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }[], customer?: { phoneNumberE164: string; externalId?: string; label?: string; }, customers?: { phoneNumberE164: string; externalId?: string; label?: string; }[], endedStatus?: string, externalId?: string, livekitRoomId?: string, properties?: object, stereoRecordingUrl?: string, toolInvocations?: { name: string; parameters: object; result: string | object; startOffsetMs: number; agent?: { customId?: string; roarkId?: string; }; description?: string; endOffsetMs?: number; }[], transcript?: { endOffsetMs: number; role: 'AGENT'; startOffsetMs: number; text: string; agent?: { customId?: string; roarkId?: string; }; languageCode?: string; payload?: object; } | { endOffsetMs: number; role: 'CUSTOMER'; startOffsetMs: number; text: string; customer?: { label?: string; phoneNumberE164?: string; }; languageCode?: string; payload?: object; }[], vapiCallId?: string): { data: object; }`\n\n**post** `/v1/call`\n\nCreate a new call with recording, transcript, agents, and customers\n\n### Parameters\n\n- `callDirection: 'INBOUND' | 'OUTBOUND'`\n  Direction of the call (INBOUND or OUTBOUND)\n\n- `interfaceType: 'PHONE' | 'WEB'`\n  Interface type of the call (PHONE or WEB)\n\n- `recordingUrl: string`\n  URL of source recording (must be an accessible WAV, MP3, MP4, or OGG file). Can be a signed URL.\n\n- `startedAt: string`\n  When the call started (ISO 8601 format)\n\n- `agent?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }`\n  Single agent participating in the call. Use this for simpler API when you have only one agent.\n\n- `agents?: { roarkId: string; endpoint?: { id: string; } | { type: string; value: string; direction?: string; }; prompt?: { resolvedPrompt: string; }; }[]`\n  Agents participating in the call. Each agent requires identification and prompt information.\n\n- `customer?: { phoneNumberE164: string; externalId?: string; label?: string; }`\n  Single customer participating in the call. Use this for simpler API when you have only one customer.\n\n- `customers?: { phoneNumberE164: string; externalId?: string; label?: string; }[]`\n  Customers participating in the call.\n\n- `endedStatus?: string`\n  High-level call end status, indicating how the call terminated\n\n- `externalId?: string`\n  A stable identifier from your own system (e.g. session ID, conversation ID) used to correlate this call with OpenTelemetry traces. Set the same value as a `roark.external_id` span or resource attribute on your traces and the matching trace will be linked automatically. Must be unique within a project.\n\n- `livekitRoomId?: string`\n  The LiveKit Cloud room ID to link this call with OpenTelemetry trace data from LiveKit. Used for matching calls with OTEL traces.\n\n- `properties?: object`\n  Custom properties to include with the call. These can be used for filtering and will show in the call details page\n\n- `stereoRecordingUrl?: string`\n  URL of source stereo recording. Must be accessible. Can be a signed URL. Supported formats: WAV, MP3, MP4, OGG.\n\n- `toolInvocations?: { name: string; parameters: object; result: string | object; startOffsetMs: number; agent?: { customId?: string; roarkId?: string; }; description?: string; endOffsetMs?: number; }[]`\n  List of tool invocations made during the call\n\n- `transcript?: { endOffsetMs: number; role: 'AGENT'; startOffsetMs: number; text: string; agent?: { customId?: string; roarkId?: string; }; languageCode?: string; payload?: object; } | { endOffsetMs: number; role: 'CUSTOMER'; startOffsetMs: number; text: string; customer?: { label?: string; phoneNumberE164?: string; }; languageCode?: string; payload?: object; }[]`\n  List of transcript entries made during the call\n\n- `vapiCallId?: string`\n  The Vapi call ID (UUID) to link this call with OpenTelemetry trace data from Vapi. Used for matching calls with OTEL traces.\n\n### Returns\n\n- `{ data: { id: string; agents: { id: string; agentVersionId?: string; endpoint?: object; }[]; callDirection: 'INBOUND' | 'OUTBOUND'; createdAt: string; customers: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; externalId: string; projectId: string; startedAt: string; status: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; }; }`\n\n  - `data: { id: string; agents: { id: string; agentVersionId?: string; endpoint?: { id: string; environment: string; phoneNumberE164?: string; }; }[]; callDirection: 'INBOUND' | 'OUTBOUND'; createdAt: string; customers: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; externalId: string; projectId: string; startedAt: string; status: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst call = await client.call.create({\n  callDirection: 'INBOUND',\n  interfaceType: 'PHONE',\n  recordingUrl: 'https://example.com',\n  startedAt: 'startedAt',\n});\n\nconsole.log(call);\n```",
     perLanguage: {
       typescript: {
         method: 'client.call.create',
@@ -369,9 +369,9 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     qualified: 'client.call.getByID',
     params: ['callId: string;'],
     response:
-      "{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }; }",
+      "{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }; }",
     markdown:
-      "## getById\n\n`client.call.getByID(callId: string): { data: object; }`\n\n**get** `/v1/call/{callId}`\n\nRetrieve an existing call by its unique identifier\n\n### Parameters\n\n- `callId: string`\n\n### Returns\n\n- `{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }; }`\n\n  - `data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: { id: string; environment: string; phoneNumberE164?: string; }; }[]; createdAt?: string; customers?: { label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.call.getByID('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+      "## getById\n\n`client.call.getByID(callId: string): { data: object; }`\n\n**get** `/v1/call/{callId}`\n\nRetrieve an existing call by its unique identifier\n\n### Parameters\n\n- `callId: string`\n\n### Returns\n\n- `{ data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: object; }[]; createdAt?: string; customers?: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }; }`\n\n  - `data: { id: string; callDirection: 'INBOUND' | 'OUTBOUND'; projectId: string; recordingUrlAccess: 'AVAILABLE' | 'NOT_AVAILABLE' | 'RESTRICTED'; startedAt: string; agents?: { id: string; agentVersionId?: string; endpoint?: { id: string; environment: string; phoneNumberE164?: string; }; }[]; createdAt?: string; customers?: { customerProfileId?: string; label?: string; phoneNumberE164?: string; }[]; durationMs?: number; endedAt?: string; endedStatus?: string; externalId?: string; policyIds?: string[]; properties?: object; recordingUrl?: string; simulationJobId?: string; status?: 'RINGING' | 'IN_PROGRESS' | 'ENDED'; summary?: string; supersededByCallId?: string; title?: string; updatedAt?: string; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.call.getByID('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
     perLanguage: {
       typescript: {
         method: 'client.call.getByID',
@@ -3174,6 +3174,259 @@ const EMBEDDED_METHODS: MethodEntry[] = [
       http: {
         example:
           'curl https://api.roark.ai/v1/persona/$PERSONA_ID \\\n    -X PUT \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'list',
+    endpoint: '/v1/customer-profile',
+    httpMethod: 'get',
+    summary: 'List customer profiles',
+    description:
+      'Returns the people who have talked to your agents in this project. Customers we hold nothing about beyond their identifier are left out unless includeNoData is true.',
+    stainlessPath: '(resource) customerProfile > (method) list',
+    qualified: 'client.customerProfile.list',
+    params: [
+      'agentId?: string;',
+      'fieldKey?: string;',
+      "fieldOperator?: 'EQUALS' | 'NOT_EQUALS' | 'CONTAINS' | 'STARTS_WITH' | 'IS_SET' | 'IS_NOT_SET';",
+      'fieldValue?: string;',
+      "includeNoData?: 'true' | 'false';",
+      'limit?: number;',
+      "modality?: 'call' | 'chat';",
+      'page?: number;',
+      'search?: string;',
+      'sortBy?: string;',
+      "sortDirection?: 'asc' | 'desc';",
+    ],
+    response:
+      '{ data: { items: { id: string; agentIds: string[]; attributes: object[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }[]; page: number; totalCount: number; }; }',
+    markdown:
+      "## list\n\n`client.customerProfile.list(agentId?: string, fieldKey?: string, fieldOperator?: 'EQUALS' | 'NOT_EQUALS' | 'CONTAINS' | 'STARTS_WITH' | 'IS_SET' | 'IS_NOT_SET', fieldValue?: string, includeNoData?: 'true' | 'false', limit?: number, modality?: 'call' | 'chat', page?: number, search?: string, sortBy?: string, sortDirection?: 'asc' | 'desc'): { data: object; }`\n\n**get** `/v1/customer-profile`\n\nReturns the people who have talked to your agents in this project. Customers we hold nothing about beyond their identifier are left out unless includeNoData is true.\n\n### Parameters\n\n- `agentId?: string`\n\n- `fieldKey?: string`\n  Filter by this field. Use with fieldOperator and, unless checking presence, fieldValue.\n\n- `fieldOperator?: 'EQUALS' | 'NOT_EQUALS' | 'CONTAINS' | 'STARTS_WITH' | 'IS_SET' | 'IS_NOT_SET'`\n  How fieldValue is compared, ignoring case. NOT_EQUALS includes customers without the field.\n\n- `fieldValue?: string`\n\n- `includeNoData?: 'true' | 'false'`\n  Include customers we hold nothing about beyond their identifier. Defaults to false.\n\n- `limit?: number`\n\n- `modality?: 'call' | 'chat'`\n\n- `page?: number`\n\n- `search?: string`\n\n- `sortBy?: string`\n  A column, or field.<KEY> (for example field.COMPANY) to sort by a field's value. Customers without a value sort last.\n\n- `sortDirection?: 'asc' | 'desc'`\n\n### Returns\n\n- `{ data: { items: { id: string; agentIds: string[]; attributes: object[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }[]; page: number; totalCount: number; }; }`\n\n  - `data: { items: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }[]; page: number; totalCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst customerProfiles = await client.customerProfile.list();\n\nconsole.log(customerProfiles);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.list',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst customerProfiles = await client.customerProfile.list();\n\nconsole.log(customerProfiles.data);",
+      },
+      python: {
+        method: 'customer_profile.list',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\ncustomer_profiles = client.customer_profile.list()\nprint(customer_profiles.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getById',
+    endpoint: '/v1/customer-profile/{customerProfileId}',
+    httpMethod: 'get',
+    summary: 'Get a customer profile',
+    description: 'Get a customer profile',
+    stainlessPath: '(resource) customerProfile > (method) getById',
+    qualified: 'client.customerProfile.getByID',
+    params: ['customerProfileId: string;'],
+    response:
+      "{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }",
+    markdown:
+      "## getById\n\n`client.customerProfile.getByID(customerProfileId: string): { data: object; }`\n\n**get** `/v1/customer-profile/{customerProfileId}`\n\nGet a customer profile\n\n### Parameters\n\n- `customerProfileId: string`\n\n### Returns\n\n- `{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }`\n\n  - `data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }; history: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.customerProfile.getByID('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.getByID',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.customerProfile.getByID('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'customer_profile.get_by_id',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.customer_profile.get_by_id(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile/$CUSTOMER_PROFILE_ID \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'delete',
+    endpoint: '/v1/customer-profile/{customerProfileId}',
+    httpMethod: 'delete',
+    summary: 'Erase a customer profile',
+    description:
+      'Permanently removes the profile, its fields, evidence and notes. Conversations are kept. A new conversation from the same identifier creates a new profile.',
+    stainlessPath: '(resource) customerProfile > (method) delete',
+    qualified: 'client.customerProfile.delete',
+    params: ['customerProfileId: string;'],
+    response: '{ data: { success: boolean; }; }',
+    markdown:
+      "## delete\n\n`client.customerProfile.delete(customerProfileId: string): { data: object; }`\n\n**delete** `/v1/customer-profile/{customerProfileId}`\n\nPermanently removes the profile, its fields, evidence and notes. Conversations are kept. A new conversation from the same identifier creates a new profile.\n\n### Parameters\n\n- `customerProfileId: string`\n\n### Returns\n\n- `{ data: { success: boolean; }; }`\n\n  - `data: { success: boolean; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst customerProfile = await client.customerProfile.delete('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(customerProfile);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.delete',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst customerProfile = await client.customerProfile.delete('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(customerProfile.data);",
+      },
+      python: {
+        method: 'customer_profile.delete',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\ncustomer_profile = client.customer_profile.delete(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(customer_profile.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile/$CUSTOMER_PROFILE_ID \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'listConversations',
+    endpoint: '/v1/customer-profile/{customerProfileId}/conversations',
+    httpMethod: 'get',
+    summary: "List a customer's conversations",
+    description: 'Calls and chats with this customer, newest first.',
+    stainlessPath: '(resource) customerProfile > (method) listConversations',
+    qualified: 'client.customerProfile.listConversations',
+    params: ['customerProfileId: string;', 'limit?: number;', 'page?: number;'],
+    response:
+      "{ data: { items: { id: string; conversationType: 'call' | 'chat'; durationMs: number; startedAt: string; summary: string; title: string; }[]; page: number; totalCount: number; }; }",
+    markdown:
+      "## listConversations\n\n`client.customerProfile.listConversations(customerProfileId: string, limit?: number, page?: number): { data: object; }`\n\n**get** `/v1/customer-profile/{customerProfileId}/conversations`\n\nCalls and chats with this customer, newest first.\n\n### Parameters\n\n- `customerProfileId: string`\n\n- `limit?: number`\n\n- `page?: number`\n\n### Returns\n\n- `{ data: { items: { id: string; conversationType: 'call' | 'chat'; durationMs: number; startedAt: string; summary: string; title: string; }[]; page: number; totalCount: number; }; }`\n\n  - `data: { items: { id: string; conversationType: 'call' | 'chat'; durationMs: number; startedAt: string; summary: string; title: string; }[]; page: number; totalCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.customerProfile.listConversations('customerProfileId');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.listConversations',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.customerProfile.listConversations('customerProfileId');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'customer_profile.list_conversations',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.customer_profile.list_conversations(\n    customer_profile_id="customerProfileId",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile/$CUSTOMER_PROFILE_ID/conversations \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'setAttribute',
+    endpoint: '/v1/customer-profile/{customerProfileId}/attributes/{key}',
+    httpMethod: 'put',
+    summary: 'Set a customer profile field',
+    description: 'Sets the value and locks the field, so newer conversations cannot change it.',
+    stainlessPath: '(resource) customerProfile > (method) setAttribute',
+    qualified: 'client.customerProfile.setAttribute',
+    params: ['customerProfileId: string;', 'key: string;', 'value: string;'],
+    response:
+      "{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }",
+    markdown:
+      "## setAttribute\n\n`client.customerProfile.setAttribute(customerProfileId: string, key: string, value: string): { data: object; }`\n\n**put** `/v1/customer-profile/{customerProfileId}/attributes/{key}`\n\nSets the value and locks the field, so newer conversations cannot change it.\n\n### Parameters\n\n- `customerProfileId: string`\n\n- `key: string`\n\n- `value: string`\n  The new value. Setting a field locks it, so newer conversations cannot change it.\n\n### Returns\n\n- `{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }`\n\n  - `data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }; history: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.customerProfile.setAttribute('FULL_NAME', {\n  customerProfileId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n  value: 'x',\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.setAttribute',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.customerProfile.setAttribute('FULL_NAME', {\n  customerProfileId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n  value: 'x',\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'customer_profile.set_attribute',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.customer_profile.set_attribute(\n    key="FULL_NAME",\n    customer_profile_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n    value="x",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile/$CUSTOMER_PROFILE_ID/attributes/$KEY \\\n    -X PUT \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "value": "x"\n        }\'',
+      },
+    },
+  },
+  {
+    name: 'clearAttribute',
+    endpoint: '/v1/customer-profile/{customerProfileId}/attributes/{key}',
+    httpMethod: 'delete',
+    summary: 'Clear a customer profile field',
+    description: 'Removes the value and any lock, so a later conversation can fill it again.',
+    stainlessPath: '(resource) customerProfile > (method) clearAttribute',
+    qualified: 'client.customerProfile.clearAttribute',
+    params: ['customerProfileId: string;', 'key: string;'],
+    response:
+      "{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }",
+    markdown:
+      "## clearAttribute\n\n`client.customerProfile.clearAttribute(customerProfileId: string, key: string): { data: object; }`\n\n**delete** `/v1/customer-profile/{customerProfileId}/attributes/{key}`\n\nRemoves the value and any lock, so a later conversation can fill it again.\n\n### Parameters\n\n- `customerProfileId: string`\n\n- `key: string`\n\n### Returns\n\n- `{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }`\n\n  - `data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }; history: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.customerProfile.clearAttribute('FULL_NAME', {\n  customerProfileId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.clearAttribute',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.customerProfile.clearAttribute('FULL_NAME', {\n  customerProfileId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'customer_profile.clear_attribute',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.customer_profile.clear_attribute(\n    "FULL_NAME",\n    customer_profile_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile/$CUSTOMER_PROFILE_ID/attributes/$KEY \\\n    -X DELETE \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'unlockAttribute',
+    endpoint: '/v1/customer-profile/{customerProfileId}/attributes/{key}/unlock',
+    httpMethod: 'post',
+    summary: 'Unlock a customer profile field',
+    description: 'Lets newer conversations change this field again. The current value stays until one does.',
+    stainlessPath: '(resource) customerProfile > (method) unlockAttribute',
+    qualified: 'client.customerProfile.unlockAttribute',
+    params: ['customerProfileId: string;', 'key: string;'],
+    response:
+      "{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }",
+    markdown:
+      "## unlockAttribute\n\n`client.customerProfile.unlockAttribute(customerProfileId: string, key: string): { data: object; }`\n\n**post** `/v1/customer-profile/{customerProfileId}/attributes/{key}/unlock`\n\nLets newer conversations change this field again. The current value stays until one does.\n\n### Parameters\n\n- `customerProfileId: string`\n\n- `key: string`\n\n### Returns\n\n- `{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }`\n\n  - `data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }; history: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.customerProfile.unlockAttribute('FULL_NAME', {\n  customerProfileId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.unlockAttribute',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.customerProfile.unlockAttribute('FULL_NAME', {\n  customerProfileId: '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'customer_profile.unlock_attribute',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.customer_profile.unlock_attribute(\n    "FULL_NAME",\n    customer_profile_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile/$CUSTOMER_PROFILE_ID/attributes/$KEY/unlock \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'updateNotes',
+    endpoint: '/v1/customer-profile/{customerProfileId}/notes',
+    httpMethod: 'put',
+    summary: 'Update the notes on a customer profile',
+    description: "Replaces your team's shared notes. Null or empty clears them. The last save wins.",
+    stainlessPath: '(resource) customerProfile > (method) updateNotes',
+    qualified: 'client.customerProfile.updateNotes',
+    params: ['customerProfileId: string;', 'notes: string;'],
+    response:
+      "{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }",
+    markdown:
+      "## updateNotes\n\n`client.customerProfile.updateNotes(customerProfileId: string, notes: string): { data: object; }`\n\n**put** `/v1/customer-profile/{customerProfileId}/notes`\n\nReplaces your team's shared notes. Null or empty clears them. The last save wins.\n\n### Parameters\n\n- `customerProfileId: string`\n\n- `notes: string`\n  Replaces the existing notes. Null or empty clears them.\n\n### Returns\n\n- `{ data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: object; history: object[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }; }`\n\n  - `data: { id: string; agentIds: string[]; attributes: { blockedValue: string; evidence: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }; history: { callId: string; chatId: string; observedAt: string; offsetMs: number; quote: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; isLocked: boolean; key: string; observedAt: string; source: 'LIVE_EXTRACTION' | 'POST_CALL_EXTRACTION' | 'API' | 'USER'; value: string; }[]; chatCount: number; conversationCount: number; displayName: string; externalId: string; firstSeenAt: string; lastSeenAt: string; notes: string; notesUpdatedAt: string; openItems: string; phoneNumberE164: string; summary: string; talkTimeMs: number; voiceCount: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.customerProfile.updateNotes('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {\n  notes: 'notes',\n});\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.customerProfile.updateNotes',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.customerProfile.updateNotes('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e', {\n  notes: 'notes',\n});\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'customer_profile.update_notes',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.customer_profile.update_notes(\n    customer_profile_id="182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n    notes="notes",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/customer-profile/$CUSTOMER_PROFILE_ID/notes \\\n    -X PUT \\\n    -H \'Content-Type: application/json\' \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN" \\\n    -d \'{\n          "notes": "notes"\n        }\'',
       },
     },
   },
