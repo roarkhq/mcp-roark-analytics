@@ -75,7 +75,9 @@ const agentEndpoint = object('An agent endpoint.', {
   agentId: string('The agent this endpoint reaches.'),
   type: string('Transport, such as PHONE.'),
   direction: string('INCOMING, OUTGOING, or INCOMING_AND_OUTGOING.'),
-  value: string('The address Roark connects to, such as an E.164 phone number.'),
+  value: nullableString(
+    'The address Roark connects to, such as an E.164 phone number. null for an outbound phone endpoint with no fixed calling number.',
+  ),
   environment: string('Environment name, such as production.'),
   outboundDialType: string('How Roark starts an outbound call: NONE or HTTP_REQUEST.'),
   outboundDialHttpRequestDefinitionId: nullableString(

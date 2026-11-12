@@ -244,11 +244,14 @@ export const buildOAuthConfig = (argv: {
     .split(',')
     .map((alias) => alias.trim())
     .filter((alias) => alias.length > 0)
-    .map((alias) => {
+    .map((alias, index) => {
       try {
         return new URL(alias).origin;
       } catch {
-        throw new Error(`oauth-resource-aliases: "${alias}" is not a URL. Give each alias as an origin.`);
+        // Names the position, not the value: this is printed at startup.
+        throw new Error(
+          `oauth-resource-aliases: entry ${index + 1} is not a URL. Give each alias as an origin, such as https://mcp.example.com.`,
+        );
       }
     });
   return {
