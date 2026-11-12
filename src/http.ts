@@ -12,6 +12,7 @@ import { getLogger } from './logger';
 import { McpOptions, toolSurfaceFor } from './options';
 import {
   Connector,
+  oauthConfigForRequest,
   ORIGIN_CONNECTOR,
   protectedResourceMetadata,
   requireBearer,
@@ -55,7 +56,8 @@ const newServer = async ({
   let authOptions: Partial<ClientOptions>;
   if (mcpOptions.oauth) {
     const connector = connectorFrom(req);
-    const authorized = requireBearer(req, mcpOptions.oauth, connector);
+    const oauth = oauthConfigForRequest(mcpOptions.oauth, req);
+    const authorized = requireBearer(req, oauth, connector);
     // Presence is not validity. Ask customer-api whether the token is still live, so a revoked or
     // expired one is answered with 401 + WWW-Authenticate here - the signal a client needs to
     // re-run the OAuth flow - rather than completing the handshake and failing later inside a
@@ -64,7 +66,7 @@ const newServer = async ({
     // The base URL is resolved the way the SDK resolves it, NOT defaulted to prod: this server is
     // launched without `clientOptions`, so on any stage but prod a prod default would check the
     // token against a server that never issued it and refuse every request.
-    await requireLiveBearer(authorized.bearerToken, mcpOptions.oauth, connector, {
+    await requireLiveBearer(authorized.bearerToken, oauth, connector, {
       baseURL: resolveApiBaseUrl(clientOptions),
     });
     authOptions = authorized;
@@ -289,13 +291,13 @@ export const streamableHTTPApp = ({
   // served in remote OAuth mode.
   if (mcpOptions.oauth) {
     const oauth = mcpOptions.oauth;
-    app.get('/.well-known/oauth-protected-resource', (_req, res) => {
-      res.status(200).json(protectedResourceMetadata(oauth));
+    app.get('/.well-known/oauth-protected-resource', (req, res) => {
+      res.status(200).json(protectedResourceMetadata(oauthConfigForRequest(oauth, req)));
     });
     // The single connector. Its `resource` carries no project, which is what tells the
     // authorization server to mint a credential for the person rather than for one project.
-    app.get('/.well-known/oauth-protected-resource/mcp', (_req, res) => {
-      res.status(200).json(protectedResourceMetadata(oauth, { kind: 'mcp' }));
+    app.get('/.well-known/oauth-protected-resource/mcp', (req, res) => {
+      res.status(200).json(protectedResourceMetadata(oauthConfigForRequest(oauth, req), { kind: 'mcp' }));
     });
     app.get('/.well-known/oauth-protected-resource/mcp/:projectId', (req, res) => {
       const projectId = req.params['projectId'];
@@ -303,7 +305,7 @@ export const streamableHTTPApp = ({
         .status(200)
         .json(
           protectedResourceMetadata(
-            oauth,
+            oauthConfigForRequest(oauth, req),
             typeof projectId === 'string' ? { kind: 'project', projectId } : undefined,
           ),
         );

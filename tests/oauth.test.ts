@@ -1,6 +1,7 @@
 import { IncomingMessage } from 'node:http';
 import {
   clearBearerVerdictCache,
+  oauthConfigForRequest,
   DEFAULT_API_BASE_URL,
   resolveApiBaseUrl,
   protectedResourceMetadata,
@@ -326,5 +327,30 @@ describe('resolveApiBaseUrl', () => {
     delete process.env['ROARK_BASE_URL'];
 
     expect(resolveApiBaseUrl({})).toBe(DEFAULT_API_BASE_URL);
+  });
+});
+
+describe('oauthConfigForRequest', () => {
+  const moved = {
+    issuer: 'https://mcp-oauth.api.test',
+    resourceBaseUrl: 'https://mcp.test',
+    resourceAliases: ['https://mcp.api.test/'],
+  };
+
+  it('describes a request on an alias with that alias, so the old URL keeps matching its metadata', () => {
+    const forAlias = oauthConfigForRequest(moved, request({ host: 'MCP.api.test' }));
+
+    expect(forAlias.resourceBaseUrl).toBe('https://mcp.api.test');
+    expect(resourceIdentifier(forAlias, PINNED)).toBe(`https://mcp.api.test/mcp/${PROJECT}`);
+  });
+
+  it('keeps the canonical origin for the canonical host, an unknown host, or no host', () => {
+    for (const headers of [{ host: 'mcp.test' }, { host: 'evil.example' }, {}]) {
+      expect(oauthConfigForRequest(moved, request(headers)).resourceBaseUrl).toBe('https://mcp.test');
+    }
+  });
+
+  it('changes nothing when no aliases are configured', () => {
+    expect(oauthConfigForRequest(config, request({ host: 'mcp.api.test' }))).toBe(config);
   });
 });
