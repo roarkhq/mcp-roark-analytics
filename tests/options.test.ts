@@ -225,7 +225,7 @@ describe('remote OAuth resource-server mode', () => {
       '--oauth-resource-base-url=https://mcp.roark.ai',
     ]);
 
-    expect(() => parseCLIOptions()).toThrow(/mcp\.api\.roark\.ai/);
+    expect(() => parseCLIOptions()).toThrow(/entry 1 is not a URL/);
 
     cleanup();
   });
