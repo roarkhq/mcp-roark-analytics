@@ -127,8 +127,11 @@ const CALL_STATUSES = ['RINGING', 'IN_PROGRESS', 'ENDED'] as const;
 const CALL_SORT_FIELDS = ['createdAt', 'startedAt', 'endedAt', 'duration', 'title', 'status'] as const;
 const SORT_DIRECTIONS = ['asc', 'desc'] as const;
 /** GET /v1/call rejects a non-UUID in `agentId` and in `properties[agent_id][eq]`. */
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_SOURCE = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+const UUID_PATTERN = new RegExp(`^${UUID_SOURCE}$`);
 const MAX_AGENT_IDS = 100;
+/** The rule `optionalAgentIds` enforces, as a JSON Schema pattern: 1 to MAX_AGENT_IDS comma-separated UUIDs. */
+export const AGENT_IDS_PATTERN = `^${UUID_SOURCE}(,${UUID_SOURCE}){0,${MAX_AGENT_IDS - 1}}$`;
 const MAX_PROPERTY_FILTERS = 20;
 const FLOW_TYPES = ['SCRIPTED', 'IMPROV', 'VOICEMAIL'] as const;
 const TRANSCRIPT_SOURCES = [
@@ -515,7 +518,11 @@ const flowAttachmentSchema = {
       description:
         'Stable slug of a flow Roark provides, used instead of id. GET /v1/simulation/template lists them. Flows made in the project have no slug.',
     },
-    happyPath: { type: 'boolean' as const, description: 'true runs the flow happy path.' },
+    happyPath: {
+      type: 'boolean' as const,
+      description:
+        "true runs the flow's happy path, the conversation going as intended. It is resolved when the run starts, so it follows the flow as it is then.",
+    },
     edgeCases: {
       type: ['string', 'array'] as const,
       description:
@@ -781,8 +788,7 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_calls',
       'List calls',
-      'Lists calls in a Roark project, simulated and live. Returns call ids, status, direction, and timestamps, without transcripts. Every filter and the sort apply together. ' +
-        "properties filters on call properties: eq matches a value, ignoring case, and exists checks whether the property is set. The built-in agent_name, also accepted as agentName, matches any participating agent's current name, and agent_id matches one agent id. Any other name is a custom property.",
+      'Lists calls in a Roark project, simulated and live. Returns call ids, status, direction, and timestamps, without transcripts. Every filter and the sort apply together.',
       objectSchema({
         project: projectProperty,
         searchText: {
@@ -792,17 +798,19 @@ export function directoryTools(): McpTool[] {
         status: {
           type: 'string',
           enum: [...CALL_STATUSES],
-          description: 'Lifecycle state to list. When omitted, calls in every state are listed.',
+          description:
+            'Where the calls are in their lifecycle: RINGING has not connected yet, IN_PROGRESS is live, ENDED has finished. When omitted, calls in every state are listed.',
         },
         agentId: {
           type: 'string',
+          pattern: AGENT_IDS_PATTERN,
           description:
-            'Agent ids, from list_agents, to list only calls those agents took part in. Several ids go comma-separated with no spaces, at most 100.',
+            'Agents whose calls to list, by id from list_agents. A call matches when any of them took part. Separate several ids with commas.',
         },
         properties: {
           type: 'object',
           description:
-            'Call property filters, keyed by property name, at most 20. Each entry sets eq or exists, not both. agent_name (alias agentName) and agent_id are built in; any other name is a custom property set on the call.',
+            "Call property filters, keyed by property name, at most 20. Each entry sets eq or exists, not both. eq matches a value, ignoring case, and exists checks whether the property is set. The built-in agent_name, also accepted as agentName, matches any participating agent's current name, and agent_id matches one agent id. Any other name is a custom property set on the call.",
           additionalProperties: {
             type: 'object',
             description: 'One filter: eq or exists.',
@@ -818,13 +826,15 @@ export function directoryTools(): McpTool[] {
         sortBy: {
           type: 'string',
           enum: [...CALL_SORT_FIELDS],
-          description: 'Call field the results are ordered by. When omitted, createdAt.',
+          default: 'createdAt',
+          description:
+            'What orders the results: when the call was created, started, or ended, how long it lasted, its title, or its status.',
         },
         sortDirection: {
           type: 'string',
           enum: [...SORT_DIRECTIONS],
-          description:
-            'asc puts the earliest or smallest first, desc the latest or largest. When omitted, desc.',
+          default: 'desc',
+          description: 'asc puts the earliest or smallest first, desc the latest or largest.',
         },
         simulationRunPlanJobId: {
           type: 'string',
@@ -993,7 +1003,8 @@ export function directoryTools(): McpTool[] {
         type: {
           type: 'string',
           enum: [...FLOW_TYPES],
-          description: 'Kind of flow to list. When omitted, flows of every kind are listed.',
+          description:
+            'How the simulated caller behaves. IMPROV gives the caller a goal to improvise around, SCRIPTED follows an exact step graph, and VOICEMAIL plays a voicemail greeting to test the message the agent leaves. When omitted, flows of every type are listed.',
         },
         includeSystem: {
           type: 'string',
@@ -1108,23 +1119,30 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'create_persona',
       'Create persona',
-      'Creates a simulated caller persona in a Roark project. Each call adds a new persona, so repeating it creates a duplicate. It changes nothing else and places no calls. Requires a name, language, accent, and gender. Returns the created persona; pass its id as personaOverrideId to create_customer_flow to use it.',
+      'Creates a simulated caller persona in a Roark project. Each call adds a new persona, so repeating it creates a duplicate. It changes nothing else and places no calls. Returns the created persona; pass its id as personaOverrideId to create_customer_flow to use it.',
       objectSchema(
         {
           project: projectProperty,
           name: { type: 'string', description: 'Name the caller uses in conversation.' },
-          language: { type: 'string', enum: [...LANGUAGES], description: 'Primary spoken language.' },
+          language: {
+            type: 'string',
+            enum: [...LANGUAGES],
+            description:
+              'The language the simulated caller speaks, as an ISO 639-1 code: EN is English, ES Spanish.',
+          },
           accent: { type: 'string', enum: [...ACCENTS], description: 'Accent the caller speaks with.' },
           gender: { type: 'string', enum: [...GENDERS], description: 'Gender the persona is voiced with.' },
           age: {
             type: 'string',
             enum: [...AGES],
-            description: 'How old the caller sounds. When omitted, ADULT.',
+            default: 'ADULT',
+            description: 'How old the caller sounds.',
           },
           baseEmotion: {
             type: 'string',
             enum: [...EMOTIONS],
-            description: 'Mood the caller starts the conversation in. When omitted, NEUTRAL.',
+            default: 'NEUTRAL',
+            description: 'The emotional state the simulated caller brings to the call.',
           },
           backstoryPrompt: {
             type: 'string',
@@ -1221,7 +1239,11 @@ export function directoryTools(): McpTool[] {
       'Starts a simulation run in a Roark project and places simulated calls to the agent. Pass exactly one of planId (an existing plan), plan (an inline plan), or template (a built-in template name, with agentEndpoints and direction). Returns the run id and how many calls the run places. This spends simulation usage on the account.',
       objectSchema({
         project: projectProperty,
-        planId: { type: 'string', description: 'Id of a saved simulation plan to run.' },
+        planId: {
+          type: 'string',
+          description:
+            'A saved run plan to run again, with its own endpoints, flows, and metrics: the simulationRunPlanId of a run started with saveAsPlan true.',
+        },
         plan: {
           type: 'object',
           description:
