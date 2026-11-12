@@ -37,6 +37,22 @@ Iterations lengthen the queue; they do not raise peak load. Concurrency governs
 load, which is why a long soak test is a legitimate configuration rather than an
 accident.
 
+`callsPerSecond` (0.01-10, optional) sets the arrival rate instead: the most
+conversations the run starts per second, fractional allowed (0.2 is one every
+5 seconds). `rampUpSeconds` (0-3600, optional) climbs the rate linearly from 0
+over that many seconds. Without a rate, calls start as fast as concurrency
+allows. With one, `maxConcurrentJobs` still applies on top, so the run achieves
+the lower of the two: the rate holds only while calls last under
+`maxConcurrentJobs / callsPerSecond` seconds. Phone calls past the run's opening
+ones start only as fast as new capacity warms, about 25 a minute, so a phone
+run above that rate can fall below it. A finished run reports the rate it
+achieved as `dialRate.achievedCallsPerSecond`, beside the target.
+
+A rate the project's concurrency limit could only hold with calls under 30
+seconds is refused when the plan is saved: `callsPerSecond` may not exceed
+that limit (the project's quota, never above the fleet's 250) divided by 30.
+At a limit of 25, the fastest accepted rate is 0.83 calls per second.
+
 ## Retrying when the agent doesn't respond
 
 `maxNoResponseRetries` (0-10, default 0) is opt-in. When the agent under
