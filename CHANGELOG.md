@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.19.3](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.19.2...v5.19.3) (2026-11-12)
+
+
+### Chores
+
+* **plugin:** connect to mcp.roark.ai ([#282](https://github.com/roarkhq/mcp-roark-analytics/issues/282)) ([fe165b2](https://github.com/roarkhq/mcp-roark-analytics/commit/fe165b24bb1e68516fd4ea58b3c202bfb239feee))
+
 ## [5.19.2](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.19.1...v5.19.2) (2026-11-12)
 
 
