@@ -41,7 +41,7 @@ export const newMcpServer = async ({
         { src: 'https://roark.ai/icon.png', mimeType: 'image/png', sizes: ['512x512'] },
       ],
       // A literal, not MCP_SERVER_VERSION: publish.yml checks dist/server.js for it.
-      version: '5.18.0', // x-release-please-version
+      version: '5.19.0', // x-release-please-version
     },
     {
       // Directory mode does not fetch instructions. The hosted document tells a
