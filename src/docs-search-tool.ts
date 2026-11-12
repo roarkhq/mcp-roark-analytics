@@ -1,7 +1,7 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { Metadata, McpRequestContext, asTextContentResult } from './types';
+import { Metadata, McpRequestContext, ToolCallResult, asTextContentResult } from './types';
 import { getLogger } from './logger';
 import type { LocalDocsSearch } from './local-docs-search';
 
@@ -22,25 +22,43 @@ export const tool: Tool = {
     properties: {
       query: {
         type: 'string',
-        description: 'The query to search for.',
+        description:
+          'What to look up, in plain words: a task, method, or parameter, such as "create a persona" or "list calls by agent".',
       },
       language: {
         type: 'string',
-        description: 'The language for the SDK to search for.',
+        description:
+          'SDK language the signatures and examples are shown in. http returns the REST endpoints.',
         enum: ['http', 'python', 'go', 'typescript', 'javascript', 'terraform', 'ruby', 'java', 'kotlin'],
       },
       detail: {
         type: 'string',
-        description: 'The amount of detail to return.',
+        description:
+          'How much to return for each match: default gives a summary, verbose the full reference. When omitted, default.',
         enum: ['default', 'verbose'],
       },
     },
     required: ['query', 'language'],
   },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      results: {
+        type: 'array',
+        description:
+          'Matches, best first. A method match is an object with method, summary, description, endpoint, and, when known, example, params, and response; with detail verbose it is the full Markdown reference as a string. A documentation match is an object with content and source. When results were cut to fit, the first entry is a string saying how many are shown.',
+        items: {},
+      },
+    },
+    required: ['results'],
+  },
+  // Reads a fixed documentation corpus, so the result depends only on the input.
   annotations: {
     title: 'Search Roark docs',
     readOnlyHint: true,
     destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
   },
 };
 
@@ -122,6 +140,24 @@ async function searchRemote(args: Record<string, unknown>, reqContext: McpReques
   return resultBody;
 }
 
+/**
+ * The local index returns `{ results }`, and so does this tool, as structuredContent and as JSON
+ * text. The hosted search (`--docs-search-mode=stainless-api`) returns a body whose shape this
+ * package does not define: a body that already has a `results` array passes through, an array
+ * becomes `results`, and anything else becomes its only entry.
+ */
+export const asResults = (results: unknown): ToolCallResult => {
+  const alreadyWrapped =
+    typeof results === 'object' &&
+    results !== null &&
+    Array.isArray((results as { results?: unknown }).results);
+  const body =
+    alreadyWrapped ?
+      { results: (results as { results: unknown[] }).results }
+    : { results: Array.isArray(results) ? results : [results] };
+  return { ...asTextContentResult(body), structuredContent: body };
+};
+
 export const handler = async ({
   reqContext,
   args,
@@ -132,10 +168,10 @@ export const handler = async ({
   const body = args ?? {};
 
   if (_localSearch) {
-    return asTextContentResult(await searchLocal(body));
+    return asResults(await searchLocal(body));
   }
 
-  return asTextContentResult(await searchRemote(body, reqContext));
+  return asResults(await searchRemote(body, reqContext));
 };
 
 export default { metadata, tool, handler };
