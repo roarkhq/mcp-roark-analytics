@@ -160,6 +160,12 @@ export function parseCLIOptions(): CLIOptions {
       default: readEnv('MCP_OAUTH_RESOURCE_BASE_URL'),
       description: 'Public base URL of this resource server, used to build metadata and resource URLs.',
     })
+    .option('oauth-resource-aliases', {
+      type: 'string',
+      default: readEnv('MCP_OAUTH_RESOURCE_ALIASES'),
+      description:
+        'Comma-separated origins this server also answers on, e.g. a previous hostname. Requests on them get metadata naming that origin.',
+    })
     .env('MCP_SERVER')
     .version(true)
     .help();
@@ -223,15 +229,33 @@ export function parseCLIOptions(): CLIOptions {
  * when either field is absent (legacy optional-bearer mode). Both the issuer and
  * this server's public base URL are required together.
  */
-const buildOAuthConfig = (argv: {
+export const buildOAuthConfig = (argv: {
   oauthIssuer?: string | undefined;
   oauthResourceBaseUrl?: string | undefined;
+  oauthResourceAliases?: string | undefined;
 }): OAuthConfig | undefined => {
-  const { oauthIssuer, oauthResourceBaseUrl } = argv;
+  const { oauthIssuer, oauthResourceBaseUrl, oauthResourceAliases } = argv;
   if (!oauthIssuer || !oauthResourceBaseUrl) {
     return undefined;
   }
-  return { issuer: oauthIssuer, resourceBaseUrl: oauthResourceBaseUrl };
+  // Each alias is reduced to its origin, and a value that is not a URL stops the server: a typo
+  // would otherwise surface only as clients on that host failing the resource check.
+  const resourceAliases = (oauthResourceAliases ?? '')
+    .split(',')
+    .map((alias) => alias.trim())
+    .filter((alias) => alias.length > 0)
+    .map((alias) => {
+      try {
+        return new URL(alias).origin;
+      } catch {
+        throw new Error(`oauth-resource-aliases: "${alias}" is not a URL. Give each alias as an origin.`);
+      }
+    });
+  return {
+    issuer: oauthIssuer,
+    resourceBaseUrl: oauthResourceBaseUrl,
+    ...(resourceAliases.length > 0 && { resourceAliases }),
+  };
 };
 
 const coerceArray = <T extends z.ZodTypeAny>(zodType: T) =>

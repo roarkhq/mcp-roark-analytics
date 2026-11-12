@@ -17,8 +17,35 @@ import { readEnv } from './util';
 export type OAuthConfig = {
   /** Authorization server issuer, e.g. https://mcp-oauth.api.roark.ai */
   issuer: string;
-  /** Public origin of this resource server, e.g. https://mcp.api.roark.ai; connector URLs are `<base>/mcp/<projectId>`. */
+  /** Public origin of this resource server, e.g. https://mcp.roark.ai; connector URLs are `<base>/mcp/<projectId>`. */
   resourceBaseUrl: string;
+  /**
+   * Other origins this server also answers on, e.g. https://mcp.api.roark.ai after a move to a
+   * new hostname. A request that arrives on one of them is described with that origin, so a
+   * client connected to the old URL keeps getting metadata that names the URL it used.
+   */
+  resourceAliases?: string[];
+};
+
+/**
+ * The config for one request: `resourceBaseUrl` becomes the origin the request arrived on when
+ * that origin is one of `resourceAliases`, and stays the canonical one otherwise.
+ *
+ * RFC 9728 has a client check that the `resource` in the metadata is the URL it connected to.
+ * Serving two hostnames with one fixed origin would fail that check on one of them. Only
+ * configured origins are reflected, so a forged Host header cannot name a resource we do not own.
+ */
+export const oauthConfigForRequest = (config: OAuthConfig, req: Pick<IncomingMessage, 'headers'>) => {
+  const host = req.headers.host?.toLowerCase();
+  if (!host) return config;
+  const alias = config.resourceAliases?.find((origin) => {
+    try {
+      return new URL(origin).host.toLowerCase() === host;
+    } catch {
+      return false;
+    }
+  });
+  return alias ? { ...config, resourceBaseUrl: stripSlash(alias) } : config;
 };
 
 /** Thrown when a request cannot be authorized; carries the WWW-Authenticate value to return. */
