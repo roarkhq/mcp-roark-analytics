@@ -24,7 +24,13 @@ const object = (description: string, properties: Record<string, Field> = {}): Fi
   description,
   properties,
 });
-const nullableObject = (description: string): Field => ({ type: ['object', 'null'], description });
+const nullableObject = (description: string, properties: Record<string, Field> = {}): Field => ({
+  type: ['object', 'null'],
+  description,
+  properties,
+});
+const nullableNumber = (description: string): Field => ({ type: ['number', 'null'], description });
+const nullableBoolean = (description: string): Field => ({ type: ['boolean', 'null'], description });
 const array = (description: string, items: Field): Field => ({ type: 'array', description, items });
 
 const timestamps = {
@@ -200,13 +206,83 @@ export const directoryOutputSchemas = {
   listMetricDefinitions: list('Metric definitions on this page.', metricDefinition, paginationWithLimit),
   getSimulationResults: single(
     object('Results of the simulation run.', {
-      run: object('The run: ids, status, run number, and start and end times.'),
-      summary: object('Call counts, pass rates, and the run score, over the calls finished so far.'),
+      run: object('The run itself.', {
+        simulationRunPlanJobId: string('Run id.'),
+        simulationRunPlanId: string('The plan the run executes.'),
+        simulationRunPlanName: nullableString('The plan name. null when the plan has since been deleted.'),
+        runNumber: nullableNumber('Per-project run number, shown as SR-42 in the app.'),
+        status: string('Run status, such as RUNNING_SIMULATIONS, COMPLETED, or FAILED.'),
+        triggeredBy: string('What started the run, such as TRIGGERED_FROM_API or SCHEDULED.'),
+        createdAt: string('When the run was created, ISO 8601.'),
+        startedAt: nullableString('When the run started, ISO 8601.'),
+        endedAt: nullableString('When the run ended, ISO 8601. null until it ends.'),
+        durationMs: nullableNumber('Wall-clock run time in milliseconds. null until the run ends.'),
+      }),
+      summary: object('Totals over the simulated calls finished so far.', {
+        score: nullableNumber(
+          "The run score, 0-100: the mean of each check's pass rate. null when nothing was evaluated.",
+        ),
+        callPassRate: nullableNumber('passedCalls / evaluatedCalls, 0-100. null when nothing was evaluated.'),
+        checkPassRate: nullableNumber(
+          'Every check verdict on every call pooled, 0-100. null when nothing was evaluated.',
+        ),
+        totalCalls: number('Every simulated call of the run, retries included.'),
+        countedCalls: number('Calls whose results count: all but invalidated ones.'),
+        completedCalls: number('Counted calls that connected and produced a conversation.'),
+        evaluatedCalls: number('Counted calls at least one check graded.'),
+        passedCalls: number('Evaluated calls that passed every check.'),
+        failedCalls: number('Evaluated calls that failed at least one check.'),
+      }),
       verdict: nullableObject(
         'Pass or fail for the run, judged against the success criteria pinned on the plan. null until the run ends.',
+        {
+          passed: boolean(
+            'Whether every check cleared its own minimum pass rate. Not derived from score: a high score can still fail.',
+          ),
+          score: nullableNumber('The same score as summary.score, for reporting only.'),
+          checks: array(
+            'Every check the run was judged on, with its pass rate and the minimum it needed.',
+            object('One check.'),
+          ),
+          failures: array('Every criterion the run missed. Empty when it passed.', object('One failure.')),
+        },
       ),
-      metrics: array('Aggregate for each metric, checks first.', object('One metric aggregate.')),
-      calls: array('The simulated calls and their checks.', object('One simulated call.')),
+      metrics: array(
+        'Aggregate for each metric, checks first.',
+        object('One metric aggregate.', {
+          metricDefinitionId: string('Metric definition id.'),
+          metricId: string('Metric slug.'),
+          name: string('Metric name.'),
+          outputType: string('Value type, such as BOOLEAN, NUMERIC, or SCALE.'),
+          isCheck: boolean('Whether this metric is one of the checks the run is judged on.'),
+          check: nullableObject("The check's tally. null for a metric that is not a check."),
+          evaluatedCalls: number('Counted calls with at least one value.'),
+          sampleSize: number('Values across those calls. A per-turn metric has several per call.'),
+          numeric: nullableObject('Summary statistics for numeric metrics. null when nothing was captured.'),
+          distribution: {
+            type: ['array', 'null'],
+            description: 'How many values took each reading, for BOOLEAN, SCALE, and CLASSIFICATION metrics.',
+            items: object('One reading and its count.'),
+          },
+          unitSymbol: nullableString('Unit of numeric, such as ms.'),
+        }),
+      ),
+      calls: array(
+        'The simulated calls and their checks.',
+        object('One simulated call.', {
+          simulationJobId: string('Simulated call id.'),
+          callId: nullableString('Call id. get_call and get_call_transcript take it as callId.'),
+          status: string('Call status, such as COMPLETED, ERROR, or INVALIDATED.'),
+          counted: boolean('false for an invalidated call: listed, never scored.'),
+          passed: nullableBoolean('Whether it passed every check that graded it. null when no check did.'),
+          personaName: nullableString('The persona that placed or took the call.'),
+          agentName: nullableString('The agent under test.'),
+          durationMs: nullableNumber('Call length in milliseconds.'),
+          attemptNumber: number('1 for the first attempt; higher for a retry.'),
+          checks: array('Each check on this call and its result.', object('One check result.')),
+          values: array("Call-level values of the run's other metrics.", object('One metric value.')),
+        }),
+      ),
       comparison: nullableObject('Comparison with an earlier run of the plan. null when there is none.'),
       attemptSummary: object(
         'Simulations placed against test cases. Differs from the call count only when the plan retried calls the agent never spoke on.',

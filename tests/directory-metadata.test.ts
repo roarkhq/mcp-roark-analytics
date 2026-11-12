@@ -2,6 +2,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv-provider.js';
 import { configureLogger } from '../src/logger';
+import { setLocalSearch } from '../src/docs-search-tool';
+import type { LocalDocsSearch } from '../src/local-docs-search';
 import { newMcpServer, selectTools } from '../src/server';
 import { McpRequestContext, McpTool } from '../src/types';
 
@@ -179,12 +181,30 @@ const responses: Record<string, unknown> = {
   },
 };
 
+// The local docs index's own result shape: a method match, a documentation match, and the
+// truncation note it puts first when results were cut.
+const docsResults = {
+  results: [
+    'Truncated; showing 2 of 3 results.',
+    {
+      method: 'client.simulationPersona.create',
+      summary: 'Create a persona',
+      description: 'Creates a simulated caller persona.',
+      endpoint: 'POST /v1/persona',
+    },
+    { content: 'A persona is the simulated caller.', source: 'concepts/personas.md' },
+  ],
+};
+responses['search_docs'] = docsResults;
+setLocalSearch({ search: () => docsResults } as unknown as LocalDocsSearch);
+
 // Inputs that pass each handler's own validation.
 const inputs: Record<string, Record<string, unknown>> = {
   get_call: { callId: 'c1' },
   get_call_transcript: { callId: 'c1' },
   list_call_metrics: { callId: 'c1' },
   get_simulation_results: { jobId: 'j1' },
+  search_docs: { query: 'create a persona', language: 'typescript' },
   create_agent: { name: 'Front desk' },
   create_agent_endpoint: { agentId: 'a1', value: '+14155550123', direction: 'INCOMING' },
   create_persona: { name: 'Sam', language: 'EN', accent: 'US', gender: 'FEMALE' },
@@ -250,9 +270,9 @@ describe('directory tool annotations', () => {
 describe('directory tool output schemas', () => {
   const tools = directory();
   const validator = new AjvJsonSchemaValidator();
-  const withOutput = tools.filter(({ tool }) => tool.name !== 'search_docs');
+  const withOutput = tools;
 
-  it('declares an object output schema on every API tool', () => {
+  it('declares an object output schema on every tool', () => {
     for (const { tool } of withOutput) {
       expect([tool.name, tool.outputSchema?.type]).toEqual([tool.name, 'object']);
     }

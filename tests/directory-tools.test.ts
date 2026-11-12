@@ -351,10 +351,11 @@ describe('directory tool handlers', () => {
         },
       },
     });
-    expect(schema.description).toMatch(/agent_name/);
-    expect(schema.description).toMatch(/agentName/);
-    expect(schema.description).toMatch(/agent_id/);
-    expect(schema.description).toMatch(/\beq\b/);
+    const filterDescription = (properties['properties'] as { description?: string }).description ?? '';
+    expect(filterDescription).toMatch(/agent_name/);
+    expect(filterDescription).toMatch(/agentName/);
+    expect(filterDescription).toMatch(/agent_id/);
+    expect(filterDescription).toMatch(/\beq\b/);
   });
 
   it('passes agent, property, and sort filters through to call.list', async () => {

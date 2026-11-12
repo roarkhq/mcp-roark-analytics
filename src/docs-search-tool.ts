@@ -1,7 +1,7 @@
 // File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
 
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { Metadata, McpRequestContext, asTextContentResult } from './types';
+import { Metadata, McpRequestContext, ToolCallResult, asTextContentResult } from './types';
 import { getLogger } from './logger';
 import type { LocalDocsSearch } from './local-docs-search';
 
@@ -39,6 +39,18 @@ export const tool: Tool = {
       },
     },
     required: ['query', 'language'],
+  },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      results: {
+        type: 'array',
+        description:
+          'Matches, best first. A method match is an object with method, summary, description, endpoint, and, when known, example, params, and response; with detail verbose it is the full Markdown reference as a string. A documentation match is an object with content and source. When results were cut to fit, the first entry is a string saying how many are shown.',
+        items: {},
+      },
+    },
+    required: ['results'],
   },
   // Reads a fixed documentation corpus, so the result depends only on the input.
   annotations: {
@@ -128,6 +140,17 @@ async function searchRemote(args: Record<string, unknown>, reqContext: McpReques
   return resultBody;
 }
 
+/**
+ * The local index returns `{ results }`, and so does this tool, as structuredContent and as JSON
+ * text. The hosted search (`--docs-search-mode=stainless-api`) returns a body whose shape this
+ * package does not define, so it is wrapped the same way: an array as `results`, anything else as
+ * its only entry.
+ */
+const asResults = (results: unknown): ToolCallResult => {
+  const body = { results: Array.isArray(results) ? results : [results] };
+  return { ...asTextContentResult(body), structuredContent: body };
+};
+
 export const handler = async ({
   reqContext,
   args,
@@ -138,10 +161,10 @@ export const handler = async ({
   const body = args ?? {};
 
   if (_localSearch) {
-    return asTextContentResult(await searchLocal(body));
+    return asResults(await searchLocal(body));
   }
 
-  return asTextContentResult(await searchRemote(body, reqContext));
+  return asResults(await searchRemote(body, reqContext));
 };
 
 export default { metadata, tool, handler };
