@@ -132,7 +132,7 @@ search the SDK docs rather than guessing a name.
 The skills' TypeScript examples are `@roarkanalytics/sdk` calls.
 
 - **Claude Code plugin (default).** Connects to Roark's hosted MCP at
-  `https://mcp.api.roark.ai/mcp` and signs in through the browser. It exposes
+  `https://mcp.roark.ai/mcp` and signs in through the browser. It exposes
   named tools: `list_projects`, `list_agents`, `list_agent_endpoints`,
   `list_calls`, `get_call`, `get_call_transcript`, `list_call_metrics`,
   `list_metric_definitions`, `get_simulation_results`, `list_personas`,

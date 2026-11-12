@@ -5,7 +5,7 @@ classes of mistakes.
 
 ## Auth and scoping
 
-- The plugin's remote connector (`https://mcp.api.roark.ai/mcp`) signs the user
+- The plugin's remote connector (`https://mcp.roark.ai/mcp`) signs the user
   in through the browser. It exposes the named tools in `roark-overview`, not
   the TypeScript snippets below. Those snippets run on the local
   code-execution server, which authenticates with a bearer token from

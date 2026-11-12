@@ -2,7 +2,7 @@
   "mcpServers": {
     "roark": {
       "type": "http",
-      "url": "https://mcp.api.roark.ai/mcp"
+      "url": "https://mcp.roark.ai/mcp"
     }
   }
 }
