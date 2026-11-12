@@ -206,6 +206,30 @@ describe('remote OAuth resource-server mode', () => {
     cleanup();
   });
 
+  it('reduces each alias to its origin', () => {
+    process.env['MCP_OAUTH_RESOURCE_ALIASES'] = 'https://mcp.api.roark.ai/mcp/';
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.roark.ai',
+    ]);
+
+    expect(parseCLIOptions().oauth?.resourceAliases).toEqual(['https://mcp.api.roark.ai']);
+
+    cleanup();
+  });
+
+  it('refuses to start on an alias that is not a URL', () => {
+    process.env['MCP_OAUTH_RESOURCE_ALIASES'] = 'mcp.api.roark.ai';
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.roark.ai',
+    ]);
+
+    expect(() => parseCLIOptions()).toThrow(/mcp\.api\.roark\.ai/);
+
+    cleanup();
+  });
+
   it('stays off when only the issuer is set', () => {
     const cleanup = mockArgv(['--oauth-issuer=https://mcp-oauth.api.roark.ai']);
 

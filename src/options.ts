@@ -238,10 +238,19 @@ export const buildOAuthConfig = (argv: {
   if (!oauthIssuer || !oauthResourceBaseUrl) {
     return undefined;
   }
+  // Each alias is reduced to its origin, and a value that is not a URL stops the server: a typo
+  // would otherwise surface only as clients on that host failing the resource check.
   const resourceAliases = (oauthResourceAliases ?? '')
     .split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0);
+    .map((alias) => alias.trim())
+    .filter((alias) => alias.length > 0)
+    .map((alias) => {
+      try {
+        return new URL(alias).origin;
+      } catch {
+        throw new Error(`oauth-resource-aliases: "${alias}" is not a URL. Give each alias as an origin.`);
+      }
+    });
   return {
     issuer: oauthIssuer,
     resourceBaseUrl: oauthResourceBaseUrl,
