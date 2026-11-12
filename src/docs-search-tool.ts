@@ -22,25 +22,31 @@ export const tool: Tool = {
     properties: {
       query: {
         type: 'string',
-        description: 'The query to search for.',
+        description:
+          'What to look up, in plain words: a task, method, or parameter, such as "create a persona" or "list calls by agent".',
       },
       language: {
         type: 'string',
-        description: 'The language for the SDK to search for.',
+        description:
+          'SDK language the signatures and examples are shown in. http returns the REST endpoints.',
         enum: ['http', 'python', 'go', 'typescript', 'javascript', 'terraform', 'ruby', 'java', 'kotlin'],
       },
       detail: {
         type: 'string',
-        description: 'The amount of detail to return.',
+        description:
+          'How much to return for each match: default gives a summary, verbose the full reference. When omitted, default.',
         enum: ['default', 'verbose'],
       },
     },
     required: ['query', 'language'],
   },
+  // Reads a fixed documentation corpus, so the result depends only on the input.
   annotations: {
     title: 'Search Roark docs',
     readOnlyHint: true,
     destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
   },
 };
 
