@@ -18,6 +18,7 @@ import {
   asErrorResult,
   asTextContentResult,
 } from './types';
+import { directoryOutputSchemas } from './directory-output-schemas';
 
 /**
  * Request types for the SDK methods these tools call.
@@ -143,16 +144,23 @@ class ToolInputError extends Error {
   }
 }
 
+// Every tool talks only to the Roark API, so openWorldHint is false, except
+// run_simulation, which places phone calls to the agent under test.
 const readAnnotations = (title: string) => ({
   title,
   readOnlyHint: true as const,
   destructiveHint: false as const,
+  idempotentHint: true as const,
+  openWorldHint: false as const,
 });
 
-const writeAnnotations = (title: string) => ({
+// Each write creates a new record, so repeating a call is not idempotent.
+const writeAnnotations = (title: string, { openWorld = false }: { openWorld?: boolean } = {}) => ({
   title,
   readOnlyHint: false as const,
   destructiveHint: true as const,
+  idempotentHint: false as const,
+  openWorldHint: openWorld,
 });
 
 const projectProperty = {
@@ -161,16 +169,20 @@ const projectProperty = {
     'Roark project id. Required when this connection is not already pinned to one project. list_projects returns the ids this credential can use.',
 };
 
-const pagingProperties = {
+/** `after` and `limit`, with the page size the endpoint uses when `limit` is omitted. */
+const paging = (defaultLimit: number) => ({
   after: {
     type: 'string' as const,
-    description: 'Cursor from a previous response. Omit for the first page.',
+    description:
+      'Paging cursor: pass pagination.nextCursor from the previous response to get the next page. Omit for the first page.',
   },
   limit: {
     type: 'number' as const,
-    description: 'Maximum number of rows to return.',
+    description: `Page size: the most rows one response returns. When omitted, the API returns up to ${defaultLimit}.`,
   },
-};
+});
+
+const pagingProperties = paging(20);
 
 type JsonSchema = Tool['inputSchema'];
 
@@ -407,9 +419,17 @@ const callListQuery = (args: Record<string, unknown>): CallListParams =>
     limit: optionalLimit(args),
   }) as CallListParams;
 
+// Every tool declares an outputSchema, so the response body is also returned as
+// structuredContent. The JSON text stays for clients that read only content.
 const callApi = async (fn: () => Promise<unknown>): Promise<ToolCallResult> => {
   try {
-    return asTextContentResult(await fn());
+    const result = await fn();
+    // A tool with an outputSchema must return structuredContent, which is an object. The API
+    // always answers with { data, ... }; anything else is reported rather than sent unstructured.
+    if (!isRecord(result)) {
+      return asErrorResult(`Unexpected response from the Roark API: ${JSON.stringify(result) ?? 'empty'}`);
+    }
+    return { ...asTextContentResult(result), structuredContent: result };
   } catch (error) {
     if (error instanceof ToolInputError || error instanceof APIError || error instanceof Error) {
       return asErrorResult(error.message);
@@ -434,6 +454,7 @@ const defineTool = (
   title: string,
   description: string,
   inputSchema: JsonSchema,
+  outputSchema: NonNullable<Tool['outputSchema']>,
   annotations: Tool['annotations'],
   metadata: Metadata,
   fn: (reqContext: McpRequestContext, args: Record<string, unknown>) => Promise<unknown>,
@@ -444,6 +465,7 @@ const defineTool = (
     title,
     description,
     inputSchema,
+    outputSchema,
     annotations,
   },
   handler: handler(fn),
@@ -451,9 +473,12 @@ const defineTool = (
 
 const endpointSchema = {
   type: 'object' as const,
-  description: 'An agent endpoint Roark dials or connects to.',
+  description: 'An agent endpoint the run tests.',
   properties: {
-    id: { type: 'string' as const, description: 'Agent endpoint id from list_agent_endpoints.' },
+    id: {
+      type: 'string' as const,
+      description: 'Agent endpoint id, from list_agent_endpoints or create_agent_endpoint.',
+    },
   },
   required: ['id'],
 };
@@ -462,8 +487,11 @@ const metricRefSchema = {
   type: 'object' as const,
   description: 'A metric to score, by id or by slug.',
   properties: {
-    id: { type: 'string' as const, description: 'Metric definition id.' },
-    slug: { type: 'string' as const, description: 'Metric slug, such as call_outcome.' },
+    id: { type: 'string' as const, description: 'Metric definition id, from list_metric_definitions.' },
+    slug: {
+      type: 'string' as const,
+      description: 'Metric slug, from list_metric_definitions. Use instead of id.',
+    },
   },
 };
 
@@ -476,32 +504,57 @@ const stringMapSchema = (description: string) => ({
 
 const flowAttachmentSchema = {
   type: 'object' as const,
-  description:
-    'A customer flow to include. Set happyPath, edgeCases, or both. id comes from list_customer_flows.',
+  description: 'A customer flow to include. Name it by id or slug, and set happyPath, edgeCases, or both.',
   properties: {
-    id: { type: 'string' as const, description: 'Customer flow id.' },
-    slug: { type: 'string' as const, description: 'Roark-curated flow slug, used instead of id.' },
-    happyPath: { type: 'boolean' as const, description: 'Whether to run the flow happy path.' },
+    id: {
+      type: 'string' as const,
+      description: 'Customer flow id, from list_customer_flows or create_customer_flow.',
+    },
+    slug: {
+      type: 'string' as const,
+      description:
+        'Stable slug of a flow Roark provides, used instead of id. GET /v1/simulation/template lists them. Flows made in the project have no slug.',
+    },
+    happyPath: { type: 'boolean' as const, description: 'true runs the flow happy path.' },
     edgeCases: {
       type: ['string', 'array'] as const,
       description:
-        'The string ALL runs every edge case. An array runs only the listed edge cases, each named by id or slug.',
+        'The string ALL runs every edge case the flow has when the run starts. An array runs only the listed edge cases, each named by id or slug.',
       items: {
         type: 'object' as const,
         properties: {
-          id: { type: 'string' as const, description: 'Edge case id from list_customer_flows.' },
-          slug: { type: 'string' as const, description: 'Edge case slug, used instead of id.' },
+          id: {
+            type: 'string' as const,
+            description: "Edge case id, from the flow's edgeCases in list_customer_flows.",
+          },
+          slug: {
+            type: 'string' as const,
+            description:
+              'Stable slug of an edge case Roark provides, matched within this flow. Used instead of id.',
+          },
           personaOverrideId: {
             type: 'string' as const,
-            description: 'Persona id to use for this edge case.',
+            description:
+              'Persona id, from list_personas, to run this edge case as instead of its own persona.',
           },
-          variables: stringMapSchema('Values for this edge case only.'),
+          variables: stringMapSchema(
+            'Values for the {{variables}} in this edge case only, as variable name to string value.',
+          ),
         },
       },
     },
-    personaOverrideId: { type: 'string' as const, description: 'Persona id to use for this attachment.' },
+    personaOverrideId: {
+      type: 'string' as const,
+      description:
+        'Persona id, from list_personas, to run everything in this flow as instead of its own persona.',
+    },
   },
 };
+
+const callIdDescription = 'Roark call id, from list_calls.';
+
+const directionDescription =
+  'INBOUND: the simulated caller phones the agent. OUTBOUND: the agent places the call to the simulated caller.';
 
 const buildRunBody = (args: Record<string, unknown>): SimulationRunParams => {
   const hasPlanId = args['planId'] !== undefined;
@@ -664,6 +717,7 @@ export function directoryTools(): McpTool[] {
       'List projects',
       'Lists the Roark projects this credential can use, with the permissions it holds in each. Returns each project id, name, slug, and organization.',
       objectSchema({}),
+      directoryOutputSchemas.listProjects,
       readAnnotations('List projects'),
       readMeta('project', '/v1/projects'),
       async (reqContext) => reqContext.client.project.list(),
@@ -671,12 +725,17 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_agents',
       'List agents',
-      'Lists voice and chat agents in a Roark project. Returns each agent id, name, custom id, and description.',
+      'Lists voice and chat agents in a Roark project, every agent unless searchText narrows it. Returns each agent id, name, custom id, and description, one page at a time.',
       objectSchema({
         project: projectProperty,
-        searchText: { type: 'string', description: 'Match against agent name or description.' },
+        searchText: {
+          type: 'string',
+          description:
+            'Text to match against agent names and descriptions. When omitted, every agent is listed.',
+        },
         ...pagingProperties,
       }),
+      directoryOutputSchemas.listAgents,
       readAnnotations('List agents'),
       readMeta('agent', '/v1/agent'),
       async (reqContext, args) =>
@@ -691,13 +750,22 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_agent_endpoints',
       'List agent endpoints',
-      'Lists the endpoints Roark uses to reach agents in a project. Returns each endpoint id, agent id, direction, type, and address. A simulation runs against an endpoint id.',
+      'Lists the endpoints Roark uses to reach agents in a project: phone numbers and other transports. Returns each endpoint id, agent id, direction, type, and address. A simulation runs against an endpoint id.',
       objectSchema({
         project: projectProperty,
-        agentId: { type: 'string', description: 'Return endpoints for this agent only.' },
-        searchText: { type: 'string', description: 'Match against endpoint address or environment name.' },
+        agentId: {
+          type: 'string',
+          description:
+            "Agent id, from list_agents, to list only that agent's endpoints. When omitted, endpoints for every agent are listed.",
+        },
+        searchText: {
+          type: 'string',
+          description:
+            'Text to match against the endpoint address, such as a phone number, or its environment name.',
+        },
         ...pagingProperties,
       }),
+      directoryOutputSchemas.listAgentEndpoints,
       readAnnotations('List agent endpoints'),
       readMeta('agentEndpoint', '/v1/agent/endpoint'),
       async (reqContext, args) =>
@@ -713,32 +781,36 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_calls',
       'List calls',
-      'Lists calls in a Roark project, including simulated and live calls. Returns call ids, status, direction, and timestamps. Does not include transcripts. ' +
-        'agentId is one agent UUID, or up to 100 comma-separated UUIDs with no spaces. ' +
-        'properties filters with one operator per name: eq is a case-insensitive exact match, and exists checks whether the property is set. ' +
-        "Built-in agent_name, also accepted as agentName, matches any participating agent's current name. Built-in agent_id matches one agent UUID. Any other name is a custom property. " +
-        'sortBy is createdAt (the default), startedAt, endedAt, duration, title, or status, and sortDirection is desc (the default) or asc. The filters and the sort apply together.',
+      'Lists calls in a Roark project, simulated and live. Returns call ids, status, direction, and timestamps, without transcripts. Every filter and the sort apply together. ' +
+        "properties filters on call properties: eq matches a value, ignoring case, and exists checks whether the property is set. The built-in agent_name, also accepted as agentName, matches any participating agent's current name, and agent_id matches one agent id. Any other name is a custom property.",
       objectSchema({
         project: projectProperty,
-        searchText: { type: 'string', description: 'Match against call title, summary, or transcript text.' },
-        status: { type: 'string', enum: [...CALL_STATUSES], description: 'Call status filter.' },
+        searchText: {
+          type: 'string',
+          description: 'Text to match against call titles, summaries, and transcripts.',
+        },
+        status: {
+          type: 'string',
+          enum: [...CALL_STATUSES],
+          description: 'Lifecycle state to list. When omitted, calls in every state are listed.',
+        },
         agentId: {
           type: 'string',
           description:
-            'One agent UUID, or up to 100 comma-separated UUIDs with no spaces. Returns calls that include any of these agents.',
+            'Agent ids, from list_agents, to list only calls those agents took part in. Several ids go comma-separated with no spaces, at most 100.',
         },
         properties: {
           type: 'object',
           description:
-            "One entry per property name, at most 20. Each entry sets eq (case-insensitive exact match, sent as properties[<name>][eq]=<value>) or exists (properties[<name>][exists]=true or false), and not both. agent_name (alias agentName) matches any participating agent's current name. agent_id takes one UUID. Any other name is a custom property.",
+            'Call property filters, keyed by property name, at most 20. Each entry sets eq or exists, not both. agent_name (alias agentName) and agent_id are built in; any other name is a custom property set on the call.',
           additionalProperties: {
             type: 'object',
-            description: 'Exactly one of eq or exists.',
+            description: 'One filter: eq or exists.',
             properties: {
-              eq: { type: 'string', description: 'Case-insensitive exact match.' },
+              eq: { type: 'string', description: 'Value the property must equal, ignoring case.' },
               exists: {
                 type: 'boolean',
-                description: 'true: the property is set. false: the property is missing.',
+                description: 'true lists calls that have the property set. false lists calls that do not.',
               },
             },
           },
@@ -746,20 +818,22 @@ export function directoryTools(): McpTool[] {
         sortBy: {
           type: 'string',
           enum: [...CALL_SORT_FIELDS],
-          description:
-            'Field to sort by. createdAt is the default. Combines with the filters and with sortDirection.',
+          description: 'Call field the results are ordered by. When omitted, createdAt.',
         },
         sortDirection: {
           type: 'string',
           enum: [...SORT_DIRECTIONS],
-          description: 'asc or desc. desc is the default. Combines with sortBy and the filters.',
+          description:
+            'asc puts the earliest or smallest first, desc the latest or largest. When omitted, desc.',
         },
         simulationRunPlanJobId: {
           type: 'string',
-          description: 'Return calls from this simulation run only.',
+          description:
+            'Simulation run id, the simulationRunPlanJobId that run_simulation returns, to list only the calls that run placed.',
         },
         ...pagingProperties,
       }),
+      directoryOutputSchemas.listCalls,
       readAnnotations('List calls'),
       readMeta('call', '/v1/call'),
       async (reqContext, args) => scopedClient(reqContext, args).call.list(callListQuery(args)),
@@ -771,10 +845,11 @@ export function directoryTools(): McpTool[] {
       objectSchema(
         {
           project: projectProperty,
-          callId: { type: 'string', description: 'Call id.' },
+          callId: { type: 'string', description: callIdDescription },
         },
         ['callId'],
       ),
+      directoryOutputSchemas.getCall,
       readAnnotations('Get call'),
       readMeta('call', '/v1/call/{callId}'),
       async (reqContext, args) => scopedClient(reqContext, args).call.getByID(requireString(args, 'callId')),
@@ -782,20 +857,21 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'get_call_transcript',
       'Get call transcript',
-      'Returns the transcript of one call in a Roark project: participants and the text of each turn, with timing.',
+      'Returns the transcript of one call in a Roark project: who took part, and the text of each turn with its timing.',
       objectSchema(
         {
           project: projectProperty,
-          callId: { type: 'string', description: 'Call id.' },
+          callId: { type: 'string', description: callIdDescription },
           source: {
             type: 'string',
             enum: [...TRANSCRIPT_SOURCES],
             description:
-              'Transcription source. When omitted, the API uses the best source it has for the call.',
+              'Which transcription to return: Roark post-call transcription, or the one the simulated caller or your agent captured live. When omitted, the first available of CUSTOMER_AGENT_REALTIME, SIMULATION_AGENT_REALTIME, then ROARK_POST_CALL.',
           },
         },
         ['callId'],
       ),
+      directoryOutputSchemas.getCallTranscript,
       readAnnotations('Get call transcript'),
       readMeta('call', '/v1/call/{callId}/transcript'),
       async (reqContext, args) =>
@@ -807,11 +883,11 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_call_metrics',
       'List call metrics',
-      'Returns the metric scores recorded for one call in a Roark project. status success returns computed scores only. status all also returns rows that have no value. flatten true returns one row per score; when omitted, scores are grouped by metric.',
+      'Returns the metric scores recorded for one call in a Roark project, grouped by metric unless flatten is true.',
       objectSchema(
         {
           project: projectProperty,
-          callId: { type: 'string', description: 'Call id.' },
+          callId: { type: 'string', description: callIdDescription },
           flatten: {
             type: 'string',
             description:
@@ -820,11 +896,13 @@ export function directoryTools(): McpTool[] {
           status: {
             type: 'string',
             enum: ['success', 'all'],
-            description: 'success returns computed scores. all also returns rows with no value.',
+            description:
+              'success returns computed scores only. all also returns metrics with no value (not applicable, missing data, or an error), so a caller can tell a finished metric from one still computing. When omitted, success.',
           },
         },
         ['callId'],
       ),
+      directoryOutputSchemas.listCallMetrics,
       readAnnotations('List call metrics'),
       readMeta('call', '/v1/call/{callId}/metrics'),
       async (reqContext, args) =>
@@ -840,7 +918,8 @@ export function directoryTools(): McpTool[] {
       'list_metric_definitions',
       'List metric definitions',
       'Lists the metrics a Roark project can score, including built-in and custom metrics. Returns each metric id, slug, name, and type.',
-      objectSchema({ project: projectProperty, ...pagingProperties }),
+      objectSchema({ project: projectProperty, ...paging(500) }),
+      directoryOutputSchemas.listMetricDefinitions,
       readAnnotations('List metric definitions'),
       readMeta('metric', '/v1/metric/definitions'),
       async (reqContext, args) =>
@@ -867,6 +946,7 @@ export function directoryTools(): McpTool[] {
         },
         ['jobId'],
       ),
+      directoryOutputSchemas.getSimulationResults,
       readAnnotations('Get simulation results'),
       readMeta('simulationRunPlanJob', '/v1/simulation/plan/job/{jobId}/results'),
       async (reqContext, args) =>
@@ -878,12 +958,17 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_personas',
       'List personas',
-      'Lists simulated caller personas in a Roark project. Returns each persona id, name, language, accent, and gender.',
+      'Lists simulated caller personas in a Roark project, every persona unless searchText narrows it. Returns each persona id, name, language, accent, and gender, one page at a time.',
       objectSchema({
         project: projectProperty,
-        searchText: { type: 'string', description: 'Match against persona name or description.' },
+        searchText: {
+          type: 'string',
+          description:
+            'Text to match against persona names and descriptions. When omitted, every persona is listed.',
+        },
         ...pagingProperties,
       }),
+      directoryOutputSchemas.listPersonas,
       readAnnotations('List personas'),
       readMeta('simulationPersona', '/v1/persona'),
       async (reqContext, args) =>
@@ -898,18 +983,27 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'list_customer_flows',
       'List customer flows',
-      'Lists customer flows in a Roark project. A customer flow is the conversation scenario a simulated caller follows. Returns each flow id, title, and type. The step graph of a scripted flow is not included.',
+      'Lists customer flows in a Roark project. A customer flow is the conversation scenario a simulated caller follows. Returns each flow id, title, type, happy path, and edge cases. The step graph of a scripted flow is not included.',
       objectSchema({
         project: projectProperty,
-        searchText: { type: 'string', description: 'Match against flow title.' },
-        type: { type: 'string', enum: [...FLOW_TYPES], description: 'Flow type filter.' },
+        searchText: {
+          type: 'string',
+          description: 'Text to match against flow titles. When omitted, flows are not filtered by title.',
+        },
+        type: {
+          type: 'string',
+          enum: [...FLOW_TYPES],
+          description: 'Kind of flow to list. When omitted, flows of every kind are listed.',
+        },
         includeSystem: {
           type: 'string',
           enum: ['true', 'false'],
-          description: 'true includes flows Roark provides. false returns only flows in the project.',
+          description:
+            'true also lists flows Roark provides. false, or omitting it, lists only flows made in the project.',
         },
         ...pagingProperties,
       }),
+      directoryOutputSchemas.listCustomerFlows,
       readAnnotations('List customer flows'),
       readMeta('customerFlow', '/v1/customer-flow'),
       async (reqContext, args) =>
@@ -928,6 +1022,7 @@ export function directoryTools(): McpTool[] {
       'List simulation environments',
       'Lists call environments in a Roark project, including environments Roark provides. Returns each environment id, name, and background noise. Creating a customer flow requires an environment id.',
       objectSchema({ project: projectProperty, ...pagingProperties }),
+      directoryOutputSchemas.listSimulationEnvironments,
       readAnnotations('List simulation environments'),
       readMeta('simulationEnvironment', '/v1/simulation/environment'),
       async (reqContext, args) =>
@@ -938,16 +1033,24 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'create_agent',
       'Create agent',
-      'Creates an agent in a Roark project. Requires a name. Returns the created agent, including its id. Does not create an endpoint.',
+      'Creates an agent in a Roark project. Each call adds a new agent. Requires a name. Returns the created agent, including its id. Does not create an endpoint; create_agent_endpoint does.',
       objectSchema(
         {
           project: projectProperty,
-          name: { type: 'string', description: 'Agent name.' },
+          name: {
+            type: 'string',
+            description: 'Display name for the agent, shown in Roark and returned by list_agents.',
+          },
           description: { type: 'string', description: 'What the agent does.' },
-          customId: { type: 'string', description: 'Caller-chosen id, unique in the project.' },
+          customId: {
+            type: 'string',
+            description:
+              'Your own identifier for the agent, such as its id in your platform. Unique in the project.',
+          },
         },
         ['name'],
       ),
+      directoryOutputSchemas.createAgent,
       writeAnnotations('Create agent'),
       writeMeta('agent', '/v1/agent'),
       async (reqContext, args) =>
@@ -962,30 +1065,41 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'create_agent_endpoint',
       'Create agent endpoint',
-      'Creates a phone endpoint for an agent in a Roark project. Roark places simulated calls to this number. Requires an agent id, an E.164 phone number, and a direction of INCOMING, OUTGOING, or INCOMING_AND_OUTGOING. Phone is the only endpoint type this tool creates.',
+      'Creates a phone endpoint for an agent in a Roark project. Each call adds a new endpoint; it places no calls itself. Simulations then call the agent on this number, or receive its calls. Phone is the only endpoint type this tool creates.',
       objectSchema(
         {
           project: projectProperty,
           agentId: { type: 'string', description: 'Agent id from list_agents or create_agent.' },
-          value: { type: 'string', description: 'Phone number in E.164 format, starting with +.' },
+          value: {
+            type: 'string',
+            description: "The agent's phone number in E.164 form, such as +14155550123.",
+          },
           direction: {
             type: 'string',
             enum: [...ENDPOINT_DIRECTIONS],
-            description: 'Which way calls can travel on this number.',
+            description:
+              'Which way calls travel on this number: INCOMING when callers reach the agent here, OUTGOING when the agent calls out from it, or both.',
           },
-          environment: { type: 'string', description: 'Environment name. The API default is production.' },
+          environment: {
+            type: 'string',
+            description:
+              'Environment label for the endpoint, such as production or staging. When omitted, production.',
+          },
           outboundDialType: {
             type: 'string',
             enum: ['NONE', 'HTTP_REQUEST'],
-            description: 'How Roark places an outbound call. The API default is NONE.',
+            description:
+              'How Roark starts an outbound simulation: HTTP_REQUEST sends an HTTP request to your platform to make the agent dial, NONE sends nothing. When omitted, NONE.',
           },
           outboundDialHttpRequestDefinitionId: {
             type: 'string',
-            description: 'HTTP request definition id. Required when outboundDialType is HTTP_REQUEST.',
+            description:
+              'Id of the HTTP request definition Roark sends to make the agent dial, from GET /v1/http-request-definition. Required when outboundDialType is HTTP_REQUEST.',
           },
         },
         ['agentId', 'value', 'direction'],
       ),
+      directoryOutputSchemas.createAgentEndpoint,
       writeAnnotations('Create agent endpoint'),
       writeMeta('agentEndpoint', '/v1/agent/endpoint'),
       async (reqContext, args) =>
@@ -994,32 +1108,36 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'create_persona',
       'Create persona',
-      'Creates a simulated caller persona in a Roark project. Requires a name, language, accent, and gender. Returns the created persona, including its id.',
+      'Creates a simulated caller persona in a Roark project. Each call adds a new persona, so repeating it creates a duplicate. It changes nothing else and places no calls. Requires a name, language, accent, and gender. Returns the created persona; pass its id as personaOverrideId to create_customer_flow to use it.',
       objectSchema(
         {
           project: projectProperty,
           name: { type: 'string', description: 'Name the caller uses in conversation.' },
           language: { type: 'string', enum: [...LANGUAGES], description: 'Primary spoken language.' },
-          accent: { type: 'string', enum: [...ACCENTS], description: 'Accent the persona is voiced with.' },
+          accent: { type: 'string', enum: [...ACCENTS], description: 'Accent the caller speaks with.' },
           gender: { type: 'string', enum: [...GENDERS], description: 'Gender the persona is voiced with.' },
           age: {
             type: 'string',
             enum: [...AGES],
-            description: 'How old the caller sounds. The API default is ADULT.',
+            description: 'How old the caller sounds. When omitted, ADULT.',
           },
           baseEmotion: {
             type: 'string',
             enum: [...EMOTIONS],
-            description: 'Emotional baseline. The API default is NEUTRAL.',
+            description: 'Mood the caller starts the conversation in. When omitted, NEUTRAL.',
           },
           backstoryPrompt: {
             type: 'string',
             description: 'Background and behavior the simulated caller plays.',
           },
-          description: { type: 'string', description: 'Short label for the persona.' },
+          description: {
+            type: 'string',
+            description: 'Short summary of the persona, to tell it apart from others in the project.',
+          },
         },
         ['name', 'language', 'accent', 'gender'],
       ),
+      directoryOutputSchemas.createPersona,
       writeAnnotations('Create persona'),
       writeMeta('simulationPersona', '/v1/persona'),
       async (reqContext, args) =>
@@ -1028,22 +1146,29 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'create_customer_flow',
       'Create customer flow',
-      'Creates an improv customer flow in a Roark project. A customer flow is the conversation scenario a simulated caller follows. Requires a title, at least one agent id, and a happy path with a title, a persona id, and an environment id. Returns the created flow, including its id. Scripted step graphs are not created by this tool.',
+      'Creates an improv customer flow in a Roark project. A customer flow is the conversation scenario a simulated caller follows. Each call adds a new flow. Requires a title, at least one agent id, and a happy path with a title, a persona id, and an environment id. Returns the created flow, including its id. Scripted step graphs are not created by this tool.',
       objectSchema(
         {
           project: projectProperty,
-          title: { type: 'string', description: 'Flow title.' },
+          title: {
+            type: 'string',
+            description: 'Name for the flow, shown in Roark and returned by list_customer_flows.',
+          },
           description: { type: 'string', description: 'What the conversation covers.' },
           agentIds: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Agents this flow exercises. At least one.',
+            minItems: 1,
+            description: 'Ids of the agents this flow tests, from list_agents or create_agent.',
           },
           happyPath: {
             type: 'object',
             description: 'The way the conversation is meant to go.',
             properties: {
-              title: { type: 'string', description: 'Happy path title.' },
+              title: {
+                type: 'string',
+                description: 'Name for the happy path, the run where the conversation goes as intended.',
+              },
               prompt: { type: 'string', description: 'What the simulated caller is trying to do.' },
               personaOverrideId: {
                 type: 'string',
@@ -1063,10 +1188,21 @@ export function directoryTools(): McpTool[] {
             items: {
               type: 'object',
               properties: {
-                title: { type: 'string' },
-                prompt: { type: 'string' },
-                personaOverrideId: { type: 'string' },
-                environmentId: { type: 'string' },
+                title: { type: 'string', description: 'Name for this edge case.' },
+                prompt: {
+                  type: 'string',
+                  description: 'What the simulated caller is trying to do in this edge case.',
+                },
+                personaOverrideId: {
+                  type: 'string',
+                  description:
+                    'Persona id from list_personas or create_persona. When omitted, the happy path persona.',
+                },
+                environmentId: {
+                  type: 'string',
+                  description:
+                    'Environment id from list_simulation_environments. When omitted, the happy path environment.',
+                },
               },
               required: ['title'],
             },
@@ -1074,6 +1210,7 @@ export function directoryTools(): McpTool[] {
         },
         ['title', 'agentIds', 'happyPath'],
       ),
+      directoryOutputSchemas.createCustomerFlow,
       writeAnnotations('Create customer flow'),
       writeMeta('customerFlow', '/v1/customer-flow'),
       async (reqContext, args) => scopedClient(reqContext, args).customerFlow.create(buildFlowBody(args)),
@@ -1081,7 +1218,7 @@ export function directoryTools(): McpTool[] {
     defineTool(
       'run_simulation',
       'Run simulation',
-      'Starts a simulation run in a Roark project and places simulated calls. Pass exactly one of planId (an existing plan), plan (an inline plan), or template (a built-in template name, with agentEndpoints and direction). Returns the run id and how many calls the run places. This spends simulation usage on the account.',
+      'Starts a simulation run in a Roark project and places simulated calls to the agent. Pass exactly one of planId (an existing plan), plan (an inline plan), or template (a built-in template name, with agentEndpoints and direction). Returns the run id and how many calls the run places. This spends simulation usage on the account.',
       objectSchema({
         project: projectProperty,
         planId: { type: 'string', description: 'Id of a saved simulation plan to run.' },
@@ -1090,49 +1227,80 @@ export function directoryTools(): McpTool[] {
           description:
             'Inline plan to run once. Requires agentEndpoints, direction, and maxSimulationDurationSeconds.',
           properties: {
-            name: { type: 'string', description: 'Plan name. Required when saveAsPlan is true.' },
-            description: { type: 'string' },
-            direction: { type: 'string', enum: [...DIRECTIONS] },
-            agentEndpoints: { type: 'array', items: endpointSchema },
+            name: {
+              type: 'string',
+              description:
+                'Name for the plan. When omitted, one is generated from the date. Needed for saveAsPlan.',
+            },
+            description: { type: 'string', description: 'Note on what the plan tests.' },
+            direction: { type: 'string', enum: [...DIRECTIONS], description: directionDescription },
+            agentEndpoints: {
+              type: 'array',
+              items: endpointSchema,
+              description: 'The agent endpoints the run tests.',
+            },
             metrics: {
               type: 'array',
               items: metricRefSchema,
               description: 'Metrics to score, by id or slug.',
             },
-            flows: { type: 'array', items: flowAttachmentSchema },
-            maxSimulationDurationSeconds: { type: 'number', description: 'Per-call cap, in seconds.' },
+            flows: {
+              type: 'array',
+              items: flowAttachmentSchema,
+              description: 'Customer flows to run, and which of their happy paths and edge cases.',
+            },
+            maxSimulationDurationSeconds: {
+              type: 'number',
+              description: 'Longest one simulated call may last, in seconds.',
+            },
             iterationCount: {
               type: 'number',
-              description: 'Repeats of each test case. The API default is 1.',
+              description: 'Times each test case runs. When omitted, 1.',
             },
             maxConcurrentJobs: {
               type: 'number',
-              description: 'How many calls run at once. The API default is 5.',
+              description: 'How many calls run at once. When omitted, 5.',
             },
             executionMode: {
               type: 'string',
               enum: ['PARALLEL', 'SEQUENTIAL_SAME_RUN_PLAN', 'SEQUENTIAL_PROJECT'],
+              description:
+                'When the run starts relative to other runs. PARALLEL starts it at once. SEQUENTIAL_SAME_RUN_PLAN queues it while another run of the same plan is active. SEQUENTIAL_PROJECT queues it while any run in the project is active. When omitted, PARALLEL.',
             },
           },
           required: ['agentEndpoints', 'direction', 'maxSimulationDurationSeconds'],
         },
         template: {
           type: 'string',
-          description: 'Built-in template name, as listed by the simulation template API.',
+          description:
+            'Name of a built-in Roark template, such as health-check. GET /v1/simulation/template lists them.',
         },
         agentEndpoints: {
           type: 'array',
           items: endpointSchema,
-          description: 'Required with template. The endpoints the template calls.',
+          description: 'For a template run: the agent endpoints it tests. A template run fails without it.',
         },
-        direction: { type: 'string', enum: [...DIRECTIONS], description: 'Required with template.' },
+        direction: {
+          type: 'string',
+          enum: [...DIRECTIONS],
+          description: `For a template run, where it is required. ${directionDescription}`,
+        },
         flows: {
           type: 'array',
           items: flowAttachmentSchema,
-          description: 'Flows for a template that does not supply its own.',
+          description:
+            'For a template run: the flows to run. Needed when the template has no flows of its own; otherwise they replace its flows.',
         },
-        iterationCount: { type: 'number' },
-        maxSimulationDurationSeconds: { type: 'number' },
+        iterationCount: {
+          type: 'number',
+          description:
+            "For a template run: times each test case runs. When omitted, 1, or the template's own count for a template that sweeps a property.",
+        },
+        maxSimulationDurationSeconds: {
+          type: 'number',
+          description:
+            "For a template run: longest one simulated call may last, in seconds. When omitted, the template's default.",
+        },
         saveAsPlan: {
           type: 'boolean',
           description:
@@ -1141,7 +1309,7 @@ export function directoryTools(): McpTool[] {
         variables: {
           type: ['object', 'array'],
           description:
-            'Placeholder values for the run. An object of name to string value applies to the whole run. An array applies values per flow (flowId, optionally narrowed by edgeCaseId or happyPath) or per scenario (scenarioId).',
+            'Values for the {{variables}} the run resolves. An object of name to string value applies to the whole run. An array applies values per flow (flowId, optionally narrowed by edgeCaseId or happyPath).',
           additionalProperties: { type: 'string' },
           items: {
             type: 'object',
@@ -1151,15 +1319,17 @@ export function directoryTools(): McpTool[] {
               happyPath: { type: 'boolean', description: "Narrow to the flow's happy path." },
               scenarioId: {
                 type: 'string',
-                description: 'Scenario id the values apply to, instead of flowId.',
+                description:
+                  'Deprecated. Scenario id the values apply to, for a saved plan built from scenarios rather than flows. Use flowId otherwise. Template runs refuse it.',
               },
-              variables: stringMapSchema('The values to apply.'),
+              variables: stringMapSchema('The values to apply, as variable name to string value.'),
             },
             required: ['variables'],
           },
         },
       }),
-      writeAnnotations('Run simulation'),
+      directoryOutputSchemas.runSimulation,
+      writeAnnotations('Run simulation', { openWorld: true }),
       writeMeta('simulation', '/v1/simulation/run'),
       async (reqContext, args) => scopedClient(reqContext, args).simulation.run(buildRunBody(args)),
     ),

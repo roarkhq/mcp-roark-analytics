@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.44.3](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.2...v4.44.3) (2026-11-12)
+
+
+### Features
+
+* **mcp:** server metadata (title, description, website, icons), behavior hints, output schemas and input descriptions for the directory tools
+
 ## [4.44.2](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.1...v4.44.2) (2026-11-04)
 
 

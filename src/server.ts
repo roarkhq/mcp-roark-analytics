@@ -32,8 +32,16 @@ export const newMcpServer = async ({
   new McpServer(
     {
       name: 'roarkanalytics_sdk_api',
+      title: 'Roark',
+      description:
+        'Test and monitor voice and chat AI agents with Roark. Read calls, transcripts, metric scores, and simulation results, and set up agents, personas, and customer flows to run simulated calls against your agent.',
+      websiteUrl: 'https://roark.ai',
+      icons: [
+        { src: 'https://roark.ai/icon.svg', mimeType: 'image/svg+xml', sizes: ['any'] },
+        { src: 'https://roark.ai/icon.png', mimeType: 'image/png', sizes: ['512x512'] },
+      ],
       // A literal, not MCP_SERVER_VERSION: publish.yml checks dist/server.js for it.
-      version: '4.44.2', // x-release-please-version
+      version: '4.44.3', // x-release-please-version
     },
     {
       // Directory mode does not fetch instructions. The hosted document tells a
