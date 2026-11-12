@@ -309,4 +309,18 @@ describe('directory tool output schemas', () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toBeUndefined();
   });
+
+  it.each([[[]], [null], [undefined], ['ok']])(
+    'reports a non-object API response (%p) as an error, not unstructured content',
+    async (response) => {
+      const result = await toolByName(tools, 'list_agents').handler({
+        reqContext: { client: clientReturning(response), project: 'p1' },
+        args: {},
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.structuredContent).toBeUndefined();
+      expect((result.content[0] as { text: string }).text).toMatch(/Unexpected response from the Roark API/);
+    },
+  );
 });

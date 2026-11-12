@@ -53,7 +53,7 @@ const single = (item: Field): OutputSchema => ({
 const list = (description: string, item: Field, pagination: Field): OutputSchema => ({
   type: 'object',
   properties: { data: array(description, item), pagination },
-  required: ['data', 'pagination'],
+  required: ['data'],
 });
 
 const agent = object('An agent.', {

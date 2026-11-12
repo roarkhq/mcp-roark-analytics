@@ -424,7 +424,11 @@ const callListQuery = (args: Record<string, unknown>): CallListParams =>
 const callApi = async (fn: () => Promise<unknown>): Promise<ToolCallResult> => {
   try {
     const result = await fn();
-    if (!isRecord(result)) return asTextContentResult(result);
+    // A tool with an outputSchema must return structuredContent, which is an object. The API
+    // always answers with { data, ... }; anything else is reported rather than sent unstructured.
+    if (!isRecord(result)) {
+      return asErrorResult(`Unexpected response from the Roark API: ${JSON.stringify(result) ?? 'empty'}`);
+    }
     return { ...asTextContentResult(result), structuredContent: result };
   } catch (error) {
     if (error instanceof ToolInputError || error instanceof APIError || error instanceof Error) {
