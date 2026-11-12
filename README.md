@@ -73,13 +73,13 @@ Add Roark as a custom connector. This uses the hosted server, so there is nothin
 
 1. Open Customize, then Connectors. On a Team or Enterprise plan, an Owner adds it under Organization settings, then Connectors.
 2. Choose Add custom connector.
-3. Enter `https://mcp.api.roark.ai/mcp` as the remote MCP server URL.
+3. Enter `https://mcp.roark.ai/mcp` as the remote MCP server URL.
 4. For authentication, choose to sign in. Leave the OAuth client on Claude's published identity, or on automatic registration. Do not add an API key under request headers.
 5. Add the connector, then sign in with your Roark account in the browser when Claude asks.
 
 The server reads and writes data in the signed-in account: agents, calls, transcripts, simulation results, metrics, personas, customer flows, and simulation runs. Roark is a voice and chat agent observability and simulation platform.
 
-A project-pinned URL, `https://mcp.api.roark.ai/mcp/<projectId>`, is available when the connector should stay on one project. `https://mcp.api.roark.ai/mcp` reaches every project the account can use, and each tool takes a project id.
+A project-pinned URL, `https://mcp.roark.ai/mcp/<projectId>`, is available when the connector should stay on one project. `https://mcp.roark.ai/mcp` reaches every project the account can use, and each tool takes a project id.
 
 ## Claude Code plugin and skills
 
@@ -136,7 +136,7 @@ surface exposes two tools:
 - `execute`, which runs the code. The code cannot use the network or the filesystem except
   through the SDK client. Whatever the code returns or prints comes back as the tool result.
 
-The hosted server at `https://mcp.api.roark.ai/mcp` does not use Code Mode. With OAuth
+The hosted server at `https://mcp.roark.ai/mcp` does not use Code Mode. With OAuth
 enabled it exposes the named read and write tools described under Remote OAuth, not `execute`.
 `--tool-surface=code` forces Code Mode on an OAuth server. `--tool-surface=directory` exposes
 the named tools on a server that is not using OAuth.
@@ -159,7 +159,7 @@ OAuth mode also switches the tool set. Instead of the `execute` code tool, which
 read and write, the server exposes separate read tools and write tools (list agents, read
 calls and transcripts, read simulation results and metrics, create a persona or customer
 flow, run a simulation, and search docs). That is the surface served at
-`https://mcp.api.roark.ai/mcp`. Pass `--tool-surface=code` to keep the code tool on an
+`https://mcp.roark.ai/mcp`. Pass `--tool-surface=code` to keep the code tool on an
 OAuth server, or `--tool-surface=directory` to expose the named tools without OAuth. A
 local stdio install stays on the code tool unless you pass `--tool-surface=directory`.
 
