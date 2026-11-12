@@ -75,6 +75,11 @@ they were told earlier.
 **Environment.** `backgroundNoise` places the caller somewhere real: a street, an
 office, a car.
 
+Where the caller is, sound and phone line alike, now belongs on the flow variant's
+**environment** (see the flows concept); the persona's own `backgroundNoise` is the older
+of the two settings and only plays when the environment adds none. A persona carries no
+line quality.
+
 **Idle handling.** What the caller does when the agent goes quiet: `idleMessages`
 (null means automatic, resolving to a per-language default),
 `idleTimeoutSeconds`, `idleMessageMaxSpokenCount`, and

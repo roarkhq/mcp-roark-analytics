@@ -48,6 +48,29 @@ languages or temperaments without restating the situation.
 For scripted flows, variants are derived from the graph's paths rather than
 authored.
 
+### Environment
+
+A variant's **environment** is where the caller is calling from: the sound around
+them (`backgroundNoise` at `backgroundNoiseVolume`) and the phone line they are on
+(`lineQuality`). Roark drops audio from the caller's 20 ms packets, per direction:
+_toward the agent_ is what the agent hears, _toward the caller_ is what the caller
+hears. Bursty loss clusters dropped packets into gaps, which is how real lines fail.
+
+| `lineQuality`      | Applied                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------- |
+| `CLEAR`            | No loss. The default.                                                                           |
+| `MINOR_LOSS`       | 1% lost at random, both ways.                                                                   |
+| `CELL_EDGE`        | 5% lost in 80 ms gaps, both ways.                                                               |
+| `POOR_CONNECTION`  | 10% lost in 120 ms gaps, both ways.                                                             |
+| `ONE_WAY_DEGRADED` | 8% lost in 80 ms gaps toward the agent only; the caller hears the agent clearly.                |
+| `CUSTOM`           | The numbers in `lineCustom`: per direction, up to 20% loss in gaps of 20 ms (random) to 200 ms. |
+
+The loss pattern is seeded per call, so a redial loses the same packets. Line quality
+only means something for an agent on the phone network: a web or WebSocket agent has
+no phone line, and the setting is ignored there. Roark ships bad-line environments
+(Cell edge, Car on Bluetooth, Spotty Wi-Fi call, Breaking up one way) beside the sound
+ones; the silent default is called Quiet room.
+
 Variants are where cost lives. Every variant a run plan selects is a real phone
 call, so "add a few more variants" and "spend more on every future run" are the
 same sentence.
