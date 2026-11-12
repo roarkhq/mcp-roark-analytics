@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.44.6](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.5...v4.44.6) (2026-11-12)
+
+
+### Bug Fixes
+
+* **mcp:** an agent endpoint's value can be null, so list_agent_endpoints and create_agent_endpoint no longer fail output validation for outbound endpoints without a fixed number
+
 ## [4.44.5](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.4...v4.44.5) (2026-11-12)
 
 
