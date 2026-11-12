@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.44.4](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.3...v4.44.4) (2026-11-12)
+
+
+### Features
+
+* **mcp:** answer on alias hostnames (MCP_OAUTH_RESOURCE_ALIASES) with OAuth metadata naming the host a client used
+
 ## [4.44.3](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.2...v4.44.3) (2026-11-12)
 
 
