@@ -2,7 +2,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv-provider.js';
 import { configureLogger } from '../src/logger';
-import { setLocalSearch } from '../src/docs-search-tool';
+import { asResults, setLocalSearch } from '../src/docs-search-tool';
+import { AGENT_IDS_PATTERN } from '../src/directory-tools';
 import type { LocalDocsSearch } from '../src/local-docs-search';
 import { newMcpServer, selectTools } from '../src/server';
 import { McpRequestContext, McpTool } from '../src/types';
@@ -343,4 +344,32 @@ describe('directory tool output schemas', () => {
       expect((result.content[0] as { text: string }).text).toMatch(/Unexpected response from the Roark API/);
     },
   );
+});
+
+describe('list_calls agentId pattern', () => {
+  const pattern = new RegExp(AGENT_IDS_PATTERN);
+  const id = '11111111-1111-4111-8111-111111111111';
+
+  it('accepts what the handler accepts: 1 to 100 comma-separated UUIDs, in either case', () => {
+    expect(pattern.test(id)).toBe(true);
+    expect(pattern.test(`${id},${id.toUpperCase()}`)).toBe(true);
+    expect(pattern.test(Array(100).fill(id).join(','))).toBe(true);
+  });
+
+  it('rejects what the handler rejects: spaces, a 101st id, or a value that is not a UUID', () => {
+    expect(pattern.test(`${id}, ${id}`)).toBe(false);
+    expect(pattern.test(Array(101).fill(id).join(','))).toBe(false);
+    expect(pattern.test('agent-1')).toBe(false);
+  });
+});
+
+describe('search_docs result wrapping', () => {
+  it('passes through a body that already has a results array', () => {
+    expect(asResults({ results: ['a'] }).structuredContent).toEqual({ results: ['a'] });
+  });
+
+  it('wraps an array as results and anything else as its only entry', () => {
+    expect(asResults(['a', 'b']).structuredContent).toEqual({ results: ['a', 'b'] });
+    expect(asResults({ hits: 3 }).structuredContent).toEqual({ results: [{ hits: 3 }] });
+  });
 });

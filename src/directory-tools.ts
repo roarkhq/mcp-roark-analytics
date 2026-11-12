@@ -127,11 +127,11 @@ const CALL_STATUSES = ['RINGING', 'IN_PROGRESS', 'ENDED'] as const;
 const CALL_SORT_FIELDS = ['createdAt', 'startedAt', 'endedAt', 'duration', 'title', 'status'] as const;
 const SORT_DIRECTIONS = ['asc', 'desc'] as const;
 /** GET /v1/call rejects a non-UUID in `agentId` and in `properties[agent_id][eq]`. */
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/** The same rule `optionalAgentIds` enforces, as a JSON Schema pattern: 1 to 100 comma-separated UUIDs. */
 const UUID_SOURCE = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
-const AGENT_IDS_PATTERN = `^${UUID_SOURCE}(,${UUID_SOURCE}){0,99}$`;
+const UUID_PATTERN = new RegExp(`^${UUID_SOURCE}$`);
 const MAX_AGENT_IDS = 100;
+/** The rule `optionalAgentIds` enforces, as a JSON Schema pattern: 1 to MAX_AGENT_IDS comma-separated UUIDs. */
+export const AGENT_IDS_PATTERN = `^${UUID_SOURCE}(,${UUID_SOURCE}){0,${MAX_AGENT_IDS - 1}}$`;
 const MAX_PROPERTY_FILTERS = 20;
 const FLOW_TYPES = ['SCRIPTED', 'IMPROV', 'VOICEMAIL'] as const;
 const TRANSCRIPT_SOURCES = [

@@ -143,11 +143,18 @@ async function searchRemote(args: Record<string, unknown>, reqContext: McpReques
 /**
  * The local index returns `{ results }`, and so does this tool, as structuredContent and as JSON
  * text. The hosted search (`--docs-search-mode=stainless-api`) returns a body whose shape this
- * package does not define, so it is wrapped the same way: an array as `results`, anything else as
- * its only entry.
+ * package does not define: a body that already has a `results` array passes through, an array
+ * becomes `results`, and anything else becomes its only entry.
  */
-const asResults = (results: unknown): ToolCallResult => {
-  const body = { results: Array.isArray(results) ? results : [results] };
+export const asResults = (results: unknown): ToolCallResult => {
+  const alreadyWrapped =
+    typeof results === 'object' &&
+    results !== null &&
+    Array.isArray((results as { results?: unknown }).results);
+  const body =
+    alreadyWrapped ?
+      { results: (results as { results: unknown[] }).results }
+    : { results: Array.isArray(results) ? results : [results] };
   return { ...asTextContentResult(body), structuredContent: body };
 };
 
