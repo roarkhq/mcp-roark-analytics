@@ -39,6 +39,7 @@ export type ContentBlock = TextContentBlock | ImageContentBlock | AudioContentBl
 
 export type ToolCallResult = {
   content: ContentBlock[];
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 };
 

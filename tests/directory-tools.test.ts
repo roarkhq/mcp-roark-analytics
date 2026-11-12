@@ -124,6 +124,25 @@ describe('directory tool surface', () => {
     }
   });
 
+  // The Claude directory sync rejects a parameter with no JSON Schema type ("Add a type to this
+  // parameter"), and clients that convert schemas need one at every depth, not only the top level.
+  it('declares a JSON Schema type on every parameter at every depth', () => {
+    const untyped: string[] = [];
+    const walk = (node: unknown, path: string): void => {
+      if (!node || typeof node !== 'object') return;
+      const schema = node as Record<string, unknown>;
+      if (!('type' in schema)) untyped.push(path);
+      const properties = (schema['properties'] ?? {}) as Record<string, unknown>;
+      for (const [key, child] of Object.entries(properties)) walk(child, `${path}.${key}`);
+      if (schema['items'] && typeof schema['items'] === 'object') walk(schema['items'], `${path}[]`);
+      if (schema['additionalProperties'] && typeof schema['additionalProperties'] === 'object') {
+        walk(schema['additionalProperties'], `${path}{}`);
+      }
+    };
+    for (const { tool } of tools) walk(tool.inputSchema, tool.name);
+    expect(untyped).toEqual([]);
+  });
+
   it('does not collect an intent parameter on any tool', () => {
     for (const { tool } of tools) {
       expect(tool.inputSchema.properties).not.toHaveProperty('intent');
@@ -332,10 +351,11 @@ describe('directory tool handlers', () => {
         },
       },
     });
-    expect(schema.description).toMatch(/agent_name/);
-    expect(schema.description).toMatch(/agentName/);
-    expect(schema.description).toMatch(/agent_id/);
-    expect(schema.description).toMatch(/\beq\b/);
+    const filterDescription = (properties['properties'] as { description?: string }).description ?? '';
+    expect(filterDescription).toMatch(/agent_name/);
+    expect(filterDescription).toMatch(/agentName/);
+    expect(filterDescription).toMatch(/agent_id/);
+    expect(filterDescription).toMatch(/\beq\b/);
   });
 
   it('passes agent, property, and sort filters through to call.list', async () => {

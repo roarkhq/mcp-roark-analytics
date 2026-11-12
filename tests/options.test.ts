@@ -68,7 +68,11 @@ describe('docs search mode', () => {
 });
 
 describe('tool surface', () => {
-  const OAUTH_ENV = ['MCP_OAUTH_ISSUER', 'MCP_OAUTH_RESOURCE_BASE_URL'] as const;
+  const OAUTH_ENV = [
+    'MCP_OAUTH_ISSUER',
+    'MCP_OAUTH_RESOURCE_BASE_URL',
+    'MCP_OAUTH_RESOURCE_ALIASES',
+  ] as const;
   let savedEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
@@ -186,6 +190,46 @@ describe('remote OAuth resource-server mode', () => {
 
   // Half a config would advertise metadata we cannot build URLs for, or demand a
   // bearer while pointing clients at nothing. Both halves or neither.
+  it('reads alias origins from a comma-separated list, dropping blanks', () => {
+    process.env['MCP_OAUTH_RESOURCE_ALIASES'] = ' https://mcp.api.roark.ai , ,https://mcp.old.example ';
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.roark.ai',
+    ]);
+
+    expect(parseCLIOptions().oauth).toEqual({
+      issuer: 'https://mcp-oauth.api.roark.ai',
+      resourceBaseUrl: 'https://mcp.roark.ai',
+      resourceAliases: ['https://mcp.api.roark.ai', 'https://mcp.old.example'],
+    });
+
+    cleanup();
+  });
+
+  it('reduces each alias to its origin', () => {
+    process.env['MCP_OAUTH_RESOURCE_ALIASES'] = 'https://mcp.api.roark.ai/mcp/';
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.roark.ai',
+    ]);
+
+    expect(parseCLIOptions().oauth?.resourceAliases).toEqual(['https://mcp.api.roark.ai']);
+
+    cleanup();
+  });
+
+  it('refuses to start on an alias that is not a URL', () => {
+    process.env['MCP_OAUTH_RESOURCE_ALIASES'] = 'mcp.api.roark.ai';
+    const cleanup = mockArgv([
+      '--oauth-issuer=https://mcp-oauth.api.roark.ai',
+      '--oauth-resource-base-url=https://mcp.roark.ai',
+    ]);
+
+    expect(() => parseCLIOptions()).toThrow(/entry 1 is not a URL/);
+
+    cleanup();
+  });
+
   it('stays off when only the issuer is set', () => {
     const cleanup = mockArgv(['--oauth-issuer=https://mcp-oauth.api.roark.ai']);
 

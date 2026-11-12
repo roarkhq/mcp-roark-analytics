@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import * as http from 'node:http';
 import type { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
@@ -243,6 +244,68 @@ describe('remote OAuth mode', () => {
       resource: `https://mcp.api.test/mcp/${PROJECT}`,
       authorization_servers: ['https://mcp-oauth.api.test'],
     });
+  });
+});
+
+describe('remote OAuth mode on two hostnames', () => {
+  // Canonical mcp.test, still answering on the previous hostname mcp.api.test.
+  const options: McpOptions = {
+    ...baseOptions,
+    oauth: { ...OAUTH, resourceBaseUrl: 'https://mcp.test', resourceAliases: ['https://mcp.api.test'] },
+  };
+
+  /** fetch cannot set Host, which is the whole point here, so this goes through node:http. */
+  const requestAs = async (host: string, path: string, init?: { method: string; body: string }) => {
+    const server = await new Promise<Server>((resolve) => {
+      const s = streamableHTTPApp({ mcpOptions: options }).listen(0, () => resolve(s));
+    });
+    servers.push(server);
+    const { port } = server.address() as AddressInfo;
+    return new Promise<{ status: number; headers: http.IncomingHttpHeaders; body: string }>(
+      (resolve, reject) => {
+        const req = http.request(
+          {
+            host: '127.0.0.1',
+            port,
+            path,
+            method: init?.method ?? 'GET',
+            headers: {
+              host,
+              'content-type': 'application/json',
+              accept: 'application/json, text/event-stream',
+            },
+          },
+          (res) => {
+            let body = '';
+            res.on('data', (chunk) => (body += chunk));
+            res.on('end', () => resolve({ status: res.statusCode ?? 0, headers: res.headers, body }));
+          },
+        );
+        req.on('error', reject);
+        if (init?.body) req.write(init.body);
+        req.end();
+      },
+    );
+  };
+
+  it.each([
+    ['mcp.test', 'https://mcp.test'],
+    ['mcp.api.test', 'https://mcp.api.test'],
+    ['evil.example', 'https://mcp.test'],
+  ])('serves metadata on host %s naming %s', async (host, origin) => {
+    const res = await requestAs(host, `/.well-known/oauth-protected-resource/mcp/${PROJECT}`);
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({ resource: `${origin}/mcp/${PROJECT}` });
+  });
+
+  it('points the challenge at the metadata on the host the client used', async () => {
+    const res = await requestAs('mcp.api.test', '/mcp', { method: 'POST', body: JSON.stringify(INITIALIZE) });
+
+    expect(res.status).toBe(401);
+    expect(res.headers['www-authenticate']).toBe(
+      'Bearer resource_metadata="https://mcp.api.test/.well-known/oauth-protected-resource/mcp"',
+    );
   });
 });
 
