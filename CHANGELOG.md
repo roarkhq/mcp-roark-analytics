@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.44.5](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.4...v4.44.5) (2026-11-12)
+
+
+### Bug Fixes
+
+* **mcp:** tool inputs describe what values mean, defaults move into the schema, get_simulation_results names its fields, and search_docs declares its output
+
 ## [4.44.4](https://github.com/roarkhq/mcp-roark-analytics/compare/v4.44.3...v4.44.4) (2026-11-12)
 
 
