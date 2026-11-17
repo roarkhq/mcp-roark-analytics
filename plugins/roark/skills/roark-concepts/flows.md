@@ -75,6 +75,44 @@ Variants are where cost lives. Every variant a run plan selects is a real phone
 call, so "add a few more variants" and "spend more on every future run" are the
 same sentence.
 
+## Caller cues
+
+A brief can steer the caller mid-call with inline cue tokens. Each one takes
+effect at the point in the brief where it sits, so the sentence around it says
+when. In the app, type `#` in the brief to insert one; it shows as a chip.
+
+| Token                      | What the caller does                                                                                                                                                                                                              |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `#{emotion:<emotion>}`     | Feels that from here on, and still moves around it reply by reply. One of the persona base emotions, lower case: `neutral`, `cheerful`, `confused`, `frustrated`, `skeptical`, `rushed`, `distracted`, `angry`, `anxious`, `sad`. |
+| `#{language:<code>}`       | Speaks that language from here on. An ISO 639-1 code with an optional region: `es`, `pt-BR`.                                                                                                                                      |
+| `#{noise:<environmentId>}` | Moves somewhere that sounds different: the background switches to that environment's noise mid-call, or to silence for a quiet one. Only the sound changes; the phone line stays the one the call started on.                     |
+| `#{interrupt}`             | The sentence it is in becomes an instruction for when to cut in on the agent. The caller watches for that moment and cuts in when it comes, at any interruption level, including a persona whose interruption is off.             |
+
+```text
+You are calling to dispute a charge on your card. #{emotion:frustrated} You
+have already called twice about it. When the agent reads back the card number,
+#{interrupt} and say it's wrong. If they transfer you, #{noise:<environmentId>}
+you have just stepped outside onto the street.
+```
+
+Caveats:
+
+- An emotion is audible only on ElevenLabs v3 and v4 voices. On any other voice
+  it changes the caller's wording, not how it sounds.
+- Cues are voice only.
+- The agent under test has to understand the language a cue switches into, or
+  the call tests nothing past that point.
+- A noise cue needs an environment to name: one of the project's own or a Roark
+  environment. A cue naming an environment that has since been deleted is
+  dropped. In config as code, a noise cue names the environment by its display
+  name instead, `#{noise:Train}`, and apply stores the id.
+- The opening line is said word for word, so cues in it are removed.
+
+The call transcript and the live view mark each cue as it fires: "Emotion
+changed to cheerful", "Language switched to Spanish", "Environment changed to
+Train", "Interrupted the agent". Scripted flows take the same tokens in their
+steps; see the scripted-flows concept.
+
 ## Expectations
 
 **Agent expectations** are short, observable contracts the agent is graded

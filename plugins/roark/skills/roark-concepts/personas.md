@@ -28,6 +28,12 @@ a brief changes nothing: language, voice, pace, emotion and background noise are
 read from the persona and from nowhere else. A brief is read as situation, never
 as identity.
 
+The one way a brief moves the caller is a caller cue token. `#{emotion:angry}`
+or `#{language:it}` changes the caller's mood or language from that point in
+the call on, and `#{noise:<environmentId>}` moves them somewhere that sounds
+different (see the flows concept). The persona's base emotion and language are
+still where the call starts; a cue only changes them from where it sits.
+
 The persona's `backstoryPrompt` is a standing biography ("a customer for six
 years, has called twice this month"), not this call's situation. If a detail
 would still be true next month it belongs on the persona; if it is only true for

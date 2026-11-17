@@ -35,6 +35,31 @@ Each node is one turn, typed by who speaks and how:
 - `SCENARIO_LINK` - hands off into another flow, walked under its own branching
   mode rather than the caller's.
 
+## Nesting is the order
+
+The graph is a tree written by nesting. A step's `steps` are what can come
+next, so a sequence nests each next step inside the previous step's `steps`.
+Sibling entries, whether in the top-level `graph` or in any `steps` array, are
+alternative branches, not a sequence: two top-level entries are two separate
+ways the call can start, and three entries in one `steps` array are three
+branches at that point.
+
+```yaml
+# A sequence: greeting, then request, then offer.
+graph:
+  - type: AGENT_TURN
+    content: Thanks for calling, how can I help?
+    steps:
+      - type: CUSTOMER_TURN
+        content: Asks to book a cleaning.
+        steps:
+          - type: AGENT_TURN
+            content: Offers Tuesday or Thursday.
+```
+
+Writing those three steps as siblings in `graph` instead describes three
+separate one-step paths from the start, none of them the conversation intended.
+
 ## The two structural rules
 
 **It is a DAG.** An edge may only point at a _new_ downstream step. Convergence
@@ -92,6 +117,46 @@ again each time the wait runs out, up to `maxAttempts` waits (at most 5), and `t
 follows the last one. Speech does not end the wait. In a menu with several keypad options, the first one with a
 policy decides. To test a dedicated no-answer path, add a `CUSTOMER_SILENCE`
 option: the call waits its duration and then follows that path.
+
+## Caller cues
+
+A step's `content` can carry the same cue tokens as an improv brief:
+`#{emotion:<emotion>}`, `#{language:<code>}`, `#{noise:<environmentId>}` and
+`#{interrupt}` (the flows concept lists the values and the caveats). In the app,
+type `#` in the step editor to insert one.
+
+- On a caller step (`CUSTOMER_TURN`, and `CUSTOMER_VERBATIM_TURN` under
+  `STRICT`), the cue takes effect from that step on: the caller feels, speaks
+  or sounds different from there. The token is never spoken.
+- On an `AGENT_TURN` in a `STRICT` flow, an `#{interrupt}` means cut in while
+  the agent says that line. The sentence holding it says when and what to say,
+  and is left out of the line the caller listens for.
+
+How a cue runs depends on `scriptAdherence`:
+
+- `STRICT`: each step's cues apply when the call reaches that step. If a step
+  holds two emotions, moves or languages, the last one wins. An interrupt holds
+  while that step is the active one.
+- `LOOSE`: the whole script is one prompt, so a cue reads as an instruction at
+  its place in the script, and every `#{interrupt}` sentence becomes a call-wide
+  instruction on when to cut in. Cues on a `CUSTOMER_VERBATIM_TURN` (or the
+  retired `CUSTOMER_FIRST_MESSAGE`) are dropped, interrupt included: the line is
+  said word for word, with nowhere to put them. Under `STRICT` the same step
+  keeps its cues.
+
+```yaml
+- type: CUSTOMER_TURN
+  content: '#{emotion:anxious} Gives the card number and asks to block the card.'
+  steps:
+    - type: AGENT_TURN
+      content: >-
+        Reads the card number back. When the agent starts reading the number
+        back, #{interrupt} and say the last four digits are wrong.
+```
+
+Cues are voice only. In a chat flow an emotion on a caller step the persona
+phrases survives as wording, and every other cue is dropped; a message sent
+word for word loses all of them.
 
 ## Branching modes
 
