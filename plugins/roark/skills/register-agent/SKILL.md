@@ -94,8 +94,9 @@ the endpoint. The definition comes from `configure-outbound-dial`.
 
 Roark supports `PHONE`, `WEBSOCKET`, `LIVEKIT`, `SMALL_WEBRTC`, `ELEVENLABS_WS`,
 `KORE`, `GOOGLE_CES`, and `DAILY`. **Only `PHONE` can be created through the
-API.** For the rest, the user creates the endpoint in the Roark product or by
-connecting a provider integration; you then look it up:
+API.** For the rest, connect the agent's platform with `connect-agent`
+(LiveKit, Pipecat, Kore and Google CES connections create their endpoints), or
+the user creates the endpoint in the Roark product; you then look it up:
 
 ```ts
 const { data: endpoints } = await client.agentEndpoint.list({ agentId })
@@ -112,8 +113,8 @@ Two things to tell the user:
 - `WEBSOCKET`, `ELEVENLABS_WS`, `KORE`, and `GOOGLE_CES` are chat-modality
   endpoints: their sessions land as chats, and a voicemail flow pointed at one is
   rejected ("Voicemail flows can only run against voice endpoints").
-- `KORE`, `GOOGLE_CES`, and `DAILY` need their provider integration connected, or
-  the simulation fails partway through.
+- `KORE`, `GOOGLE_CES`, and `DAILY` need their platform connected
+  (`connect-agent`), or the simulation fails partway through.
 
 Do not guess a create payload for these.
 
