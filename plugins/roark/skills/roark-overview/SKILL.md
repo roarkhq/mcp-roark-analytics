@@ -58,8 +58,11 @@ The name of the one skill to load next.
 
 ### 3. Connect the agent
 
-- **`register-agent`** - give Roark the agent under test and the phone number it
-  calls. Skip it if the agent already has an endpoint.
+- **`connect-agent`** - connect the platform the agent runs on (Retell,
+  Vapi, ElevenLabs, Bland, Leaping, LiveKit, Pipecat, Kore, Google CES). Its
+  agents and calls come into Roark on their own.
+- **`register-agent`** - give Roark an agent that is only a phone number, or add
+  a phone endpoint to one. Skip it if the agent already has an endpoint.
 - **`configure-outbound-dial`** - only when Roark must call your platform's API
   to make the agent dial out. Inbound agents skip it.
 

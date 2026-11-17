@@ -28,8 +28,8 @@ looking back (a collection job).
 
 ## Use a different skill when
 
-- The call is not in Roark yet: `ingest-calls` imports it (provider
-  integrations send calls automatically).
+- The call is not in Roark yet: `ingest-calls` imports one, and `connect-agent`
+  connects a platform whose calls then arrive on their own.
 - You want to test before launch: `simulate-quickstart` or `build-run-plan`.
 - You need to choose or create the metrics themselves: `configure-metrics`.
 - You want collectors declared in a repo: `manage-config-as-code`.

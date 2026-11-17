@@ -51,6 +51,7 @@ skill, and what you will have at the end. Not sure where to start? Load
 
 | Skill | Use it to |
 | --- | --- |
+| `connect-agent` | Connect Retell, Vapi, ElevenLabs, LiveKit, Pipecat and other platforms: agents and calls come in on their own. |
 | `register-agent` | Connect your agent to Roark: the agent and the phone endpoint Roark calls. |
 | `configure-outbound-dial` | Trigger outbound simulated calls through your platform's API. Inbound agents skip it. |
 

@@ -29,8 +29,8 @@ batch you loop over) and reads it. `monitor-live-calls` decides which calls get
 
 - You want every production call graded automatically, or a new metric run over
   past calls: `monitor-live-calls`.
-- Your calls come from Vapi, Retell, LiveKit, or Pipecat: those integrations send
-  calls to Roark by webhook (see the end of this skill), no import code needed.
+- Your calls come from Vapi, Retell, LiveKit, or Pipecat: connect the platform with
+  `connect-agent` and its calls arrive on their own, no import code needed.
 - The calls are simulations: `read-results`.
 
 ## You will have
