@@ -135,7 +135,7 @@ export const AGENT_IDS_PATTERN = `^${UUID_SOURCE}(,${UUID_SOURCE}){0,${MAX_AGENT
 const MAX_PROPERTY_FILTERS = 20;
 const FLOW_TYPES = ['SCRIPTED', 'IMPROV', 'VOICEMAIL'] as const;
 const CALLER_CUES_HINT =
-  ' Can carry caller cues that change the caller from that point on (voice only): #{emotion:<persona base emotion, lower case>}, #{language:<ISO 639-1 code>}, #{noise:<environment id from list_simulation_environments>}, and #{interrupt} in a sentence saying when to cut in on the agent.';
+  ' Can carry caller cues such as #{emotion:angry} or #{interrupt} (voice only); see the author-personas-flows skill.';
 const TRANSCRIPT_SOURCES = [
   'ROARK_POST_CALL',
   'SIMULATION_AGENT_REALTIME',

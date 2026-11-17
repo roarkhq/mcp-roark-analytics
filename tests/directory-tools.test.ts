@@ -143,6 +143,15 @@ describe('directory tool surface', () => {
     expect(untyped).toEqual([]);
   });
 
+  it('tells create_customer_flow briefs about caller cues', () => {
+    const properties = toolByName(tools, 'create_customer_flow').tool.inputSchema.properties as Record<
+      string,
+      any
+    >;
+    expect(properties['happyPath'].properties.prompt.description).toContain('#{interrupt}');
+    expect(properties['edgeCases'].items.properties.prompt.description).toContain('#{interrupt}');
+  });
+
   it('does not collect an intent parameter on any tool', () => {
     for (const { tool } of tools) {
       expect(tool.inputSchema.properties).not.toHaveProperty('intent');

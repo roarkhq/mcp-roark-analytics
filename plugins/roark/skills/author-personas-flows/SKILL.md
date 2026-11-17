@@ -160,6 +160,7 @@ its meaning reads as part of the sentence, because a brief is one prompt and
 each token is replaced by words ("from here on you feel angry", "cut in"):
 
 ```ts
+// `street` is the CITY environment found in step 2.
 await client.customerFlow.updateHappyPath(flow.id, {
   prompt:
     'You were charged twice for last week\'s cleaning and want one charge refunded. ' +

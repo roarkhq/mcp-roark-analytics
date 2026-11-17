@@ -185,25 +185,43 @@ A strict script with every kind of cue, nested correctly (each next step inside
 the previous step's `steps`):
 
 ```ts
+const { data: envs } = await client.simulationEnvironment.list()
+const train = envs.find((e) => e.name === 'Train') // any environment whose noise fits the new place
+
 const { data: flow } = await client.customerFlow.create({
   type: 'SCRIPTED',
   title: 'Double charge - wrong card read back',
   scriptAdherence: 'STRICT',
   graph: [
-    { type: 'CUSTOMER_FIRST_MESSAGE', content: '#{emotion:angry} Hi, I was charged twice for my cleaning.',
+    {
+      type: 'CUSTOMER_FIRST_MESSAGE',
+      content: '#{emotion:angry} Hi, I was charged twice for my cleaning.',
       steps: [
-        { type: 'AGENT_TURN', content: 'The agent asks for the card that was charged.',
+        {
+          type: 'AGENT_TURN',
+          content: 'The agent asks for the card that was charged.',
           steps: [
-            { type: 'CUSTOMER_TURN', content: '#{emotion:frustrated} Read out the card number 4111 1111 1111 1111.',
+            {
+              type: 'CUSTOMER_TURN',
+              content: '#{emotion:frustrated} Read out the card number 4111 1111 1111 1111.',
               steps: [
-                { type: 'AGENT_TURN',
-                  content: 'The agent reads the card number back. #{interrupt} Cut in once it has read eight digits and say that is the card.',
+                {
+                  type: 'AGENT_TURN',
+                  content:
+                    'The agent reads the card number back. #{interrupt} Cut in once it has read eight digits and say that is the card.',
                   steps: [
-                    { type: 'CUSTOMER_TURN', content: `#{noise:${trainEnvId}} Say you are boarding a train.` },
-                  ] },
-              ] },
-          ] },
-      ] },
+                    {
+                      type: 'CUSTOMER_TURN',
+                      content: `#{noise:${train.id}} Say you are boarding a train.`,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
   ],
 })
 ```
