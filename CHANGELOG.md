@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.20.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.19.4...v5.20.0) (2026-11-17)
+
+
+### Features
+
+* **skills:** connect-agent, for connecting Retell, Vapi, LiveKit, Pipecat and other agent platforms ([#289](https://github.com/roarkhq/mcp-roark-analytics/issues/289)) ([8d74d90](https://github.com/roarkhq/mcp-roark-analytics/commit/8d74d90b98c8b55f23fc24b9cb6fd85ff4969e4c))
+
 ## [5.19.4](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.19.3...v5.19.4) (2026-11-17)
 
 
