@@ -34,6 +34,11 @@ Each step object is validated strictly: fields that do not belong to the step's
 
 ## Branch and merge
 
+- **Sequence is nesting.** The step that follows another goes inside that step's
+  `steps`. Steps side by side in one array are alternatives, never a sequence,
+  and that includes the top level of `graph`: every top-level entry hangs off
+  `START`. `graph: [CUSTOMER_FIRST_MESSAGE, AGENT_TURN]` is two paths, the first
+  of them only the opening line, not one conversation of two steps.
 - **Branch**: a step whose `steps` array has more than one child. Each child
   begins a distinct path; every leaf path becomes one derived variant (one
   billable call in `DETERMINISTIC` mode).
@@ -80,25 +85,27 @@ the same confirmation step.
 
 ```ts
 graph: [
-  { type: 'CUSTOMER_FIRST_MESSAGE', content: 'Hello' },
-  { type: 'AGENT_TURN', content: 'Press 1 to pay, 0 for an agent.',
+  { type: 'CUSTOMER_FIRST_MESSAGE', content: 'Hello',
     steps: [
-      // path A: pay by keypad
-      { type: 'CUSTOMER_DTMF', dtmfDigits: '1',
+      { type: 'AGENT_TURN', content: 'Press 1 to pay, 0 for an agent.',
         steps: [
-          { type: 'AGENT_TURN', content: 'Enter your account number.',
+          // path A: pay by keypad
+          { type: 'CUSTOMER_DTMF', dtmfDigits: '1',
             steps: [
-              { type: 'CUSTOMER_DTMF', dtmfDigits: '4483#',
-                // rejoin the shared confirmation step created on path B
-                mergeIntoNodeIds: ['confirm'] },
+              { type: 'AGENT_TURN', content: 'Enter your account number.',
+                steps: [
+                  { type: 'CUSTOMER_DTMF', dtmfDigits: '4483#',
+                    // rejoin the shared confirmation step created on path B
+                    mergeIntoNodeIds: ['confirm'] },
+                ] },
             ] },
-        ] },
-      // path B: transfer to a human, then the shared confirmation
-      { type: 'CUSTOMER_DTMF', dtmfDigits: '0',
-        steps: [
-          { type: 'AGENT_TURN', ref: 'confirm',
-            content: 'You are all set. Anything else?',
-            steps: [ { type: 'CUSTOMER_TURN', content: 'No, thanks' } ] },
+          // path B: transfer to a human, then the shared confirmation
+          { type: 'CUSTOMER_DTMF', dtmfDigits: '0',
+            steps: [
+              { type: 'AGENT_TURN', ref: 'confirm',
+                content: 'You are all set. Anything else?',
+                steps: [ { type: 'CUSTOMER_TURN', content: 'No, thanks' } ] },
+            ] },
         ] },
     ] },
 ]
@@ -106,3 +113,10 @@ graph: [
 
 Here the `confirm` step is authored once (under path B) with a `ref`, and path A
 merges into it via `mergeIntoNodeIds: ['confirm']` rather than duplicating it.
+
+## Caller cues in step content
+
+A step's `content` can carry `#{emotion:<emotion>}`, `#{language:<code>}`,
+`#{noise:<environment id>}` and `#{interrupt}` tokens that change the simulated
+caller from that step on. What each does, how `STRICT` and `LOOSE` scripts run
+them, and the caveats are in the main skill, under "Caller cues".

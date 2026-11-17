@@ -54,19 +54,24 @@ const { data: flow } = await client.customerFlow.create({
   agentIds: [agentId], // optional for scripted; defaults to []
   branchingMode: 'DETERMINISTIC', // or 'ADAPTIVE', see step 3
   graph: [
-    { type: 'CUSTOMER_FIRST_MESSAGE', content: 'Hi, I need to pay my bill' },
     {
-      type: 'AGENT_TURN',
-      content: 'Sure. Press 1 for billing, 2 for support.',
+      type: 'CUSTOMER_FIRST_MESSAGE',
+      content: 'Hi, I need to pay my bill',
       steps: [
         {
-          type: 'CUSTOMER_DTMF',
-          dtmfDigits: '1',
+          type: 'AGENT_TURN',
+          content: 'Sure. Press 1 for billing, 2 for support.',
           steps: [
             {
-              type: 'AGENT_TURN',
-              content: 'Enter your account number.',
-              steps: [{ type: 'CUSTOMER_DTMF', dtmfDigits: '4483#' }],
+              type: 'CUSTOMER_DTMF',
+              dtmfDigits: '1',
+              steps: [
+                {
+                  type: 'AGENT_TURN',
+                  content: 'Enter your account number.',
+                  steps: [{ type: 'CUSTOMER_DTMF', dtmfDigits: '4483#' }],
+                },
+              ],
             },
           ],
         },
@@ -77,6 +82,14 @@ const { data: flow } = await client.customerFlow.create({
 
 const { data: full } = await client.customerFlow.getByID(flow.id) // confirm the derived paths
 ```
+
+**The next step goes inside the previous step's `steps`.** Steps side by side in
+one array are alternative branches, never a sequence, and that includes the top
+level of `graph`, whose entries all hang off `START`. Writing
+`graph: [{ CUSTOMER_FIRST_MESSAGE }, { AGENT_TURN, steps: [...] }]` gives two
+paths, and the first one is only the opening line. Nest every step you want in
+the same conversation, as above, and put more than one step in a `steps` array
+only where the call should fork.
 
 `graph` is required and needs at least one step. **Variants come from the
 graph**, one per path. Do not send `happyPath` / `edgeCases`, and do not use
@@ -140,6 +153,77 @@ held variant ids survive. Flow-level fields (`title`, `agentIds`,
 
 **MCP note:** the plugin's `create_customer_flow` tool creates IMPROV flows only.
 Scripted graphs need the local code-execution server.
+
+## Caller cues: change the caller mid-call
+
+A step's `content` can carry inline tokens that move the simulated caller at that
+point of the script. In the app they are typed with `#` in the editor; over the
+API they are plain text in `content`.
+
+| token | the caller, from that step on |
+| --- | --- |
+| `#{emotion:<emotion>}` | feels it. One of the persona base emotions, lower case: `neutral`, `cheerful`, `confused`, `frustrated`, `skeptical`, `rushed`, `distracted`, `angry`, `anxious`, `sad` |
+| `#{language:<code>}` | speaks that language: ISO 639-1 with an optional region (`es`, `pt-BR`). The agent has to understand it |
+| `#{noise:<environment id>}` | moves somewhere that sounds different: the environment's id (a uuid) from `client.simulationEnvironment.list()` |
+| `#{interrupt}` | cuts in on the agent. The sentence holding the token says when and what to say |
+
+How a script runs them depends on `scriptAdherence` (set on create or with
+`customerFlow.update`):
+
+- **`STRICT`**: each step's cues fire when the call reaches that step, exactly.
+  If a step holds two cues of one kind, the last wins. On an `AGENT_TURN`,
+  `#{interrupt}` means cut in while the agent is speaking that step, and the
+  rest of the sentence says when ("once it has read eight digits"). The tokens
+  and the interrupt sentence are taken out of what is said or listened for.
+- **`LOOSE`** (the default): the whole script is one prompt, so each cue becomes
+  an instruction in it ("from here on you feel angry") and every `#{interrupt}`
+  sentence becomes a call-wide rule for when to cut in. Lines said word for word
+  (`CUSTOMER_FIRST_MESSAGE`, `CUSTOMER_VERBATIM_TURN`) lose their cues here; put
+  them on a `CUSTOMER_TURN` instead.
+
+A strict script with every kind of cue, nested correctly (each next step inside
+the previous step's `steps`):
+
+```ts
+const { data: flow } = await client.customerFlow.create({
+  type: 'SCRIPTED',
+  title: 'Double charge - wrong card read back',
+  scriptAdherence: 'STRICT',
+  graph: [
+    { type: 'CUSTOMER_FIRST_MESSAGE', content: '#{emotion:angry} Hi, I was charged twice for my cleaning.',
+      steps: [
+        { type: 'AGENT_TURN', content: 'The agent asks for the card that was charged.',
+          steps: [
+            { type: 'CUSTOMER_TURN', content: '#{emotion:frustrated} Read out the card number 4111 1111 1111 1111.',
+              steps: [
+                { type: 'AGENT_TURN',
+                  content: 'The agent reads the card number back. #{interrupt} Cut in once it has read eight digits and say that is the card.',
+                  steps: [
+                    { type: 'CUSTOMER_TURN', content: `#{noise:${trainEnvId}} Say you are boarding a train.` },
+                  ] },
+              ] },
+          ] },
+      ] },
+  ],
+})
+```
+
+Caveats:
+
+- **Voice only.** A chat run has no voice or sound to change: a mood still
+  reads as an instruction on a step the caller phrases, every other cue is
+  dropped, and a line sent word for word loses all of them.
+- **Emotion is audible only on ElevenLabs v3 and v4 voices.** On any other voice
+  it changes what the caller says, not how it sounds. The persona's
+  `baseEmotion` is where the call starts; the cue moves it.
+- **Noise** names an environment by id, so renaming it is safe; a cue whose
+  environment was deleted is dropped, and an environment with no background
+  noise means "somewhere quiet".
+- **Language**: a call can switch between at most eight languages, the one it
+  starts in included.
+- Fired cues show in the call transcript: "Emotion changed to angry",
+  "Language switched to Spanish", "Environment changed to Train", "Interrupted
+  the agent". Use them to confirm a cue fired when reading results.
 
 ## Next
 

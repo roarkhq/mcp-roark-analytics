@@ -45,8 +45,10 @@ happy path, a few edge cases, and agent expectations, ready to attach in
 **Read first:** `../roark-concepts/personas.md` and `../roark-concepts/flows.md`.
 The rule that silently ruins a test: language, accent, voice, pace, mood, and
 background noise are read from the **persona** and nowhere else. Writing "is
-angry" or "speaks Spanish" into a brief changes nothing. The brief is only the
-situation.
+angry" or "speaks Spanish" into a brief in plain words changes nothing. The
+brief is only the situation. The one way a brief moves the caller is a caller
+cue token (`#{emotion:angry}`, `#{language:es}`), and that is a change from a
+point in the call onward, not who the caller is; see step 4.
 
 ## 1. Pick or create personas
 
@@ -139,7 +141,49 @@ const { data: flow } = await client.customerFlow.create({
 Keep edge cases few and different from each other. Every edge case a run selects
 is a separate billable call.
 
-## 4. Add agent expectations
+## 4. Move the caller mid-call with caller cues
+
+A brief (`happyPath.prompt` or an edge case `prompt`) can carry inline tokens
+that change the simulated caller from a point in the call onward. In the app
+they are typed with `#` in the brief editor; over the API they are plain text.
+
+| token | the caller, from that point on |
+| --- | --- |
+| `#{emotion:<emotion>}` | feels it. A persona base emotion, lower case: `neutral`, `cheerful`, `confused`, `frustrated`, `skeptical`, `rushed`, `distracted`, `angry`, `anxious`, `sad` |
+| `#{language:<code>}` | speaks that language: ISO 639-1 with an optional region (`es`, `pt-BR`). The agent has to understand it |
+| `#{noise:<environment id>}` | moves somewhere that sounds different: an environment's id from `client.simulationEnvironment.list()` |
+| `#{interrupt}` | cuts in on the agent. The sentence holding the token is the instruction for when, and what to say |
+
+The persona's `baseEmotion` is where the call starts; an emotion cue moves it
+from there. Write the condition around each token, and place the token where
+its meaning reads as part of the sentence, because a brief is one prompt and
+each token is replaced by words ("from here on you feel angry", "cut in"):
+
+```ts
+await client.customerFlow.updateHappyPath(flow.id, {
+  prompt:
+    'You were charged twice for last week\'s cleaning and want one charge refunded. ' +
+    'When the agent asks for the card, read out 4111 1111 1111 1111. ' +
+    'When the agent reads the card number back, #{interrupt} and say that is the card. ' +
+    'If the agent says the refund takes more than a week, #{emotion:angry}. ' +
+    `Once the refund is agreed, #{noise:${street.id}} and say you have to go.`,
+})
+```
+
+- **Voice only.** Improv flows do not run as chat simulations.
+- **Emotion is audible only on ElevenLabs v3 and v4 voices.** On any other voice
+  the cue changes what the caller says, not how it sounds.
+- **The model picks the moment**, from the condition you wrote, so the exact
+  turn can differ between calls. When it must happen at one step, use a
+  `STRICT` scripted flow (`author-scripted-flows`).
+- An edge case with its own brief takes its interrupts from that brief only.
+- A call switches between at most eight languages, the starting one included.
+  A noise cue whose environment was deleted is dropped.
+- Fired cues show in the call transcript: "Emotion changed to angry",
+  "Language switched to Spanish", "Environment changed to Street", "Interrupted
+  the agent".
+
+## 5. Add agent expectations
 
 Expectations are short, observable things the agent must do, graded from the
 transcript. Flow-level ones apply to every variant; replacing them replaces the

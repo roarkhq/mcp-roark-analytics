@@ -20,6 +20,9 @@ internal model says `mode: 'UNSCRIPTED'`.
   metric, which the run plan must attach.
 - **Variables** - `{{placeholder}}` tokens filled per attachment or at run time
   (see `../../build-run-plan/references/flow-selection.md`).
+- **Caller cues** - `#{emotion:...}`, `#{language:...}`, `#{noise:<environment id>}`
+  and `#{interrupt}` tokens in a `prompt` that change the caller from that point
+  in the call on. Voice only; see "Move the caller mid-call" in `../SKILL.md`.
 
 ## Operations
 

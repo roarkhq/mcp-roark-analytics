@@ -62,7 +62,10 @@ field.
 ## Behavioral profile
 
 - **`baseEmotion`** - `NEUTRAL` (default) | `CHEERFUL` | `CONFUSED` |
-  `FRUSTRATED` | `SKEPTICAL` | `RUSHED` | `DISTRACTED`.
+  `FRUSTRATED` | `SKEPTICAL` | `RUSHED` | `DISTRACTED` | `ANGRY` | `ANXIOUS` |
+  `SAD`. The mood the call starts in; a flow's `#{emotion:<value>}` cue (the
+  same values, lower case) moves it mid-call. A cued change is audible only
+  on an ElevenLabs v3 or v4 voice; on other voices it changes the wording only.
 - **`intentClarity`** - `CLEAR` (default) | `INDIRECT` | `VAGUE`; how plainly they
   state what they want.
 - **`confirmationStyle`** - `EXPLICIT` (default) | `VAGUE`; how they confirm

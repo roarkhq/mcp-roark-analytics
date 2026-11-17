@@ -109,7 +109,9 @@ created through the API; find them in the list and use their id.
 Read `../roark-concepts/personas.md` and `../roark-concepts/flows.md` once. The
 rule that ruins tests silently: anything about who the caller **is** (language,
 accent, mood, pace, background noise) lives on the persona. Writing "is angry"
-into a brief changes nothing. Briefs describe the **situation**.
+into a brief changes nothing. Briefs describe the **situation**. To change the
+caller partway through a call, use a caller cue token (`#{emotion:angry}`), see
+`author-personas-flows`.
 
 **Pick personas from the system library first.** The list returns every trait,
 so pick by fields rather than by name:
