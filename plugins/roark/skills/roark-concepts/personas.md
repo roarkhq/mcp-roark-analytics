@@ -56,8 +56,10 @@ transcription and turn-taking.
 _still speaking_: `OFF` (waits its turn), `BACKCHANNEL` (listening noises like
 "mm-hm" that never take the floor, which is a direct test of whether the agent
 wrongly stops for one), then `OCCASIONAL` and `HEAVY`, which also cut in.
-Timing is randomised per agent turn, so two runs of the same persona do not
-interrupt at identical moments.
+They cut in at plausible moments chosen from what the agent is saying (reading
+back a number, starting a long explanation), not on a timer: `OCCASIONAL` where
+a caller like this plausibly would, `HEAVY` readily, though never on every turn.
+A customer flow can also say exactly when to cut in, at any level.
 
 `responseTiming` is deprecated and no longer offered. It set how long the caller
 waited once the agent had _stopped_, and measured across production simulations
