@@ -134,6 +134,8 @@ const MAX_AGENT_IDS = 100;
 export const AGENT_IDS_PATTERN = `^${UUID_SOURCE}(,${UUID_SOURCE}){0,${MAX_AGENT_IDS - 1}}$`;
 const MAX_PROPERTY_FILTERS = 20;
 const FLOW_TYPES = ['SCRIPTED', 'IMPROV', 'VOICEMAIL'] as const;
+const CALLER_CUES_HINT =
+  ' Can carry caller cues such as #{emotion:angry} or #{interrupt} (voice only); see the author-personas-flows skill.';
 const TRANSCRIPT_SOURCES = [
   'ROARK_POST_CALL',
   'SIMULATION_AGENT_REALTIME',
@@ -1187,7 +1189,10 @@ export function directoryTools(): McpTool[] {
                 type: 'string',
                 description: 'Name for the happy path, the run where the conversation goes as intended.',
               },
-              prompt: { type: 'string', description: 'What the simulated caller is trying to do.' },
+              prompt: {
+                type: 'string',
+                description: 'What the simulated caller is trying to do.' + CALLER_CUES_HINT,
+              },
               personaOverrideId: {
                 type: 'string',
                 description: 'Persona id from list_personas or create_persona.',
@@ -1209,7 +1214,8 @@ export function directoryTools(): McpTool[] {
                 title: { type: 'string', description: 'Name for this edge case.' },
                 prompt: {
                   type: 'string',
-                  description: 'What the simulated caller is trying to do in this edge case.',
+                  description:
+                    'What the simulated caller is trying to do in this edge case.' + CALLER_CUES_HINT,
                 },
                 personaOverrideId: {
                   type: 'string',

@@ -70,9 +70,12 @@ Sends a **`graph`** (required, min 1 step) instead of a happy path and edge case
   kind: 'flow', type: 'scripted', name: 'billing-ivr',
   branchingMode: 'DETERMINISTIC',        // or ADAPTIVE
   graph: [
-    { type: 'CUSTOMER_FIRST_MESSAGE', content: 'Hi' },
-    { type: 'AGENT_TURN', content: 'Press 1 for billing.',
-      steps: [{ type: 'CUSTOMER_DTMF', dtmfDigits: '1', ref: 'after-1' }] },
+    // the next step nests inside the previous one; siblings are branches
+    { type: 'CUSTOMER_FIRST_MESSAGE', content: 'Hi',
+      steps: [
+        { type: 'AGENT_TURN', content: 'Press 1 for billing.',
+          steps: [{ type: 'CUSTOMER_DTMF', dtmfDigits: '1', ref: 'after-1' }] },
+      ] },
   ],
 }
 ```
