@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.20.1](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.20.0...v5.20.1) (2026-11-17)
+
+
+### Documentation
+
+* **skills:** document caller cues and nest the scripted graph examples ([#290](https://github.com/roarkhq/mcp-roark-analytics/issues/290)) ([6ed987b](https://github.com/roarkhq/mcp-roark-analytics/commit/6ed987b9f6eda283a673df2772fe100357dc148a))
+
 ## [5.20.0](https://github.com/roarkhq/mcp-roark-analytics/compare/v5.19.4...v5.20.0) (2026-11-17)
 
 
