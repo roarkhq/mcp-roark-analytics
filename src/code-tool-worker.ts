@@ -176,6 +176,7 @@ const fuse = new Fuse(
     'client.simulationJob.lookup',
     'client.simulationJobToolMock.list',
     'client.simulationAudioClip.list',
+    'client.simulationPhoneNumber.list',
     'client.simulationToolFixture.create',
     'client.simulationToolFixture.delete',
     'client.simulationToolFixture.list',
