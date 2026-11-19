@@ -419,6 +419,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/audio-clip',
   },
   {
+    clientCallName: 'client.simulationPhoneNumber.list',
+    fullyQualifiedName: 'simulationPhoneNumber.list',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/phone-number',
+  },
+  {
     clientCallName: 'client.simulationToolFixture.create',
     fullyQualifiedName: 'simulationToolFixture.create',
     httpMethod: 'post',
