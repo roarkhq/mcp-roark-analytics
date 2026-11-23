@@ -863,6 +863,12 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/customer-flow/folder',
   },
   {
+    clientCallName: 'client.customerFlowFolder.update',
+    fullyQualifiedName: 'customerFlowFolder.update',
+    httpMethod: 'put',
+    httpPath: '/v1/customer-flow/folder/{folderId}',
+  },
+  {
     clientCallName: 'client.customerFlowFolder.list',
     fullyQualifiedName: 'customerFlowFolder.list',
     httpMethod: 'get',

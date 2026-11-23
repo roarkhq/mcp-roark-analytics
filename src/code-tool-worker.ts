@@ -252,6 +252,7 @@ const fuse = new Fuse(
     'client.customerFlowFolder.create',
     'client.customerFlowFolder.delete',
     'client.customerFlowFolder.list',
+    'client.customerFlowFolder.update',
     'client.customerFlowEdgeCase.add',
     'client.customerFlowEdgeCase.promote',
     'client.customerFlowEdgeCase.remove',
