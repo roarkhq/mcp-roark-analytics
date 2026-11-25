@@ -581,10 +581,22 @@ export const sdkMethods: SdkMethod[] = [
     httpPath: '/v1/simulation/plan/job/{jobId}/cost',
   },
   {
+    clientCallName: 'client.simulationRunPlanJob.getRescore',
+    fullyQualifiedName: 'simulationRunPlanJob.getRescore',
+    httpMethod: 'get',
+    httpPath: '/v1/simulation/plan/job/{jobId}/rescore',
+  },
+  {
     clientCallName: 'client.simulationRunPlanJob.getResults',
     fullyQualifiedName: 'simulationRunPlanJob.getResults',
     httpMethod: 'get',
     httpPath: '/v1/simulation/plan/job/{jobId}/results',
+  },
+  {
+    clientCallName: 'client.simulationRunPlanJob.rescore',
+    fullyQualifiedName: 'simulationRunPlanJob.rescore',
+    httpMethod: 'post',
+    httpPath: '/v1/simulation/plan/job/{jobId}/rescore',
   },
   {
     clientCallName: 'client.simulationRunPlanJob.start',
