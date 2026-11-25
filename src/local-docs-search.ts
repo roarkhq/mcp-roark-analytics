@@ -3229,6 +3229,68 @@ const EMBEDDED_METHODS: MethodEntry[] = [
     },
   },
   {
+    name: 'rescore',
+    endpoint: '/v1/simulation/plan/job/{jobId}/rescore',
+    httpMethod: 'post',
+    summary: 'Re-score a simulation run',
+    description:
+      "Grade a finished run's calls again, without placing new calls: the same calls and metrics, with each\nmetric's current version and the flows' current agent expectations. Use it after editing a metric or\na flow's expectations, to see how the run you already have scores against them.\n\nThe new values replace the run's current ones; earlier values stay in each metric value's history.\nThe grading is billed like any metric collection. A run is re-scored one at a time: while one\nre-score runs, another is refused with 409.\n\nReturns immediately. Poll GET /v1/simulation/plan/job/{jobId}/rescore until `status` is COMPLETED or\nFAILED, then read the new values from GET /v1/simulation/plan/job/{jobId}/results.",
+    stainlessPath: '(resource) simulationRunPlanJob > (method) rescore',
+    qualified: 'client.simulationRunPlanJob.rescore',
+    params: ['jobId: string;'],
+    response:
+      "{ data: { completedAt: string; createdAt: string; debriefRequestedAt: string; errorMessage: string; jobId: string; rescoreId: string; scoredConversations: number; status: 'RUNNING' | 'COMPLETED' | 'FAILED'; totalConversations: number; }; }",
+    markdown:
+      "## rescore\n\n`client.simulationRunPlanJob.rescore(jobId: string): { data: object; }`\n\n**post** `/v1/simulation/plan/job/{jobId}/rescore`\n\nGrade a finished run's calls again, without placing new calls: the same calls and metrics, with each\nmetric's current version and the flows' current agent expectations. Use it after editing a metric or\na flow's expectations, to see how the run you already have scores against them.\n\nThe new values replace the run's current ones; earlier values stay in each metric value's history.\nThe grading is billed like any metric collection. A run is re-scored one at a time: while one\nre-score runs, another is refused with 409.\n\nReturns immediately. Poll GET /v1/simulation/plan/job/{jobId}/rescore until `status` is COMPLETED or\nFAILED, then read the new values from GET /v1/simulation/plan/job/{jobId}/results.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { completedAt: string; createdAt: string; debriefRequestedAt: string; errorMessage: string; jobId: string; rescoreId: string; scoredConversations: number; status: 'RUNNING' | 'COMPLETED' | 'FAILED'; totalConversations: number; }; }`\n\n  - `data: { completedAt: string; createdAt: string; debriefRequestedAt: string; errorMessage: string; jobId: string; rescoreId: string; scoredConversations: number; status: 'RUNNING' | 'COMPLETED' | 'FAILED'; totalConversations: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulationRunPlanJob.rescore('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunPlanJob.rescore',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.simulationRunPlanJob.rescore('182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e');\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'simulation_run_plan_job.rescore',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.simulation_run_plan_job.rescore(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/plan/job/$JOB_ID/rescore \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
+    name: 'getRescore',
+    endpoint: '/v1/simulation/plan/job/{jobId}/rescore',
+    httpMethod: 'get',
+    summary: "Get a simulation run's latest re-score",
+    description:
+      "The run's most recent re-score, with its status and how many conversations have been graded.",
+    stainlessPath: '(resource) simulationRunPlanJob > (method) getRescore',
+    qualified: 'client.simulationRunPlanJob.getRescore',
+    params: ['jobId: string;'],
+    response:
+      "{ data: { completedAt: string; createdAt: string; debriefRequestedAt: string; errorMessage: string; jobId: string; rescoreId: string; scoredConversations: number; status: 'RUNNING' | 'COMPLETED' | 'FAILED'; totalConversations: number; }; }",
+    markdown:
+      "## getRescore\n\n`client.simulationRunPlanJob.getRescore(jobId: string): { data: object; }`\n\n**get** `/v1/simulation/plan/job/{jobId}/rescore`\n\nThe run's most recent re-score, with its status and how many conversations have been graded.\n\n### Parameters\n\n- `jobId: string`\n\n### Returns\n\n- `{ data: { completedAt: string; createdAt: string; debriefRequestedAt: string; errorMessage: string; jobId: string; rescoreId: string; scoredConversations: number; status: 'RUNNING' | 'COMPLETED' | 'FAILED'; totalConversations: number; }; }`\n\n  - `data: { completedAt: string; createdAt: string; debriefRequestedAt: string; errorMessage: string; jobId: string; rescoreId: string; scoredConversations: number; status: 'RUNNING' | 'COMPLETED' | 'FAILED'; totalConversations: number; }`\n\n### Example\n\n```typescript\nimport Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark();\n\nconst response = await client.simulationRunPlanJob.getRescore(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(response);\n```",
+    perLanguage: {
+      typescript: {
+        method: 'client.simulationRunPlanJob.getRescore',
+        example:
+          "import Roark from '@roarkanalytics/sdk';\n\nconst client = new Roark({\n  bearerToken: process.env['ROARK_API_BEARER_TOKEN'], // This is the default and can be omitted\n});\n\nconst response = await client.simulationRunPlanJob.getRescore(\n  '182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e',\n);\n\nconsole.log(response.data);",
+      },
+      python: {
+        method: 'simulation_run_plan_job.get_rescore',
+        example:
+          'import os\nfrom roark_analytics import Roark\n\nclient = Roark(\n    bearer_token=os.environ.get("ROARK_API_BEARER_TOKEN"),  # This is the default and can be omitted\n)\nresponse = client.simulation_run_plan_job.get_rescore(\n    "182bd5e5-6e1a-4fe4-a799-aa6d9a6ab26e",\n)\nprint(response.data)',
+      },
+      http: {
+        example:
+          'curl https://api.roark.ai/v1/simulation/plan/job/$JOB_ID/rescore \\\n    -H "Authorization: Bearer $ROARK_API_BEARER_TOKEN"',
+      },
+    },
+  },
+  {
     name: 'getCost',
     endpoint: '/v1/simulation/plan/job/{jobId}/cost',
     httpMethod: 'get',
