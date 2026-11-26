@@ -51,10 +51,25 @@ authored.
 ### Environment
 
 A variant's **environment** is where the caller is calling from: the sound around
-them (`backgroundNoise` at `backgroundNoiseVolume`) and the phone line they are on
-(`lineQuality`). Roark drops audio from the caller's 20 ms packets, per direction:
-_toward the agent_ is what the agent hears, _toward the caller_ is what the caller
-hears. Bursty loss clusters dropped packets into gaps, which is how real lines fail.
+them (`backgroundNoise` at `backgroundNoiseVolume`) and the phone line they are on.
+The line has three parts that combine freely, applied in the order a real call meets
+them:
+
+1. **Hiss** (`lineNoise`, 0 to 1): line noise, both ways. 0 is none; 1 is heavy, about
+   10 dB under phone speech.
+2. **The phone** (`phone`): the codecs the call passes through, both ways. Null is no
+   phone.
+3. **Lost audio** (`lineQuality`): Roark drops the caller's 20 ms packets, per
+   direction: _toward the agent_ is what the agent hears, _toward the caller_ is what
+   the caller hears. Bursty loss clusters dropped packets into gaps, which is how real
+   lines fail. The receiving end fills each gap the way a phone does: the voice repeats
+   and fades out, over a soft background, never dead silence.
+
+| `phone`     | Applied                                                                                       |
+| ----------- | --------------------------------------------------------------------------------------------- |
+| `LANDLINE`  | The narrow band of a phone handset and the codec of the phone network.                        |
+| `MOBILE`    | The narrow band and the compressed voice codec of a mobile call.                              |
+| `BLUETOOTH` | A mobile on a car kit or headset: the Bluetooth link adds fizz under the voice, then `MOBILE`. |
 
 | `lineQuality`      | Applied                                                                                         |
 | ------------------ | ----------------------------------------------------------------------------------------------- |
@@ -65,11 +80,13 @@ hears. Bursty loss clusters dropped packets into gaps, which is how real lines f
 | `ONE_WAY_DEGRADED` | 8% lost in 80 ms gaps toward the agent only; the caller hears the agent clearly.                |
 | `CUSTOM`           | The numbers in `lineCustom`: per direction, up to 20% loss in gaps of 20 ms (random) to 200 ms. |
 
-The loss pattern is seeded per call, so a redial loses the same packets. Line quality
-only means something for an agent on the phone network: a web or WebSocket agent has
-no phone line, and the setting is ignored there. Roark ships bad-line environments
-(Cell edge, Car on Bluetooth, Spotty Wi-Fi call, Breaking up one way) beside the sound
-ones; the silent default is called Quiet room.
+The loss and the hiss are seeded per call, so a redial loses the same packets and
+hears the same hiss. The
+line only means something for an agent on the phone network: a web or WebSocket agent
+has no phone line, and the setting is ignored there. Roark ships bad-line environments
+(Cell edge, Car on Bluetooth, Spotty Wi-Fi call, Breaking up one way, Old landline,
+and Worst line, which turns everything up at once) beside the sound ones; the silent
+default is called Quiet room.
 
 Variants are where cost lives. Every variant a run plan selects is a real phone
 call, so "add a few more variants" and "spend more on every future run" are the
