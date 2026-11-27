@@ -118,6 +118,15 @@ follows the last one. Speech does not end the wait. In a menu with several keypa
 policy decides. To test a dedicated no-answer path, add a `CUSTOMER_SILENCE`
 option: the call waits its duration and then follows that path.
 
+## Waiting on hold
+
+A scripted flow has no step that waits for the agent: `CUSTOMER_SILENCE` is a
+fixed pause, held for its stated length whatever the agent does. Each path's
+variant carries its own `holdMode`, `holdInstructions` and `holdMaxSeconds` (see
+the flows concept), which apply to the caller's improvised turns, where the
+caller's model chooses what to say, and so to a LOOSE script. A STRICT script
+speaks and listens step by step and does not use them.
+
 ## Caller cues
 
 A step's `content` can carry the same cue tokens as an improv brief:

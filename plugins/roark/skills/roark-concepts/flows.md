@@ -92,6 +92,27 @@ Variants are where cost lives. Every variant a run plan selects is a real phone
 call, so "add a few more variants" and "spend more on every future run" are the
 same sentence.
 
+## Waiting on hold
+
+Each variant says how its simulated caller waits quietly while the agent is busy,
+so one edge case can test a caller who will not wait while the happy path waits
+patiently. `holdMode` is one of:
+
+- `DEFAULT`: Roark's rules. Wait when the agent asks for a moment ("bear with me",
+  "let me pull that up"), and never in place of answering a question.
+- `CUSTOM`: follow `holdInstructions`, written in plain words, for example "Hold
+  whenever the agent is processing a credit card number and says okay." Required
+  with this mode, up to 4000 characters. Start from Roark's rules and add your case,
+  since they carry how to wait.
+- `NEVER`: the caller never holds.
+
+The caller stays silent until the agent speaks again or `holdMaxSeconds` (5 to
+600) runs out, then takes the turn back. Null `holdMaxSeconds` is 180.
+
+On an edge case, a null `holdMode` follows the happy path: its mode, instructions
+and longest wait together. On the happy path, a null `holdMode` is `DEFAULT`. An
+edge case set to `DEFAULT` uses Roark's rules even when the happy path is custom.
+
 ## Caller cues
 
 A brief can steer the caller mid-call with inline cue tokens. Each one takes
